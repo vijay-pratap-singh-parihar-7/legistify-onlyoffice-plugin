@@ -1,0 +1,9 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Ask AI Icon - Chat/Message with AI -->
+  <rect width="32" height="32" rx="4" fill="#2667ff"/>
+  <!-- Chat bubble -->
+  <path d="M8 10C8 8.9 8.9 8 10 8H18C19.1 8 20 8.9 20 10V16C20 17.1 19.1 18 18 18H12L8 22V10Z" fill="white"/>
+  <!-- AI sparkle -->
+  <circle cx="24" cy="12" r="3" fill="#FFD700"/>
+  <path d="M24 9L24.5 10.5L26 11L24.5 11.5L24 13L23.5 11.5L22 11L23.5 10.5L24 9Z" fill="white"/>
+</svg>

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>AI Contract Assistant</title>
+    <script type="text/javascript" src="../v1/plugins.js"></script>
+    <script type="text/javascript" src="../v1/plugins-ui.js"></script>
+    <link rel="stylesheet" href="../v1/plugins.css">
+    
+    <!-- Your Custom Styles -->
+    <link rel="stylesheet" href="styles/plugin.css">
+</head>
+<body>
+    <!-- Resize Handle -->
+    <div id="resize-handle" class="resize-handle"></div>
+    <div id="plugin-container" class="plugin-root">
+        <!-- Tab Navigation - Matches MS Editor App.jsx -->
+        <div class="tab-list-container">
+            <div class="tab-list">
+                <button class="tab-button active" data-tab="Playbook" onclick="handleTabChange('Playbook')">Playbook</button>
+                <button class="tab-button" data-tab="ReviewHub" onclick="handleTabChange('ReviewHub')">Review Hub</button>
+                <button class="tab-button" data-tab="Assistant" onclick="handleTabChange('Assistant')">Copilot</button>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div id="main-content-area">
+            <!-- Review Hub - Card Buttons (shown when no activeContent and ReviewHub tab) -->
+            <div id="review-hub-view" class="review-hub-view" style="display: none;">
+                <div class="card-container">
+                    <div class="card-body">
+                        <button class="card-button" onclick="handleButtonClick('summary')" id="summary-btn">
+                            <svg class="button-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M12 6v6l4 2"></path>
+                            </svg>
+                            Summarize Using AI
+                            <span class="btn-spinner" id="summary-spinner" style="display: none;"></span>
+                        </button>
+
+                        <button class="card-button" onclick="handleButtonClick('clause')" id="clause-btn">
+                            <svg class="button-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                            Identify Key Clauses
+                            <span class="btn-spinner" id="clause-spinner" style="display: none;"></span>
+                        </button>
+
+                        <button class="card-button" onclick="handleButtonClick('obligation')" id="obligation-btn">
+                            <svg class="button-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            </svg>
+                            AI Obligations Extractor
+                            <span class="btn-spinner" id="obligation-spinner" style="display: none;"></span>
+                        </button>
+
+                        <button class="card-button" onclick="handleButtonClick('library')" id="library-btn">
+                            <svg class="button-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                            </svg>
+                            Refer Your Clause Library
+                            <span class="btn-spinner" id="library-spinner" style="display: none;"></span>
+                        </button>
+
+                        <button class="card-button" onclick="handleButtonClick('clauseApproval')" id="clauseApproval-btn">
+                            <svg class="button-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 11l3 3L22 4"></path>
+                                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                            </svg>
+                            Clause Approval
+                            <span class="btn-spinner" id="clauseApproval-spinner" style="display: none;"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Playbook View (shown when Playbook tab is active) -->
+            <div id="playbook-view" class="playbook-container" style="display: none;"></div>
+
+            <!-- Assistant/Copilot View (shown when Assistant tab is active) -->
+            <div id="assistant-view" class="assistant-container" style="display: none;"></div>
+        </div>
+
+        <!-- Drawer for Summary, Clauses, Obligations, Library, Clause Approval -->
+        <div id="drawer-overlay" class="drawer-overlay" style="display: none;" onclick="closeDrawer()"></div>
+        <div id="drawer" class="drawer" style="display: none;">
+            <div class="drawer-header">
+                <button class="drawer-close-button" onclick="closeDrawer()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+                <h3 class="drawer-title" id="drawer-title"></h3>
+                <div class="drawer-header-actions" id="drawer-header-actions" style="display: none;">
+                    <div class="summary-button" id="drawer-regenerate-btn" title="Regenerate" style="display: none;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <polyline points="1 20 1 14 7 14"></polyline>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                        </svg>
+                    </div>
+                    <div class="summary-button" id="drawer-copy-btn" title="Copy" style="display: none;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <div class="drawer-content" id="drawer-content"></div>
+        </div>
+
+        <!-- Summary View (for drawer) -->
+        <div id="summary-view" class="drawer-view" style="display: none;">
+            <div class="summary-feature-container">
+                <div class="marginHeader">
+                    <div class="headerBox">
+                        <svg class="back-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="closeDrawer()" style="cursor: pointer;">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                        <p class="summaryText">Summary</p>
+                    </div>
+                    <div class="response-action-box" id="summary-action-box" style="display: none;">
+                        <div class="summary-button" onclick="regenerateSummary()" title="Regenerate Summary">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 4 23 10 17 10"></polyline>
+                                <polyline points="1 20 1 14 7 14"></polyline>
+                                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                            </svg>
+                        </div>
+                        <div class="summary-button" onclick="copySummary()" title="Copy Summary">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="summary-text-card" id="summary-result"></div>
+            </div>
+        </div>
+
+        <!-- Clauses View (for drawer) -->
+        <div id="clauses-view" class="drawer-view" style="display: none;">
+            <div class="summary-feature-container">
+                <div class="marginHeader">
+                    <div class="headerBox">
+                        <svg class="back-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="closeDrawer()" style="cursor: pointer;">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                        <p class="summaryText">Clauses</p>
+                    </div>
+                    <div class="response-action-box" id="clauses-action-box" style="display: none;">
+                        <div class="summary-button" onclick="regenerateClauses()" title="Regenerate Clauses">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 4 23 10 17 10"></polyline>
+                                <polyline points="1 20 1 14 7 14"></polyline>
+                                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                            </svg>
+                        </div>
+                        <div class="summary-button" onclick="copyClauses()" title="Copy Clauses">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="summary-text-card" id="clauses-result"></div>
+            </div>
+        </div>
+
+        <!-- Obligations View (for drawer) -->
+        <div id="obligations-view" class="drawer-view" style="display: none;">
+            <div class="summary-feature-container">
+                <div class="marginHeader">
+                    <div class="headerBox">
+                        <svg class="back-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="closeDrawer()" style="cursor: pointer;">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                        <p class="summaryText">Obligations</p>
+                    </div>
+                    <div class="response-action-box" id="obligations-action-box" style="display: none;">
+                        <div class="summary-button" onclick="regenerateObligations()" title="Regenerate Obligations">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 4 23 10 17 10"></polyline>
+                                <polyline points="1 20 1 14 7 14"></polyline>
+                                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                            </svg>
+                        </div>
+                        <div class="summary-button" onclick="copyObligations()" title="Copy Obligations">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="summary-text-card" id="obligations-result"></div>
+            </div>
+        </div>
+
+        <!-- Library View (for drawer) -->
+        <div id="library-view" class="drawer-view" style="display: none;">
+            <div id="library-container" class="library-container"></div>
+        </div>
+
+        <!-- Clause Approval View (for drawer) -->
+        <div id="clauseApproval-view" class="drawer-view" style="display: none;">
+            <div id="clauseApproval-container" class="clauseApproval-container"></div>
+        </div>
+
+        <!-- Ask AI / Copilot View (for drawer) -->
+        <div id="ask-ai-view" class="drawer-view" style="display: none;"></div>
+    </div>
+
+    <!-- Load Plugin Scripts -->
+    <script src="scripts/streaming-utils.js"></script>
+    <script src="scripts/progress-loader.js"></script>
+    <script src="scripts/main.js"></script>
+    <script src="scripts/askAI.js"></script>
+    <script src="scripts/summary.js"></script>
+    <script src="scripts/obligations.js"></script>
+    <script src="scripts/clauses.js"></script>
+    <script src="scripts/playbook.js"></script>
+    <script src="scripts/library.js"></script>
+    <script src="scripts/approval.js"></script>
+</body>
+</html>

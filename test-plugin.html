@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>OnlyOffice Plugin Test - Standalone</title>
+    <link rel="stylesheet" href="styles/plugin.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .test-header {
+            background: #2667ff;
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+        .test-header h1 {
+            margin: 0;
+            font-size: 18px;
+        }
+        .console-output {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 500px;
+            overflow-y: auto;
+            border-top: 1px solid #333;
+        }
+        .console-line {
+            margin: 2px 0;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .console-log { color: #d4d4d4; }
+        .console-error { color: #f48771; }
+        .console-warn { color: #cca700; }
+        .console-debug { color: #4ec9b0; }
+        .clear-btn {
+            background: #666;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .clear-btn:hover {
+            background: #777;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>OnlyOffice Plugin Test</h1>
+            <p style="margin: 5px 0 0 0; font-size: 12px; opacity: 0.9;">Standalone Browser Test</p>
+        </div>
+        <div id="plugin-container" style="height: 600px; overflow: hidden;">
+            <!-- Plugin content will be loaded here -->
+        </div>
+        <div class="console-output" id="console-output">
+            <div class="console-line console-log">Console output will appear here...</div>
+        </div>
+        <button class="clear-btn" onclick="clearConsole()">Clear Console</button>
+    </div>
+
+    <!-- Mock OnlyOffice API -->
+    <script>
+        // Mock window.Asc.plugin
+        window.Asc = {
+            plugin: {
+                init: function() {
+                    console.log('[MOCK] OnlyOffice plugin.init() called');
+                    addConsoleLog('OnlyOffice plugin.init() called', 'log');
+                    
+                    // Initialize plugin data
+                    if (window.Asc.plugin.info && window.Asc.plugin.info.initData) {
+                        try {
+                            const initData = typeof window.Asc.plugin.info.initData === 'string' 
+                                ? JSON.parse(window.Asc.plugin.info.initData) 
+                                : window.Asc.plugin.info.initData;
+                            window.pluginData = { ...window.pluginData, ...initData };
+                            addConsoleLog('Plugin initData merged: ' + JSON.stringify(initData), 'log');
+                        } catch (e) {
+                            addConsoleLog('Error parsing initData: ' + e.message, 'error');
+                        }
+                    }
+                    
+                    // Call the actual plugin init if it exists
+                    if (window.pluginInit) {
+                        window.pluginInit();
+                    }
+                },
+                info: {
+                    initData: null
+                },
+                executeMethod: function(method, params, onSuccess, onError) {
+                    addConsoleLog(`[MOCK] executeMethod: ${method}`, 'log');
+                    if (onError) {
+                        onError({ message: 'Method not implemented in test mode' });
+                    }
+                },
+                button: function(id) {
+                    addConsoleLog(`[MOCK] Button clicked: ${id}`, 'log');
+                },
+                resizeWindow: function(width, height) {
+                    addConsoleLog(`[MOCK] resizeWindow: ${width}x${height}`, 'log');
+                },
+                openPanel: function() {
+                    addConsoleLog('[MOCK] openPanel() called', 'log');
+                }
+            }
+        };
+
+        // Override console methods to capture output
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+
+        function addConsoleLog(message, type = 'log') {
+            const output = document.getElementById('console-output');
+            const line = document.createElement('div');
+            line.className = `console-line console-${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            line.textContent = `[${timestamp}] ${message}`;
+            output.appendChild(line);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            const message = args.map(a => {
+                if (typeof a === 'object') {
+                    return JSON.stringify(a, null, 2);
+                }
+                return String(a);
+            }).join(' ');
+            addConsoleLog(message, message.includes('[DEBUG]') ? 'debug' : 'log');
+        };
+
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addConsoleLog(args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' '), 'error');
+        };
+
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            addConsoleLog(args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' '), 'warn');
+        };
+
+        function clearConsole() {
+            document.getElementById('console-output').innerHTML = '';
+        }
+
+        // Load plugin scripts
+        window.addEventListener('DOMContentLoaded', function() {
+            addConsoleLog('Loading plugin scripts...', 'log');
+            
+            // Load streaming utils first (optional)
+            const streamingUtils = document.createElement('script');
+            streamingUtils.src = 'scripts/streaming-utils.js';
+            streamingUtils.onload = function() {
+                addConsoleLog('streaming-utils.js loaded', 'log');
+                loadMainScript();
+            };
+            streamingUtils.onerror = function() {
+                addConsoleLog('Warning: streaming-utils.js not found, continuing...', 'warn');
+                loadMainScript();
+            };
+            document.head.appendChild(streamingUtils);
+        });
+
+        function loadMainScript() {
+            // Load main.js
+            const mainScript = document.createElement('script');
+            mainScript.src = 'scripts/main.js';
+            mainScript.onload = function() {
+                addConsoleLog('main.js loaded', 'log');
+                loadSummaryScript();
+            };
+            mainScript.onerror = function() {
+                addConsoleLog('Error loading main.js', 'error');
+            };
+            document.head.appendChild(mainScript);
+        }
+
+        function loadSummaryScript() {
+            // Load summary.js
+            const summaryScript = document.createElement('script');
+            summaryScript.src = 'scripts/summary.js';
+            summaryScript.onload = function() {
+                addConsoleLog('summary.js loaded', 'log');
+                
+                // Initialize plugin after a short delay to ensure everything is ready
+                setTimeout(function() {
+                    if (window.Asc && window.Asc.plugin && window.Asc.plugin.init) {
+                        addConsoleLog('Initializing plugin...', 'log');
+                        window.Asc.plugin.init();
+                    } else {
+                        addConsoleLog('Plugin init function not found', 'error');
+                    }
+                }, 100);
+            };
+            summaryScript.onerror = function() {
+                addConsoleLog('Error loading summary.js', 'error');
+            };
+            document.head.appendChild(summaryScript);
+        }
+    </script>
+</body>
+</html>

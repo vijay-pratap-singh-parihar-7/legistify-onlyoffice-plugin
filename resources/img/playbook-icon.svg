@@ -1,0 +1,13 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- AI Playbook Icon - Book with AI sparkle -->
+  <rect width="32" height="32" rx="4" fill="#2667ff"/>
+  <!-- Book -->
+  <path d="M10 8C9.4 8 9 8.4 9 9V23C9 23.6 9.4 24 10 24H22C22.6 24 23 23.6 23 23V9C23 8.4 22.6 8 22 8H10Z" fill="white"/>
+  <!-- Book pages -->
+  <line x1="13" y1="12" x2="19" y2="12" stroke="#2667ff" stroke-width="1" stroke-linecap="round"/>
+  <line x1="13" y1="15" x2="19" y2="15" stroke="#2667ff" stroke-width="1" stroke-linecap="round"/>
+  <line x1="13" y1="18" x2="17" y2="18" stroke="#2667ff" stroke-width="1" stroke-linecap="round"/>
+  <!-- AI sparkle -->
+  <circle cx="24" cy="10" r="2.5" fill="#FFD700"/>
+  <path d="M24 7.5L24.3 8.5L25.3 8.8L24.3 9.1L24 10.1L23.7 9.1L22.7 8.8L23.7 8.5L24 7.5Z" fill="white"/>
+</svg>

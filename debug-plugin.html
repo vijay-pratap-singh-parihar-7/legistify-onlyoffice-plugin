@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Plugin Debug Tool</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test { margin: 10px 0; padding: 10px; border: 1px solid #ddd; }
+        .pass { background: #d4edda; }
+        .fail { background: #f8d7da; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>OnlyOffice Plugin Debug Tool</h1>
+    <p>Use this tool to check if your plugin is accessible and configured correctly.</p>
+    
+    <div class="test">
+        <h3>Test 1: Check Plugin URL</h3>
+        <button onclick="testPluginUrl()">Test Plugin URL</button>
+        <div id="url-result"></div>
+    </div>
+    
+    <div class="test">
+        <h3>Test 2: Check config.json</h3>
+        <button onclick="testConfigJson()">Test config.json</button>
+        <div id="config-result"></div>
+    </div>
+    
+    <div class="test">
+        <h3>Test 3: Check Plugin Files</h3>
+        <button onclick="testPluginFiles()">Test Plugin Files</button>
+        <div id="files-result"></div>
+    </div>
+    
+    <script>
+        const PLUGIN_URL = "https://vijay-pratap-singh-parihar.github.io/Onlyoffice-plugin/config.json";
+        
+        async function testPluginUrl() {
+            const resultDiv = document.getElementById('url-result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                const response = await fetch(PLUGIN_URL, { method: 'HEAD' });
+                if (response.ok) {
+                    resultDiv.innerHTML = `<span class="pass">✅ URL is accessible (Status: ${response.status})</span>`;
+                } else {
+                    resultDiv.innerHTML = `<span class="fail">❌ URL returned status: ${response.status}</span>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="fail">❌ Error: ${error.message}<br>Possible issues:<br>- URL is incorrect<br>- CORS issue<br>- Server is down</span>`;
+            }
+        }
+        
+        async function testConfigJson() {
+            const resultDiv = document.getElementById('config-result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                const response = await fetch(PLUGIN_URL);
+                const text = await response.text();
+                
+                try {
+                    const config = JSON.parse(text);
+                    
+                    // Validate required fields
+                    const checks = [];
+                    if (config.guid) checks.push(`✅ GUID: ${config.guid}`);
+                    else checks.push(`❌ Missing GUID`);
+                    
+                    if (config.name) checks.push(`✅ Name: ${config.name}`);
+                    else checks.push(`❌ Missing name`);
+                    
+                    if (config.variations && config.variations.length > 0) {
+                        checks.push(`✅ Variations: ${config.variations.length} found`);
+                    } else {
+                        checks.push(`❌ No variations defined`);
+                    }
+                    
+                    resultDiv.innerHTML = `<span class="pass">✅ Valid JSON</span><br>` + checks.join('<br>');
+                } catch (e) {
+                    resultDiv.innerHTML = `<span class="fail">❌ Invalid JSON: ${e.message}</span>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="fail">❌ Error fetching config: ${error.message}</span>`;
+            }
+        }
+        
+        async function testPluginFiles() {
+            const resultDiv = document.getElementById('files-result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            const baseUrl = PLUGIN_URL.replace('/config.json', '');
+            const files = [
+                'index.html',
+                'scripts/main.js',
+                'styles/plugin.css',
+                'resources/img/icon.svg'
+            ];
+            
+            const results = [];
+            for (const file of files) {
+                try {
+                    const response = await fetch(`${baseUrl}/${file}`, { method: 'HEAD' });
+                    if (response.ok) {
+                        results.push(`✅ ${file}`);
+                    } else {
+                        results.push(`❌ ${file} (Status: ${response.status})`);
+                    }
+                } catch (error) {
+                    results.push(`❌ ${file} (Error: ${error.message})`);
+                }
+            }
+            
+            resultDiv.innerHTML = results.join('<br>');
+        }
+    </script>
+</body>
+</html>
