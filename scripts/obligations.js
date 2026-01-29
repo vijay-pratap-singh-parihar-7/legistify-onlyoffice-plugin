@@ -189,14 +189,9 @@
         updateStreamingUI();
 
         try {
-            const url = `${backendUrl}/ai-assistant/onlyoffice/stream-generate-obligation?contractId=${pluginData.contractId}&userId=${pluginData.userId}&organizationId=${pluginData.organizationId}`;
-            const res = await fetch(url, {
+            const url = `/ai-assistant/onlyoffice/stream-generate-obligation?contractId=${pluginData.contractId}&userId=${pluginData.userId}&organizationId=${pluginData.organizationId}`;
+            const res = await window.pluginFetch(url, {
                 method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-auth-token': accessToken || '',
-                    'accept-language': 'en-US,en;q=0.9',
-                },
                 signal: abortController.signal,
             });
 
@@ -480,16 +475,9 @@
             // Progress loader already shown in initObligationsView
             
             // Check history for saved obligation
-            const url = `${backendUrl}/ai-assistant/fetch-obligation?contractId=${pluginData.contractId}`;
-            const response = await fetch(url, {
-                headers: {
-                    'x-auth-token': accessToken,
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
+            const url = `/ai-assistant/fetch-obligation?contractId=${pluginData.contractId}`;
+            const response = await window.pluginFetch(url);
+            const data = await response.json();
                 if (data?.status && data?.data?.obligation) {
                     savedObligation = data.data.obligation;
                     obligationsData = data.data.obligation;

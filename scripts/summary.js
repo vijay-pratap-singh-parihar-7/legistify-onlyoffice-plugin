@@ -109,16 +109,9 @@
         
         try {
             initialLoading = true;
-            const url = `${backendUrl}/ai-assistant/fetch-Summary-Clause?contractId=${pluginData.contractId}`;
-            const response = await fetch(url, {
-                headers: {
-                    'x-auth-token': accessToken,
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
+            const url = `/ai-assistant/fetch-Summary-Clause?contractId=${pluginData.contractId}`;
+            const response = await window.pluginFetch(url);
+            const data = await response.json();
                 if (data && data.summary) {
                     savedSummary = data.summary;
                     summaryData = data.summary;
@@ -294,19 +287,12 @@
                 fetch('http://127.0.0.1:7242/ingest/be32d8b0-12c9-4dbe-a212-01f2fe6cfcc2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'summary.js:161',message:'Fetch request starting',data:{url:url,method:'GET',mode:'cors',credentials:'omit',hasSignal:!!abortController.signal,frontendOrigin:frontendOrigin},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
                 // #endregion
                 
-                // Match frontend request headers exactly as shown in curl
-                response = await fetch(url, {
+                // CORS-compliant fetch request
+                // Note: Don't set 'origin' header - browser sets it automatically
+                // Setting it manually can cause CORS issues
+                response = await window.pluginFetch(url, {
                     method: 'GET',
-                    headers: {
-                        'accept': '*/*',
-                        'accept-language': 'en-US,en;q=0.9',
-                        'content-type': 'application/json',
-                        'origin': frontendOrigin,
-                        'x-auth-token': accessToken || ''
-                    },
-                    signal: abortController.signal,
-                    mode: 'cors',
-                    credentials: 'omit'
+                    signal: abortController.signal
                 });
                 
                 const fetchDuration = Date.now() - fetchStartTime;
@@ -578,16 +564,9 @@
         
         try {
             initialLoading = true;
-            const url = `${backendUrl}/ai-assistant/fetch-Summary-Clause?contractId=${pluginData.contractId}`;
-            const response = await fetch(url, {
-                headers: {
-                    'x-auth-token': accessToken,
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
+            const url = `/ai-assistant/fetch-Summary-Clause?contractId=${pluginData.contractId}`;
+            const response = await window.pluginFetch(url);
+            const data = await response.json();
                 if (data && data.summary) {
                     savedSummary = data.summary;
                     summaryData = data.summary;

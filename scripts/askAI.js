@@ -250,21 +250,12 @@
             const accessToken = window.getAccessToken();
 
             const formData = { contractId: pluginData.contractId, question: prompt };
-            const url = `${backendUrl}/ai-assistant/ask-question`;
+            const url = `/ai-assistant/ask-question`;
             
-            const response = await fetch(url, {
+            const response = await window.pluginFetch(url, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-auth-token': accessToken || '',
-                    'accept-language': 'en-US,en;q=0.9'
-                },
                 body: JSON.stringify(formData)
             });
-
-            if (!response.ok) {
-                throw new Error('Failed to get AI response');
-            }
 
             const data = await response.json();
             if (data?.status) {
@@ -322,18 +313,12 @@
         if (!pluginData.contractId || !accessToken) return;
 
         const param = query ? `contractId=${pluginData.contractId}&${query}` : `contractId=${pluginData.contractId}`;
-        const url = `${backendUrl}/ai-assistant/chat-history?${param}`;
+        const url = `/ai-assistant/chat-history?${param}`;
         
         try {
-            const response = await fetch(url, {
-                headers: {
-                    'x-auth-token': accessToken,
-                    'Content-Type': 'application/json'
-                }
-            });
+            const response = await window.pluginFetch(url);
             
-            if (response.ok) {
-                const data = await response.json();
+            const data = await response.json();
                 if (data?.status && data?.data?.result?.length > 0) {
                     totalCount = data.data.totalCount || 0;
                     historySearch = [...historySearch, ...(data.data.result || [])];
@@ -370,17 +355,16 @@
             bodyData.append('contractId', pluginData.contractId);
             bodyData.append('regenerate', regenerate);
 
-            const url = `${backendUrl}/ai-assistant/onlyoffice/sync-document`;
-            const response = await fetch(url, {
+            const url = `/ai-assistant/onlyoffice/sync-document`;
+            const response = await window.pluginFetch(url, {
                 method: 'POST',
                 headers: {
-                    'x-auth-token': accessToken || ''
+                    // Remove Content-Type for FormData - browser sets it automatically with boundary
                 },
                 body: bodyData
             });
 
-            if (response.ok) {
-                const data = await response.json();
+            const data = await response.json();
                 if (data?.status) {
                     const responseData = data.data?.data || data.data?.result;
                     historySearch = [responseData, ...historySearch];

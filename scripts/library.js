@@ -162,20 +162,10 @@
             }
 
             const query = mode ? `${param}&onlyFavourite=true` : param;
-            const url = `${backendUrl}/clause-library/clause-list${query ? '?' + query : ''}`;
+            const url = `/clause-library/clause-list${query ? '?' + query : ''}`;
             
-            const response = await fetch(url, {
-                headers: {
-                    'x-auth-token': accessToken,
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            if (!response.ok) {
-                throw new Error('Failed to fetch clause library');
-            }
-
-                const data = await response.json();
+            const response = await window.pluginFetch(url);
+            const data = await response.json();
             if (data?.status) {
                 clauseList = data.data?.clauses || [];
                 renderClauseList();
@@ -211,14 +201,9 @@
             }
 
             const query = clauseSwitch ? `${param}&onlyFavourite=true` : param;
-            const url = `${backendUrl}/clause-library/sub-clause-list${query ? '?' + query : ''}`;
+            const url = `/clause-library/sub-clause-list${query ? '?' + query : ''}`;
             
-            const response = await fetch(url, {
-                headers: {
-                    'x-auth-token': accessToken,
-                    'Content-Type': 'application/json'
-                }
-            });
+            const response = await window.pluginFetch(url);
 
             if (!response.ok) {
                 throw new Error('Failed to fetch sub clause library');
@@ -376,17 +361,8 @@
                 throw new Error('Access token not available');
         }
 
-            const url = `${backendUrl}/clause-library/sub-clause-details?subClauseId=${subClauseId}`;
-            const response = await fetch(url, {
-                headers: {
-                    'x-auth-token': accessToken,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch sub clause details');
-            }
+            const url = `/clause-library/sub-clause-details?subClauseId=${subClauseId}`;
+            const response = await window.pluginFetch(url);
 
                 const data = await response.json();
             if (data?.status && data?.data) {
@@ -436,17 +412,11 @@
                 markFavourite: !currentFavorite ? 'true' : 'false'
             };
 
-            const url = `${backendUrl}/clause-library/mark-favourite`;
-            const response = await fetch(url, {
+            const url = `/clause-library/mark-favourite`;
+            const response = await window.pluginFetch(url, {
                 method: 'POST',
-                headers: {
-                    'x-auth-token': accessToken,
-                    'Content-Type': 'application/json'
-                },
                 body: JSON.stringify(formData)
             });
-
-            if (!response.ok) {
                 throw new Error('Failed to update favorite');
             }
 
