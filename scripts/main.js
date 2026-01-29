@@ -110,8 +110,9 @@
         }
         
         // Plugin initialization - called when OnlyOffice loads the plugin
-        window.Asc.plugin.init = function() {
+        window.Asc.plugin.init = function(data) {
         console.log('AI Contract Assistant Plugin initialized');
+        console.log('Init function received data parameter:', data);
         
         // Get plugin initialization data (passed from backend)
         // OnlyOffice may pass initData in different formats depending on pluginsData structure
@@ -121,20 +122,36 @@
         console.log('window.Asc.plugin.info:', window.Asc.plugin.info);
         console.log('window.Asc.plugin.info.initData:', window.Asc.plugin.info?.initData);
         console.log('window.Asc.plugin.info.pluginsData:', window.Asc.plugin.info?.pluginsData);
+        console.log('window.Asc.plugin.info.data:', window.Asc.plugin.info?.data);
         
-        if (window.Asc.plugin.info && window.Asc.plugin.info.initData) {
+        // Try multiple locations where OnlyOffice might store the plugin data
+        // 1. Check if data is passed as parameter to init function
+        if (data) {
+            initData = data;
+            console.log('Using initData from init function parameter');
+        } else if (window.Asc.plugin.info && window.Asc.plugin.info.initData) {
             initData = window.Asc.plugin.info.initData;
             console.log('Using initData from window.Asc.plugin.info.initData');
+        } else if (window.Asc.plugin.info && window.Asc.plugin.info.data && window.Asc.plugin.info.data.trim() !== '') {
+            // OnlyOffice often stores plugin data in the 'data' field
+            initData = window.Asc.plugin.info.data;
+            console.log('Using initData from window.Asc.plugin.info.data');
         } else if (window.Asc.plugin.info && window.Asc.plugin.info.pluginsData) {
-            // If pluginsData is an array, get the last element (the actual data)
+            // If pluginsData is an object (keyed by plugin GUID), get the data for this plugin
             const pluginsData = window.Asc.plugin.info.pluginsData;
-            if (Array.isArray(pluginsData) && pluginsData.length > 0) {
+            if (typeof pluginsData === 'object' && !Array.isArray(pluginsData)) {
+                const pluginGuid = window.Asc.plugin.info.guid;
+                if (pluginsData[pluginGuid]) {
+                    initData = pluginsData[pluginGuid];
+                    console.log('Using initData from pluginsData object for GUID:', pluginGuid);
+                }
+            } else if (Array.isArray(pluginsData) && pluginsData.length > 0) {
                 // The last element should be the JSON stringified data
                 initData = pluginsData[pluginsData.length - 1];
                 console.log('Using initData from pluginsData array, index:', pluginsData.length - 1);
             } else {
                 initData = pluginsData;
-                console.log('Using initData from pluginsData (not array)');
+                console.log('Using initData from pluginsData (not array/object)');
             }
         } else {
             console.warn('No initData found in window.Asc.plugin.info');
