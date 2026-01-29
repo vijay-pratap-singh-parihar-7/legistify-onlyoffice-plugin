@@ -189,9 +189,14 @@
         updateStreamingUI();
 
         try {
-            const url = `/ai-assistant/onlyoffice/stream-generate-AiClause?contractId=${pluginData.contractId}&userId=${pluginData.userId}&organizationId=${pluginData.organizationId}`;
-            const res = await window.pluginFetch(url, {
+            const url = `${backendUrl}/ai-assistant/onlyoffice/stream-generate-AiClause?contractId=${pluginData.contractId}&userId=${pluginData.userId}&organizationId=${pluginData.organizationId}`;
+            const res = await fetch(url, {
                 method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-auth-token': accessToken || '',
+                    'accept-language': 'en-US,en;q=0.9',
+                },
                 signal: abortController.signal,
             });
 
@@ -475,9 +480,16 @@
             // Progress loader already shown in initClausesView
             
             // Check history for saved clause
-            const url = `/ai-assistant/fetch-Summary-Clause?contractId=${pluginData.contractId}`;
-            const response = await window.pluginFetch(url);
-            const data = await response.json();
+            const url = `${backendUrl}/ai-assistant/fetch-Summary-Clause?contractId=${pluginData.contractId}`;
+            const response = await fetch(url, {
+                headers: {
+                    'x-auth-token': accessToken,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
                 if (data?.status && data?.data?.clause) {
                     savedClause = data.data.clause;
                     clausesData = data.data.clause;

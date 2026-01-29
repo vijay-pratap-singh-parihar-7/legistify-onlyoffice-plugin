@@ -85,8 +85,13 @@
                 throw new Error('Access token not available');
             }
 
-            const url = `/ai-assistant/global-playbooks`;
-            const response = await window.pluginFetch(url);
+            const url = `${backendUrl}/ai-assistant/global-playbooks`;
+            const response = await fetch(url, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-auth-token': accessToken
+                }
+            });
 
             if (!response.ok) {
                 const errorText = await response.text();
@@ -243,9 +248,14 @@
                 params.append('playbookId', playbookId);
             }
 
-            const url = `/ai-assistant/run-playbook-stream?${params.toString()}`;
-            const response = await window.pluginFetch(url, {
-                method: 'GET'
+            const url = `${backendUrl}/ai-assistant/run-playbook-stream?${params.toString()}`;
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'accept-language': 'en-US,en;q=0.9',
+                    'x-auth-token': accessToken
+                }
             });
 
             if (!response.ok) {
@@ -915,9 +925,13 @@
         }
         
         try {
-            const url = `/ai-assistant/generate-playbook-with-ai`;
-            const response = await window.pluginFetch(url, {
+            const url = `${backendUrl}/ai-assistant/generate-playbook-with-ai`;
+            const response = await fetch(url, {
                 method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-auth-token': accessToken
+                },
                 body: JSON.stringify({
                     contractId: pluginData.contractId,
                     fileName: pluginData.fileName || 'Untitled Document'
@@ -972,8 +986,13 @@
             
             if (!accessToken) return baseName;
             
-            const url = `/ai-assistant/global-playbooks`;
-            const response = await window.pluginFetch(url);
+            const url = `${backendUrl}/ai-assistant/global-playbooks`;
+            const response = await fetch(url, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-auth-token': accessToken
+                }
+            });
             
             if (response.ok) {
                 const data = await response.json();
@@ -1142,9 +1161,13 @@
         }
         
         try {
-            const url = `/ai-assistant/editor-create-playbook`;
-            const response = await window.pluginFetch(url, {
+            const url = `${backendUrl}/ai-assistant/editor-create-playbook`;
+            const response = await fetch(url, {
                 method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-auth-token': accessToken
+                },
                 body: JSON.stringify({
                     name: name,
                     rules: rules
@@ -1303,9 +1326,13 @@
         }
         
         try {
-            const url = `/ai-assistant/editor-create-playbook`;
-            const response = await window.pluginFetch(url, {
+            const url = `${backendUrl}/ai-assistant/editor-create-playbook`;
+            const response = await fetch(url, {
                 method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-auth-token': accessToken
+                },
                 body: JSON.stringify({
                     name: name,
                     rules: generatedPlaybook.rules

@@ -176,8 +176,17 @@
                 throw new Error('Access token not available');
             }
 
-            const url = `/clause-approval/clause-approvals-list?contractId=${pluginData.contractId}`;
-            const response = await window.pluginFetch(url);
+            const url = `${backendUrl}/clause-approval/clause-approvals-list?contractId=${pluginData.contractId}`;
+            const response = await fetch(url, {
+                headers: {
+                    'x-auth-token': accessToken,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch clause approvals');
+            }
 
             const data = await response.json();
             if (data?.status && data?.data?.length > 0) {
@@ -211,8 +220,17 @@
                 throw new Error('Access token not available');
             }
 
-            const url = `/clause-approval/clause-approval-details?contractId=${pluginData.contractId}&approvalId=${approvalId}`;
-            const response = await window.pluginFetch(url);
+            const url = `${backendUrl}/clause-approval/clause-approval-details?contractId=${pluginData.contractId}&approvalId=${approvalId}`;
+            const response = await fetch(url, {
+                headers: {
+                    'x-auth-token': accessToken,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch clause approval details');
+            }
 
             const data = await response.json();
             if (data?.status && data?.data?.clauseApprovalDetails?.length > 0) {
@@ -450,9 +468,16 @@
             const backendUrl = window.getBackendUrl();
             const accessToken = window.getAccessToken();
 
-            const url = `/clause-approval/contract-followers?contractId=${pluginData.contractId}`;
-            const response = await window.pluginFetch(url);
-            const data = await response.json();
+            const url = `${backendUrl}/clause-approval/contract-followers?contractId=${pluginData.contractId}`;
+            const response = await fetch(url, {
+                headers: {
+                    'x-auth-token': accessToken,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
                 if (data?.status && data?.data?.length > 0) {
                     contractFollowers = data.data;
                 }
@@ -504,11 +529,17 @@
             const backendUrl = window.getBackendUrl();
             const accessToken = window.getAccessToken();
 
-            const url = `/clause-approval/start-clause-approval?contractId=${pluginData.contractId}`;
-            const response = await window.pluginFetch(url, {
-                method: 'POST'
+            const url = `${backendUrl}/clause-approval/start-clause-approval?contractId=${pluginData.contractId}`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'x-auth-token': accessToken,
+                    'Content-Type': 'application/json'
+                }
             });
-            const data = await response.json();
+
+            if (response.ok) {
+                const data = await response.json();
                 if (data?.status) {
                     showToast('Approval Workflows Started Successfully', 'success');
                     getClauseApprovalsList();
@@ -535,11 +566,17 @@
             const backendUrl = window.getBackendUrl();
             const accessToken = window.getAccessToken();
 
-            const url = `/clause-approval/approval-reminder?contractId=${pluginData.contractId}`;
-            const response = await window.pluginFetch(url, {
-                method: 'POST'
+            const url = `${backendUrl}/clause-approval/approval-reminder?contractId=${pluginData.contractId}`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'x-auth-token': accessToken,
+                    'Content-Type': 'application/json'
+                }
             });
-            const data = await response.json();
+
+            if (response.ok) {
+                const data = await response.json();
                 if (data?.status) {
                     showToast('Approval Reminder Sent Successfully', 'success');
                 } else {
@@ -565,9 +602,16 @@
             const backendUrl = window.getBackendUrl();
             const accessToken = window.getAccessToken();
 
-            const url = `/clause-approval/approval-matrix?contractId=${pluginData.contractId}`;
-            const response = await window.pluginFetch(url);
-            const data = await response.json();
+            const url = `${backendUrl}/clause-approval/approval-matrix?contractId=${pluginData.contractId}`;
+            const response = await fetch(url, {
+                headers: {
+                    'x-auth-token': accessToken,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
                 if (data?.status && data?.data) {
                     window.open(data.data, '_blank');
                     showToast('Approval Matrix Downloaded Successfully', 'success');
@@ -600,12 +644,18 @@
             const backendUrl = window.getBackendUrl();
             const accessToken = window.getAccessToken();
 
-            const url = `/ai-assistant/generate-contract-clause-summary`;
-            const response = await window.pluginFetch(url, {
+            const url = `${backendUrl}/ai-assistant/generate-contract-clause-summary`;
+            const response = await fetch(url, {
                 method: 'POST',
+                headers: {
+                    'x-auth-token': accessToken,
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify({ clause: form.clause })
             });
-            const data = await response.json();
+
+            if (response.ok) {
+                const data = await response.json();
                 if (data?.status && data?.data) {
                     form.summary = data.data;
                 }
@@ -662,11 +712,17 @@
             const backendUrl = window.getBackendUrl();
             const accessToken = window.getAccessToken();
 
-            const url = `/clause-approval/create-clause-approval`;
-            const response = await window.pluginFetch(url, {
+            const url = `${backendUrl}/clause-approval/create-clause-approval`;
+            const response = await fetch(url, {
                 method: 'POST',
+                headers: {
+                    'x-auth-token': accessToken,
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify(form)
             });
+
+            if (response.ok) {
             const data = await response.json();
                 if (data?.status) {
                     showNewApprovalForm = false;
