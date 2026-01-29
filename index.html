@@ -3,9 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <title>AI Contract Assistant</title>
-    <script type="text/javascript" src="../v1/plugins.js"></script>
-    <script type="text/javascript" src="../v1/plugins-ui.js"></script>
+    <script type="text/javascript" src="../v1/plugins.js" onerror="console.error('Failed to load plugins.js')"></script>
+    <script type="text/javascript" src="../v1/plugins-ui.js" onerror="console.error('Failed to load plugins-ui.js')"></script>
     <link rel="stylesheet" href="../v1/plugins.css">
+    <script>
+        // Debug: Check if scripts loaded
+        window.addEventListener('load', function() {
+            console.log('Page loaded. window.Asc:', typeof window.Asc !== 'undefined' ? window.Asc : 'undefined');
+            console.log('window.Asc.plugin:', typeof window.Asc !== 'undefined' && typeof window.Asc.plugin !== 'undefined' ? window.Asc.plugin : 'undefined');
+        });
+    </script>
     
     <!-- Your Custom Styles -->
     <link rel="stylesheet" href="styles/plugin.css">

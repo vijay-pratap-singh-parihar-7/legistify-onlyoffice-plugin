@@ -31,7 +31,7 @@
       "isModal": false,
       "isInsideMode": false,
       "type": "panel",
-      "initDataType": "none",
+      "initDataType": "text",
       "initOnSelectionChanged": false,
       "buttons": [
         {

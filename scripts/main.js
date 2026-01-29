@@ -2,6 +2,10 @@
 (function(window, undefined) {
     'use strict';
 
+    // Debug: Log when script loads
+    console.log('Plugin main.js script loaded at:', new Date().toISOString());
+    console.log('window.Asc at script load:', typeof window.Asc !== 'undefined' ? window.Asc : 'undefined');
+    
     // Store plugin data (contractId, accessToken, etc.) - will be populated from backend
     // These are empty defaults - actual values come from backend via initData
     window.pluginData = {
@@ -35,13 +39,111 @@
         clauseApprovalsData: null
     };
     
-    // Plugin initialization - called when OnlyOffice loads the plugin
-    window.Asc.plugin.init = function() {
+    // Wait for OnlyOffice API to be available before setting up plugin
+    function waitForOnlyOfficeAPI(callback) {
+        let attempts = 0;
+        const maxAttempts = 200; // 20 seconds max wait time (200 * 100ms)
+        
+        function checkAPI() {
+            attempts++;
+            
+            // Check if window.Asc exists
+            if (typeof window.Asc === 'undefined') {
+                console.log('Waiting for window.Asc... attempt', attempts);
+                if (attempts < maxAttempts) {
+                    setTimeout(checkAPI, 100);
+                } else {
+                    console.error('window.Asc not available after', maxAttempts, 'attempts');
+                    showPluginError('OnlyOffice API (window.Asc) is not available. Please ensure the plugin is properly loaded and OnlyOffice is running.');
+                }
+                return;
+            }
+            
+            // Check if window.Asc.plugin exists
+            if (typeof window.Asc.plugin === 'undefined') {
+                console.log('Waiting for window.Asc.plugin... attempt', attempts);
+                // Try to initialize plugin object if it doesn't exist
+                if (!window.Asc.plugin) {
+                    window.Asc.plugin = {};
+                }
+                if (attempts < maxAttempts) {
+                    setTimeout(checkAPI, 100);
+                } else {
+                    console.error('window.Asc.plugin not available after', maxAttempts, 'attempts');
+                    console.log('window.Asc:', window.Asc);
+                    showPluginError('OnlyOffice plugin API (window.Asc.plugin) is not available. Please refresh the page or contact support.');
+                }
+                return;
+            }
+            
+            console.log('OnlyOffice API detected after', attempts, 'attempts');
+            console.log('window.Asc.plugin:', window.Asc.plugin);
+            callback();
+        }
+        
+        // Start checking immediately
+        checkAPI();
+    }
+    
+    // Try immediate initialization if API is already available
+    if (window.Asc && window.Asc.plugin) {
+        console.log('OnlyOffice API already available, setting up immediately');
+        setupPluginInit();
+    } else {
+        // Wait for OnlyOffice API to be available
+        waitForOnlyOfficeAPI(function() {
+            setupPluginInit();
+        });
+    }
+    
+    function setupPluginInit() {
+        // Ensure window.Asc.plugin exists
+        if (!window.Asc) {
+            console.error('window.Asc is still undefined');
+            showPluginError('OnlyOffice API (window.Asc) is not available. Please ensure OnlyOffice is running and the plugin is properly configured.');
+            return;
+        }
+        
+        if (!window.Asc.plugin) {
+            console.warn('window.Asc.plugin is undefined, attempting to create it');
+            window.Asc.plugin = {};
+        }
+        
+        // Plugin initialization - called when OnlyOffice loads the plugin
+        window.Asc.plugin.init = function() {
         console.log('AI Contract Assistant Plugin initialized');
         
         // Get plugin initialization data (passed from backend)
-        const initData = window.Asc.plugin.info.initData;
-        console.log('initData', initData);
+        // OnlyOffice may pass initData in different formats depending on pluginsData structure
+        let initData = null;
+        
+        // Debug: Log all available plugin info
+        console.log('window.Asc.plugin.info:', window.Asc.plugin.info);
+        console.log('window.Asc.plugin.info.initData:', window.Asc.plugin.info?.initData);
+        console.log('window.Asc.plugin.info.pluginsData:', window.Asc.plugin.info?.pluginsData);
+        
+        if (window.Asc.plugin.info && window.Asc.plugin.info.initData) {
+            initData = window.Asc.plugin.info.initData;
+            console.log('Using initData from window.Asc.plugin.info.initData');
+        } else if (window.Asc.plugin.info && window.Asc.plugin.info.pluginsData) {
+            // If pluginsData is an array, get the last element (the actual data)
+            const pluginsData = window.Asc.plugin.info.pluginsData;
+            if (Array.isArray(pluginsData) && pluginsData.length > 0) {
+                // The last element should be the JSON stringified data
+                initData = pluginsData[pluginsData.length - 1];
+                console.log('Using initData from pluginsData array, index:', pluginsData.length - 1);
+            } else {
+                initData = pluginsData;
+                console.log('Using initData from pluginsData (not array)');
+            }
+        } else {
+            console.warn('No initData found in window.Asc.plugin.info');
+            console.log('Available keys in window.Asc.plugin.info:', window.Asc.plugin.info ? Object.keys(window.Asc.plugin.info) : 'info is null/undefined');
+        }
+        
+        console.log('initData received:', initData);
+        console.log('initData type:', typeof initData);
+        
         if (initData) {
             try {
                 const data = typeof initData === 'string' ? JSON.parse(initData) : initData;
@@ -104,7 +206,50 @@
         
         // Initialize default view
         handleTabChange('Playbook');
-    };
+        };
+        
+        // Plugin execution complete callback
+        window.Asc.plugin.executeCommand = function(command, data) {
+            console.log('Command received:', command, data);
+        };
+
+        // Handle plugin panel close event
+        window.Asc.plugin.onClose = function() {
+            console.log('Plugin panel close event triggered by OnlyOffice');
+        };
+        
+        // Handle button clicks from OnlyOffice toolbar
+        window.Asc.plugin.button = function(id) {
+            const buttonMap = {
+                'askai': 'genai',
+                'ask-ai': 'genai',
+                'summary': 'summary',
+                'clauses': 'clause',
+                'obligations': 'obligation',
+                'aiplaybook': 'playbook',
+                'playbook': 'playbook',
+                'library': 'library',
+                'approval': 'clauseApproval'
+            };
+
+            const normalizedId = id.toLowerCase().replace(/\s+/g, '');
+            const contentKey = buttonMap[normalizedId] || buttonMap[id];
+            
+            if (contentKey) {
+                if (contentKey === 'playbook') {
+                    handleTabChange('Playbook');
+                } else if (contentKey === 'genai' || contentKey === 'askai') {
+                    handleTabChange('Assistant');
+                    setTimeout(() => handleButtonClick('genai'), 100);
+                } else {
+                    handleTabChange('ReviewHub');
+                    setTimeout(() => handleButtonClick(contentKey), 100);
+                }
+            }
+        };
+        
+        console.log('Plugin initialization functions set up successfully');
+    }
     
     // Initialize tab navigation - matches MS Editor App.jsx
     function initTabNavigation() {
@@ -565,36 +710,6 @@
         });
     }
 
-    // Handle button clicks from OnlyOffice toolbar
-    window.Asc.plugin.button = function(id) {
-        const buttonMap = {
-            'askai': 'genai',
-            'ask-ai': 'genai',
-            'summary': 'summary',
-            'clauses': 'clause',
-            'obligations': 'obligation',
-            'aiplaybook': 'playbook',
-            'playbook': 'playbook',
-            'library': 'library',
-            'approval': 'clauseApproval'
-        };
-
-        const normalizedId = id.toLowerCase().replace(/\s+/g, '');
-        const contentKey = buttonMap[normalizedId] || buttonMap[id];
-        
-        if (contentKey) {
-            if (contentKey === 'playbook') {
-                handleTabChange('Playbook');
-            } else if (contentKey === 'genai' || contentKey === 'askai') {
-                handleTabChange('Assistant');
-                setTimeout(() => handleButtonClick('genai'), 100);
-            } else {
-                handleTabChange('ReviewHub');
-                setTimeout(() => handleButtonClick(contentKey), 100);
-            }
-        }
-    };
-
     // Set up close button event listeners
     function setupCloseButtonListeners() {
         // Try multiple times to find the OnlyOffice close button (it may load later)
@@ -741,16 +856,6 @@
 
         window.getDocumentText = window.getDocumentContent;
     }
-
-    // Plugin execution complete callback
-    window.Asc.plugin.executeCommand = function(command, data) {
-        console.log('Command received:', command, data);
-    };
-
-    // Handle plugin panel close event
-    window.Asc.plugin.onClose = function() {
-        console.log('Plugin panel close event triggered by OnlyOffice');
-    };
 
     // Function to close/hide the plugin panel programmatically
     window.closePluginPanel = function() {
