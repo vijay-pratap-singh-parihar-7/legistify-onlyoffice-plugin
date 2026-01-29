@@ -120,42 +120,95 @@
         
         // Debug: Log all available plugin info
         console.log('window.Asc.plugin.info:', window.Asc.plugin.info);
+        console.log('window.Asc.plugin.info.options:', window.Asc.plugin.info?.options);
         console.log('window.Asc.plugin.info.initData:', window.Asc.plugin.info?.initData);
         console.log('window.Asc.plugin.info.pluginsData:', window.Asc.plugin.info?.pluginsData);
         console.log('window.Asc.plugin.info.data:', window.Asc.plugin.info?.data);
         
-        // Try multiple locations where OnlyOffice might store the plugin data
-        // 1. Check if data is passed as parameter to init function
-        if (data) {
-            initData = data;
-            console.log('Using initData from init function parameter');
-        } else if (window.Asc.plugin.info && window.Asc.plugin.info.initData) {
-            initData = window.Asc.plugin.info.initData;
-            console.log('Using initData from window.Asc.plugin.info.initData');
-        } else if (window.Asc.plugin.info && window.Asc.plugin.info.data && window.Asc.plugin.info.data.trim() !== '') {
-            // OnlyOffice often stores plugin data in the 'data' field
-            initData = window.Asc.plugin.info.data;
-            console.log('Using initData from window.Asc.plugin.info.data');
-        } else if (window.Asc.plugin.info && window.Asc.plugin.info.pluginsData) {
-            // If pluginsData is an object (keyed by plugin GUID), get the data for this plugin
-            const pluginsData = window.Asc.plugin.info.pluginsData;
-            if (typeof pluginsData === 'object' && !Array.isArray(pluginsData)) {
-                const pluginGuid = window.Asc.plugin.info.guid;
-                if (pluginsData[pluginGuid]) {
-                    initData = pluginsData[pluginGuid];
-                    console.log('Using initData from pluginsData object for GUID:', pluginGuid);
-                }
-            } else if (Array.isArray(pluginsData) && pluginsData.length > 0) {
-                // The last element should be the JSON stringified data
-                initData = pluginsData[pluginsData.length - 1];
-                console.log('Using initData from pluginsData array, index:', pluginsData.length - 1);
-            } else {
-                initData = pluginsData;
-                console.log('Using initData from pluginsData (not array/object)');
+        // According to OnlyOffice official documentation:
+        // - pluginsData should contain only config.json URLs (array)
+        // - Initialization data should be passed via the 'options' object
+        // - Options are keyed by plugin GUID: options['asc.{GUID}']
+        const pluginGuid = window.Asc.plugin.info?.guid || 'asc.{9DC93CDB-B576-4F0C-B55E-FCC9C48DD007}';
+        
+        // Try to get data from options object (official way)
+        if (window.Asc.plugin.info && window.Asc.plugin.info.options) {
+            const pluginOptions = window.Asc.plugin.info.options[pluginGuid];
+            if (pluginOptions) {
+                // Options is an object, convert to JSON string for consistency
+                initData = JSON.stringify(pluginOptions);
+                console.log('Using initData from window.Asc.plugin.info.options for GUID:', pluginGuid);
             }
-        } else {
+        }
+        
+        // Fallback: Try other locations where OnlyOffice might store the plugin data
+        if (!initData) {
+            // 1. Check if data is passed as parameter to init function
+            if (data && (typeof data === 'string' || (Array.isArray(data) && data.length > 0))) {
+                initData = Array.isArray(data) ? data[data.length - 1] : data;
+                console.log('Using initData from init function parameter');
+            } else if (window.Asc.plugin.info && window.Asc.plugin.info.initData) {
+                initData = window.Asc.plugin.info.initData;
+                console.log('Using initData from window.Asc.plugin.info.initData');
+            } else if (window.Asc.plugin.info && window.Asc.plugin.info.data) {
+                // Check if data is an array with elements
+                if (Array.isArray(window.Asc.plugin.info.data) && window.Asc.plugin.info.data.length > 0) {
+                    // If it's an array, get the last element (the actual data, not the config URL)
+                    initData = window.Asc.plugin.info.data[window.Asc.plugin.info.data.length - 1];
+                    console.log('Using initData from window.Asc.plugin.info.data array, index:', window.Asc.plugin.info.data.length - 1);
+                } else if (typeof window.Asc.plugin.info.data === 'string' && window.Asc.plugin.info.data.trim() !== '') {
+                    // OnlyOffice often stores plugin data in the 'data' field (as a JSON string)
+                    initData = window.Asc.plugin.info.data;
+                    console.log('Using initData from window.Asc.plugin.info.data (string)');
+                }
+            } else if (window.Asc.plugin.info && window.Asc.plugin.info.pluginsData) {
+                // pluginsData can be a string (JSON), object, or array
+                const pluginsData = window.Asc.plugin.info.pluginsData;
+                if (typeof pluginsData === 'string') {
+                    // If it's a string, it's the JSON data directly
+                    initData = pluginsData;
+                    console.log('Using initData from pluginsData (string)');
+                } else if (typeof pluginsData === 'object' && !Array.isArray(pluginsData)) {
+                    // If it's an object (keyed by plugin GUID), get the data for this plugin
+                    if (pluginsData[pluginGuid]) {
+                        initData = pluginsData[pluginGuid];
+                        console.log('Using initData from pluginsData object for GUID:', pluginGuid);
+                    }
+                } else if (Array.isArray(pluginsData) && pluginsData.length > 0) {
+                    // If it's an array, the last element should be the JSON stringified data
+                    initData = pluginsData[pluginsData.length - 1];
+                    console.log('Using initData from pluginsData array, index:', pluginsData.length - 1);
+                } else {
+                    initData = pluginsData;
+                    console.log('Using initData from pluginsData (other type)');
+                }
+            }
+        }
+        
+        if (!initData) {
             console.warn('No initData found in window.Asc.plugin.info');
             console.log('Available keys in window.Asc.plugin.info:', window.Asc.plugin.info ? Object.keys(window.Asc.plugin.info) : 'info is null/undefined');
+            
+            // Try to extract contractId from document callback URL as fallback
+            if (window.Asc.plugin.info && window.Asc.plugin.info.documentCallbackUrl) {
+                const callbackUrl = window.Asc.plugin.info.documentCallbackUrl;
+                console.log('Attempting to extract contractId from callback URL:', callbackUrl);
+                // Extract contractId from URL like: /api/onlyoffice/track/{contractId}
+                const match = callbackUrl.match(/\/onlyoffice\/track\/([a-fA-F0-9]{24})/);
+                if (match && match[1]) {
+                    console.log('Extracted contractId from callback URL:', match[1]);
+                    // Create minimal plugin data with contractId
+                    initData = JSON.stringify({
+                        contractId: match[1],
+                        accessToken: null, // Will need to be provided via other means
+                        userId: window.Asc.plugin.info.userId || null,
+                        organizationId: null,
+                        backendUrl: callbackUrl.split('/onlyoffice')[0] || null,
+                        permissions: {}
+                    });
+                    console.log('Created fallback initData from callback URL');
+                }
+            }
         }
         
         console.log('initData received:', initData);
