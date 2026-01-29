@@ -128,12 +128,20 @@
         // According to OnlyOffice official documentation:
         // - pluginsData should contain only config.json URLs (array)
         // - Initialization data should be passed via the 'options' object
-        // - Options are keyed by plugin GUID: options['asc.{GUID}']
+        // - Options can be directly in options object or keyed by plugin GUID
         const pluginGuid = window.Asc.plugin.info?.guid || 'asc.{9DC93CDB-B576-4F0C-B55E-FCC9C48DD007}';
         
         // Try to get data from options object (official way)
         if (window.Asc.plugin.info && window.Asc.plugin.info.options) {
-            const pluginOptions = window.Asc.plugin.info.options[pluginGuid];
+            // First try: options might be keyed by plugin GUID
+            let pluginOptions = window.Asc.plugin.info.options[pluginGuid];
+            
+            // If not found, try direct access (options might contain data directly)
+            if (!pluginOptions && window.Asc.plugin.info.options.contractId) {
+                pluginOptions = window.Asc.plugin.info.options;
+                console.log('Using options directly (not keyed by GUID)');
+            }
+            
             if (pluginOptions) {
                 // Options is an object, convert to JSON string for consistency
                 initData = JSON.stringify(pluginOptions);
