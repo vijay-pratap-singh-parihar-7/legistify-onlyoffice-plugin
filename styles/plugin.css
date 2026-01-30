@@ -5,6 +5,8 @@ body {
     padding: 0;
     overflow: hidden;
     position: relative;
+    height: 100vh;
+    max-height: 100vh;
 }
 
 .plugin-root {
@@ -140,6 +142,9 @@ body {
 .review-hub-view {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
+    max-height: calc(100vh - 35px);
 }
 
 .card-container {
@@ -316,25 +321,53 @@ body {
 /* Playbook Container - Matches MS Editor playbookContainer */
 .playbook-container {
     height: calc(100vh - 45px);
-    overflow: auto;
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* Internet Explorer 10+ */
+    max-height: calc(100vh - 45px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    position: relative;
 }
 
 .playbook-container::-webkit-scrollbar {
-    display: none; /* WebKit */
+    width: 8px;
+}
+
+.playbook-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.playbook-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.playbook-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
 }
 
 /* Assistant Container */
 .assistant-container {
     height: calc(100vh - 45px);
-    overflow: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+    max-height: calc(100vh - 45px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    position: relative;
 }
 
 .assistant-container::-webkit-scrollbar {
-    display: none;
+    width: 8px;
+}
+
+.assistant-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.assistant-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.assistant-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
 }
 
 /* Landing View - Card-based UI */
@@ -1571,6 +1604,8 @@ body {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
+    min-height: 0;
+    max-height: calc(100vh - 200px);
 }
 
 .playbook-list {
@@ -1711,6 +1746,8 @@ body {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
+    min-height: 0;
+    max-height: calc(100vh - 120px);
 }
 
 .filter-badge {
@@ -2235,6 +2272,8 @@ body {
     margin: 0 auto;
     width: 90%;
     justify-content: flex-start;
+    min-height: 0;
+    max-height: calc(100vh - 150px);
 }
 
 .create-page-inner {
@@ -2253,24 +2292,154 @@ body {
     width: 100%;
 }
 
-.image-container {
+.flow-item {
     flex: 1;
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
-.arrow {
+.flow-arrow {
     font-size: 24px;
     color: #9da4aa;
     font-weight: bold;
+}
+
+/* Contract Illustration - MS Editor style */
+.contract-illustration {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100px;
+}
+
+.contract-image {
+    max-width: 100%;
+    height: auto;
+    max-height: 100px;
+}
+
+/* Document Processor Illustration - MS Editor style */
+.document-processor-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100px;
+    position: relative;
+}
+
+.processor-circle {
+    width: 80px;
+    height: 80px;
+    background-color: #9da4aa;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+}
+
+.main-doc {
+    width: 35px;
+    height: 45px;
+    background-color: #fff;
+    border-radius: 4px;
+    position: relative;
+    z-index: 3;
+}
+
+.doc-lines {
+    position: absolute;
+    top: 8px;
+    left: 6px;
+    right: 6px;
+}
+
+.doc-line {
+    height: 2px;
+    background-color: #e9ecef;
+    margin-bottom: 3px;
+    border-radius: 1px;
+}
+
+.doc-line:nth-child(1) {
+    width: 80%;
+}
+
+.doc-line:nth-child(2) {
+    width: 90%;
+}
+
+.doc-line:nth-child(3) {
+    width: 70%;
+}
+
+.doc-line:nth-child(4) {
+    width: 85%;
+}
+
+.magnifying-glass {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #6c757d;
+    border-radius: 50%;
+    z-index: 4;
+}
+
+.magnifying-handle {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    width: 8px;
+    height: 2px;
+    background-color: #6c757d;
+    transform: rotate(45deg);
+    border-radius: 1px;
+}
+
+.side-doc {
+    position: absolute;
+    width: 25px;
+    height: 35px;
+    background-color: #f8f9fa;
+    border-radius: 3px;
+    border: 1px solid #e9ecef;
+}
+
+.side-doc-left {
+    left: 5px;
+    top: 50%;
+    transform: translateY(-50%) rotate(-10deg);
+    z-index: 1;
+}
+
+.side-doc-right {
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%) rotate(10deg);
+    z-index: 1;
 }
 
 .instruction-text {
     font-size: 14px;
     color: #6c757d;
     text-align: center;
-    margin-bottom: 10px;
+    margin-bottom: 20px;
     line-height: 1.4;
 }
 
@@ -2284,7 +2453,8 @@ body {
     font-weight: 600;
     cursor: pointer;
     width: 90%;
-    margin-bottom: 20px;
+    max-width: 400px;
+    margin: 0 auto 20px auto;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2620,6 +2790,7 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 0;
+    max-height: calc(100vh - 150px);
 }
 
 .create-form-inner {
@@ -2737,4 +2908,216 @@ body {
 .save-form-button:disabled {
     background-color: #adb5bd;
     cursor: not-allowed;
+}
+
+/* Loading Container Visual - MS Editor smartphone animation */
+.loading-container-visual {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: calc(95vh - 100px);
+    flex-direction: column;
+    gap: 24px;
+    text-align: center;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.smartphone-illustration {
+    width: 120px;
+    height: 120px;
+    margin: 10px auto 24px;
+    position: relative;
+}
+
+.phone-container {
+    width: 80px;
+    height: 120px;
+    border: 3px solid #2667ff;
+    border-radius: 12px;
+    margin: 0 auto;
+    position: relative;
+    background-color: #f8f9ff;
+}
+
+.phone-screen {
+    width: 70px;
+    height: 100px;
+    margin: 8px auto 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px;
+}
+
+.screen-line {
+    height: 8px;
+    background-color: #2667ff;
+    border-radius: 4px;
+}
+
+.phone-button {
+    width: 20px;
+    height: 2px;
+    background-color: #2667ff;
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 1px;
+}
+
+.loading-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #212529;
+    margin: 0 0 16px 0;
+}
+
+.loading-description {
+    font-size: 16px;
+    color: #6c757d;
+    margin: 0 0 24px 0;
+    line-height: 1.5;
+}
+
+.loading-spinner-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: #2667ff;
+    font-weight: 500;
+}
+
+/* Playbook Detail View Styles */
+.playbook-detail-root {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 100%;
+    background-color: #fff;
+}
+
+.playbook-detail-header {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background-color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #80808036;
+    gap: 10px;
+    padding: 8px 10px;
+    flex-shrink: 0;
+    width: 100%;
+}
+
+.playbook-detail-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+}
+
+.playbook-detail-content {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    max-height: calc(100vh - 100px);
+}
+
+.playbook-detail-info {
+    margin-bottom: 24px;
+}
+
+.playbook-detail-guidelines {
+    flex: 1;
+    margin-bottom: 20px;
+    min-height: 0;
+}
+
+.guidelines-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.guideline-detail-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.guideline-detail-item:hover {
+    background-color: #f0f0f0;
+    border-color: #2667ff;
+    box-shadow: 0 2px 4px rgba(38, 103, 255, 0.1);
+}
+
+.guideline-number {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #2667ff;
+    color: #fff;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.guideline-text {
+    flex: 1;
+    font-size: 13px;
+    color: #495057;
+    line-height: 1.6;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+}
+
+.playbook-detail-actions {
+    flex-shrink: 0;
+    padding-top: 16px;
+    border-top: 1px solid #e9ecef;
+}
+
+.run-playbook-detail-button {
+    width: 100%;
+    background-color: #9da4aaff;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.run-playbook-detail-button:hover:not(:disabled) {
+    background-color: #2667ff;
+    box-shadow: 0 2px 8px rgba(38, 103, 255, 0.3);
+}
+
+.run-playbook-detail-button:disabled {
+    background-color: #adb5bd;
+    cursor: not-allowed;
+    box-shadow: none;
 }

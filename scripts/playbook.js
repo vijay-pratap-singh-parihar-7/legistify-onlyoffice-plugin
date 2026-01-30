@@ -206,10 +206,68 @@
 
     // Render playbook detail
     function renderPlaybookDetail(playbook) {
-        // This would render the PlaybookDetail view
-        // For now, just show a placeholder
-        console.log('Show playbook detail:', playbook);
+        const playbookView = document.getElementById('playbook-view');
+        if (!playbookView) return;
+        
+        const rules = playbook.rules || [];
+        const isStandard = playbook.organizationId === null;
+        
+        playbookView.innerHTML = `
+            <div class="playbook-detail-root">
+                <div class="playbook-detail-header">
+                    <div class="playbook-detail-header-left">
+                        <svg class="back-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="handleBackFromDetail()" style="cursor: pointer;">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                        <span style="font-size: 14px; font-weight: 650; cursor: pointer;" onclick="handleBackFromDetail()">Back</span>
+                    </div>
+                </div>
+                <div class="playbook-detail-content">
+                    <div class="playbook-detail-info">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                            <span class="standard-text">${isStandard ? 'Standard' : 'Custom'}</span>
+                            <span>•</span>
+                            <span style="font-size: 14px; color: #6c757d;">${rules.length} Guidelines</span>
+                        </div>
+                        <h2 style="font-size: 18px; font-weight: 600; color: #212529; margin: 0 0 20px 0;">${escapeHtml(playbook.name)}</h2>
+                    </div>
+                    <div class="playbook-detail-guidelines">
+                        <h3 style="font-size: 14px; font-weight: 600; color: #2667ff; margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 0.3px;">Guidelines</h3>
+                        <div class="guidelines-list">
+                            ${rules.map((rule, index) => {
+                                const ruleText = typeof rule === 'string' ? rule : rule.rule || rule.text || '';
+                                return `
+                                    <div class="guideline-detail-item">
+                                        <div class="guideline-number">${index + 1}</div>
+                                        <div class="guideline-text">${escapeHtml(ruleText)}</div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                    <div class="playbook-detail-actions">
+                        <button class="run-playbook-detail-button" onclick="handleRunPlaybookFromDetail('${playbook._id}')" ${runningPlaybook !== null ? 'disabled' : ''}>
+                            ${runningPlaybook === playbook._id ? '<div class="loading-spinner-small"></div>' : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>'}
+                            Run Playbook
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
     }
+    
+    // Handle back from detail
+    window.handleBackFromDetail = function() {
+        showDetailView = false;
+        selectedPlaybookForDetail = null;
+        renderPlaybookList();
+        fetchPlaybooks();
+    };
+    
+    // Handle run playbook from detail
+    window.handleRunPlaybookFromDetail = function(playbookId) {
+        handleRunPlaybook(playbookId);
+    };
 
     // Handle run playbook - matches MS Editor handleRunPlaybook
     window.handleRunPlaybook = async function(playbookId) {
@@ -765,40 +823,47 @@
         }
     }
     
-    // Render initial create view
+    // Render initial create view - Matches MS Editor CreateGuidePage exactly
     function renderInitialCreateView() {
         const pluginData = window.getPluginData();
         const fileName = pluginData?.fileName || 'Untitled Document';
         
         return `
             <div class="create-page-inner">
-                <h1 style="font-size: 18px; font-weight: bold; color: #212529; margin: 0 0 12px 0; text-align: center;">
+                <h1 style="font-size: 18px; font-weight: bold; color: #212529; margin: 0 0 20px 0; text-align: center;">
                     Create a new Guide
                 </h1>
                 
                 <div class="flow-container">
-                    <div class="image-container">
-                        <div style="width: 80px; height: 80px; border: 2px solid #2667ff; border-radius: 8px; background: #f8f9ff; display: flex; align-items: center; justify-content: center;">
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#2667ff" stroke-width="2">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                <polyline points="14 2 14 8 20 8"></polyline>
-                                <line x1="16" y1="13" x2="8" y2="13"></line>
-                                <line x1="16" y1="17" x2="8" y2="17"></line>
-                                <polyline points="10 9 9 9 8 9"></polyline>
-                            </svg>
+                    <div class="flow-item">
+                        <div class="contract-illustration">
+                            <img 
+                                src="https://cdn.spotdraft.com/review-plugin/production/release-20250728/20250818/assets/images/your-contract-illustration.svg"
+                                alt="Your Contract"
+                                class="contract-image"
+                                onerror="this.style.display='none';"
+                            />
                         </div>
                     </div>
-                    <div class="arrow">→</div>
-                    <div class="image-container">
-                        <div style="width: 80px; height: 80px; border: 2px solid #2667ff; border-radius: 8px; background: #f8f9ff; display: flex; align-items: center; justify-content: center; position: relative;">
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#2667ff" stroke-width="2">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <path d="M12 6v6l4 2"></path>
-                            </svg>
-                            <div style="position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; background: #2667ff; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                                    <path d="M12 2v20M2 12h20"></path>
-                                </svg>
+                    
+                    <div class="flow-arrow">→</div>
+                    
+                    <div class="flow-item">
+                        <div class="document-processor-wrapper">
+                            <div class="processor-circle">
+                                <div class="side-doc side-doc-left"></div>
+                                <div class="side-doc side-doc-right"></div>
+                                <div class="main-doc">
+                                    <div class="doc-lines">
+                                        <div class="doc-line"></div>
+                                        <div class="doc-line"></div>
+                                        <div class="doc-line"></div>
+                                        <div class="doc-line"></div>
+                                    </div>
+                                    <div class="magnifying-glass">
+                                        <div class="magnifying-handle"></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -820,26 +885,29 @@
         `;
     }
     
-    // Render generating view
+    // Render generating view - Matches MS Editor smartphone loading animation
     function renderGeneratingView() {
         return `
-            <div class="loading-container" style="position: relative; min-height: 400px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                <div style="width: 120px; height: 120px; margin: 10px auto 24px; position: relative;">
-                    <div style="width: 80px; height: 120px; border: 3px solid #2667ff; border-radius: 12px; margin: 0 auto; position: relative; background-color: #f8f9ff;">
-                        <div style="width: 70px; height: 100px; margin: 8px auto 0; display: flex; flex-direction: column; gap: 8px; padding: 8px;">
-                            <div style="width: 100%; height: 8px; background-color: #2667ff; border-radius: 4px;"></div>
-                            <div style="width: 80%; height: 8px; background-color: #2667ff; border-radius: 4px;"></div>
-                            <div style="width: 90%; height: 8px; background-color: #2667ff; border-radius: 4px;"></div>
-                            <div style="width: 70%; height: 8px; background-color: #2667ff; border-radius: 4px;"></div>
+            <div class="loading-container-visual">
+                <div class="smartphone-illustration">
+                    <div class="phone-container">
+                        <div class="phone-screen">
+                            <div class="screen-line" style="width: 100%;"></div>
+                            <div class="screen-line" style="width: 80%;"></div>
+                            <div class="screen-line" style="width: 90%;"></div>
+                            <div class="screen-line" style="width: 70%;"></div>
                         </div>
-                        <div style="width: 20px; height: 2px; background-color: #2667ff; position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); border-radius: 1px;"></div>
+                        <div class="phone-button"></div>
                     </div>
                 </div>
-                <h2 style="font-size: 18px; font-weight: 600; color: #212529; margin: 0 0 8px 0;">Generating your Guide</h2>
-                <p style="font-size: 14px; color: #6c757d; text-align: center; margin: 0 0 16px 0;">
+                <h2 class="loading-title">Generating your Guide</h2>
+                <p class="loading-description">
                     AI is analyzing your contract and creating personalized guidelines...
                 </p>
-                <div class="loading-spinner"></div>
+                <div class="loading-spinner-wrapper">
+                    <div class="loading-spinner"></div>
+                    <span>Processing...</span>
+                </div>
             </div>
         `;
     }
