@@ -1605,7 +1605,8 @@ body {
     overflow-y: auto;
     overflow-x: hidden;
     min-height: 0;
-    max-height: calc(100vh - 200px);
+    max-height: calc(100vh - 120px);
+    height: 100%;
 }
 
 .playbook-list {
@@ -1615,6 +1616,7 @@ body {
     border-radius: 8px;
     border: 1px solid #e9ecef;
     overflow: visible;
+    padding: 8px 0;
 }
 
 .playbook-item {
@@ -1627,6 +1629,7 @@ body {
 
 .playbook-item:last-child {
     border-bottom: none;
+    margin-bottom: 8px;
 }
 
 .playbook-item:hover {
@@ -3024,12 +3027,13 @@ body {
 .playbook-detail-content {
     flex: 1;
     padding: 16px;
+    padding-bottom: 20px;
     overflow-y: auto;
     overflow-x: hidden;
     display: flex;
     flex-direction: column;
     min-height: 0;
-    max-height: calc(100vh - 100px);
+    max-height: calc(100vh - 180px);
 }
 
 .playbook-detail-info {
@@ -3089,9 +3093,14 @@ body {
 }
 
 .playbook-detail-actions {
+    position: sticky;
+    bottom: 0;
     flex-shrink: 0;
-    padding-top: 16px;
+    padding: 16px;
+    background-color: #fff;
     border-top: 1px solid #e9ecef;
+    z-index: 100;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .run-playbook-detail-button {

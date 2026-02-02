@@ -24,7 +24,7 @@
         "en": "Legistify AI Panel"
       },
       "url": "index.html",
-      "icons": [ "resources/img/icon.svg", "resources/img/legistify-logo.svg" ],
+      "icons": [ "resources/img/legistify-logo.png", "resources/img/legistify-logo.png" ],
       "isViewer": false,
       "EditorsSupport": ["word"],
       "isVisual": true,
