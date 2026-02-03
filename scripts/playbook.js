@@ -577,23 +577,33 @@
     function renderResultsView() {
         const playbookView = document.getElementById('playbook-view');
         if (!playbookView) return;
+        
+        // Ensure playbook view is visible
+        playbookView.style.display = 'block';
+        
+        // Ensure Playbook tab is active
+        const playbookTab = document.querySelector('[data-tab="Playbook"]');
+        if (playbookTab && !playbookTab.classList.contains('active')) {
+            if (window.handleTabChange) {
+                window.handleTabChange('Playbook');
+            }
+        }
 
         const playbook = playbooks.find(pb => pb._id === runningPlaybook) || selectedPlaybook;
         const playbookName = playbook?.name || 'Guide';
 
         playbookView.innerHTML = `
             <div class="results-root">
-                <div class="results-header">
-                    <div class="header-box">
+                <div class="results-header" style="display: flex; justify-content: space-between; align-items: center; position: relative;">
+                    <div class="header-box" style="display: flex; align-items: center; gap: 4px; flex: 0 0 auto;">
                         <svg class="back-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="handleBackFromResults()" style="cursor: pointer;">
                             <polyline points="15 18 9 12 15 6"></polyline>
                         </svg>
-                        <p class="summary-text" onclick="handleBackFromResults()" style="cursor: pointer; margin: 0;">Back</p>
-                        <span style="font-size: 16px; font-weight: 650; margin-left: 8px;">${escapeHtml(playbookName)}</span>
+                        <p class="summary-text" onclick="handleBackFromResults()" style="cursor: pointer; margin: 0; font-weight: 650; font-size: 16px;">Back</p>
                     </div>
-                    <div id="streaming-indicator" style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #6e6b7b; font-weight: 500;"></div>
+                    <div id="streaming-indicator" style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #6e6b7b; font-weight: 500; flex: 0 0 auto;"></div>
                 </div>
-                <div class="results-content" id="results-content"></div>
+                <div class="results-content" id="results-content" style="padding-bottom: ${!isStreamingPlaybook && playbookResults?.aiPlaybookResponse?.length > 0 ? '80px' : '0'};"></div>
             </div>
         `;
 
@@ -611,21 +621,28 @@
         const playBook = hasFinalData ? playbookResults.aiPlaybookResponse : [];
         const statusCount = playbookResults?.statusCount || {};
         
-        // Update filtered playbook
-        if (activeFilter === 'all') {
-            filteredPlaybook = playBook;
-        } else {
+        // Update filtered playbook - matches MS Editor logic exactly
+        if (!isStreamingPlaybook && activeFilter !== 'all') {
+            // When not streaming and filter is not 'all', keep current filter
             filteredPlaybook = playBook.filter((item) => item?.statusValue === activeFilter);
+        } else {
+            // When streaming or filter is 'all', show all items
+            if (activeFilter === 'all') {
+                filteredPlaybook = playBook;
+            } else {
+                filteredPlaybook = playBook.filter((item) => item?.statusValue === activeFilter);
+            }
         }
 
-        // Update streaming indicator - matches MS Editor/OnlyOffice
+        // Update streaming indicator - matches MS Editor/OnlyOffice exactly
         if (streamingIndicator) {
             const streamingPlaybookMeta = runningPlaybook && !hasFinalData
                 ? playbooks.find((pb) => pb._id === runningPlaybook) || selectedPlaybook
                 : selectedPlaybook;
             const streamingTotalCount = streamingPlaybookMeta?.rules?.length || 0;
             const streamingCompletedCount = playbookResults?.aiPlaybookResponse?.length || 0;
-            const showStreamingIndicator = isStreamingPlaybook && streamingTotalCount > 0;
+            // Only show loader after first chunk of data arrives
+            const showStreamingIndicator = isStreamingPlaybook && streamingTotalCount > 0 && playBook.length > 0;
             const streamingProgressLabel =
                 streamingTotalCount > 0
                     ? `${Math.min(streamingCompletedCount, streamingTotalCount)}/${streamingTotalCount} Done`
@@ -633,93 +650,132 @@
 
             if (showStreamingIndicator) {
                 streamingIndicator.innerHTML = `
-                    <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #6e6b7b; font-weight: 500;">
+                    <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #6e6b7b; font-weight: 500; flex: 0 0 auto;">
                         <div class="loading-spinner-small"></div>
                         <span>${streamingProgressLabel}</span>
                     </div>
                 `;
             } else {
-                streamingIndicator.innerHTML = '';
+                streamingIndicator.innerHTML = '<div style="flex: 0 0 auto; width: 60px;"></div>';
             }
         }
 
         if (playBook.length === 0) {
             if (isStreamingPlaybook) {
-                // Center the progress loader
-                resultsContent.innerHTML = `
-                    <div style="display: flex; justify-content: center; align-items: center; min-height: 60vh; width: 100%;">
-                        <div id="progress-loader-container" style="width: 100%; max-width: 500px;"></div>
-                    </div>
-                `;
-                const loaderContainer = document.getElementById('progress-loader-container');
-                if (loaderContainer && window.createProgressLoader) {
-                    window.createProgressLoader(loaderContainer, {
-                        title: 'Analyzing your contract playbook',
-                        steps: [
-                            'Reading playbook guidelines',
-                            'Analyzing compliance requirements',
-                            'Identifying gaps and risks',
-                            'Generating recommendations'
-                        ],
-                        stepDelay: 1000,
-                        minDisplayTime: 3000
-                    });
-                } else if (loaderContainer) {
-                    loaderContainer.innerHTML = '<div class="loading-spinner"></div>';
+                // Show ProgressLoader when streaming and no data yet
+                // Check if loader already exists to avoid recreating it
+                const existingLoader = resultsContent.querySelector('#progress-loader-container');
+                if (!existingLoader) {
+                    resultsContent.innerHTML = `
+                        <div style="display: flex; justify-content: center; align-items: center; min-height: 60vh; width: 100%; position: relative;">
+                            <div id="progress-loader-container" style="width: 100%; max-width: 500px;"></div>
+                        </div>
+                    `;
+                    const loaderContainer = document.getElementById('progress-loader-container');
+                    if (loaderContainer && window.createProgressLoader) {
+                        window.createProgressLoader(loaderContainer, {
+                            title: 'Analyzing your contract playbook',
+                            steps: [
+                                'Reading playbook guidelines',
+                                'Analyzing compliance requirements',
+                                'Identifying gaps and risks',
+                                'Generating recommendations'
+                            ],
+                            stepDelay: 1000,
+                            minDisplayTime: 3000
+                        });
+                    } else if (loaderContainer) {
+                        loaderContainer.innerHTML = '<div class="loading-spinner"></div>';
+                    }
                 }
             } else {
-                resultsContent.innerHTML = '<p class="empty-state-text">No playbook results available</p>';
+                resultsContent.innerHTML = '<p class="empty-state-text" style="text-align: center; color: #6c757d; margin: 40px 0;">No playbook results available</p>';
             }
             return;
         }
+        
+        // Remove ProgressLoader if it exists when data arrives
+        const existingLoader = resultsContent.querySelector('#progress-loader-container');
+        if (existingLoader && existingLoader.parentNode) {
+            existingLoader.parentNode.remove();
+        }
 
-        // Render filters and results
+        // Render filters and results - matches MS Editor exactly
         const riskyPercentage = ((statusCount?.notMet || 0) / playBook.length) * 100;
         const favorablePercentage = ((statusCount?.met || 0) / playBook.length) * 100;
         const missingPercentage = ((statusCount?.NA || 0) / playBook.length) * 100;
 
         // Render filters and results - matches MS Editor/OnlyOffice screenshot exactly
         resultsContent.innerHTML = `
-            <div class="filter-container-ms">
-                <button class="filter-badge ${activeFilter === 'all' ? 'active' : ''}" onclick="filterWithResult('all', ${playBook.length})">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${activeFilter === 'all' ? '#fff' : 'gray'}" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-                    <span>All</span>
-                    <span class="badge-count">${playBook.length}</span>
-                </button>
-                <button class="filter-badge ${activeFilter === 'met' ? 'active' : ''}" onclick="filterWithResult('met', ${statusCount?.met || 0})">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="${activeFilter === 'met' ? '#fff' : 'green'}" stroke="${activeFilter === 'met' ? '#fff' : '#ffff'}" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                    <span>Favourable</span>
-                    <span class="badge-count">${statusCount?.met || 0}</span>
-                </button>
-                <button class="filter-badge ${activeFilter === 'notMet' ? 'active' : ''}" onclick="filterWithResult('notMet', ${statusCount?.notMet || 0})">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="${activeFilter === 'notMet' ? '#fff' : 'red'}" stroke="${activeFilter === 'notMet' ? '#fff' : '#fff'}" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                    <span>Risky</span>
-                    <span class="badge-count">${statusCount?.notMet || 0}</span>
-                </button>
-                <button class="filter-badge ${activeFilter === 'na' ? 'active' : ''}" onclick="filterWithResult('na', ${statusCount?.NA || 0})">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${activeFilter === 'na' ? '#fff' : 'gray'}" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
-                    <span>Missing</span>
-                    <span class="badge-count">${statusCount?.NA || 0}</span>
-                </button>
-            </div>
-            ${filteredPlaybook.map((val, i) => {
-                const statusValue = val?.statusValue || 'na';
-                const badgeIcon = getBadgeIcon(statusValue);
-                return `
-                    <div class="result-item" onclick="handleItemClick(${i})" style="background: rgb(128 128 128 / 15%); margin: 10px 9px; border-radius: 5px; padding: 12px; position: relative; cursor: pointer; transition: all 0.2s;">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-                            <div style="display: flex; gap: 0.5rem; align-items: center; flex: 1;">
-                                ${badgeIcon}
-                                <span style="font-weight: 600; font-size: 14px;">Guideline</span>
-                            </div>
-                            <div style="padding: 4px; border-radius: 4px;">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2" style="color: #666;"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                            </div>
+            <div style="padding: 10px; margin: 8px 8px 8px 8px; background-color: rgb(128 128 128 / 15%); border-radius: 4px;">
+                <!-- Filter Buttons -->
+                <div style="display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 0.75rem; margin-bottom: ${!isStreamingPlaybook && playBook.length > 0 && ((statusCount?.met || 0) + (statusCount?.notMet || 0)) > 0 ? '12px' : '0'};">
+                    <button class="filter-badge ${activeFilter === 'all' ? 'active' : ''}" onclick="filterWithResult('all', ${playBook.length})" style="margin: 0px; display: flex; align-items: center; font-size: 14px; font-weight: 600; color: #000; gap: 4px; border-color: grey; background-color: ${activeFilter === 'all' ? '#e9ecef' : 'transparent'};">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="gray" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                        <span>All</span>
+                        <span style="border: 1px solid gray; color: #2567ff; border-radius: 5px; font-size: 12px; padding: 0 5px;">${playBook.length}</span>
+                    </button>
+                    <button class="filter-badge ${activeFilter === 'met' ? 'active' : ''}" onclick="filterWithResult('met', ${statusCount?.met || 0})" style="margin: 0px; display: flex; align-items: center; font-size: 14px; font-weight: 600; color: #000; gap: 4px; border-color: green; background-color: ${activeFilter === 'met' ? '#e9ecef' : 'transparent'};">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="green" stroke="#ffff" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                        <span>Favourable</span>
+                        <span style="border: 1px solid gray; color: #2567ff; border-radius: 5px; font-size: 12px; padding: 0 5px;">${statusCount?.met || 0}</span>
+                    </button>
+                    <button class="filter-badge ${activeFilter === 'notMet' ? 'active' : ''}" onclick="filterWithResult('notMet', ${statusCount?.notMet || 0})" style="margin: 0px; display: flex; align-items: center; font-size: 14px; font-weight: 600; color: #000; gap: 4px; border-color: red; background-color: ${activeFilter === 'notMet' ? '#e9ecef' : 'transparent'};">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="red" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        <span>Risky</span>
+                        <span style="border: 1px solid gray; color: #2567ff; border-radius: 5px; font-size: 12px; padding: 0 5px;">${statusCount?.notMet || 0}</span>
+                    </button>
+                    <button class="filter-badge ${activeFilter === 'na' ? 'active' : ''}" onclick="filterWithResult('na', ${statusCount?.NA || 0})" style="margin: 0px; display: flex; align-items: center; font-size: 14px; font-weight: 600; color: #000; gap: 4px; border-color: gray; background-color: ${activeFilter === 'na' ? '#e9ecef' : 'transparent'};">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="gray" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+                        <span>Missing</span>
+                        <span style="border: 1px solid gray; color: #2567ff; border-radius: 5px; font-size: 12px; padding: 0 5px;">${statusCount?.NA || 0}</span>
+                    </button>
+                </div>
+
+                <!-- Risk Status Progress Bar - matches MS Editor exactly -->
+                ${!isStreamingPlaybook && playBook.length > 0 ? `
+                    <div>
+                        <div style="display: flex; height: 20px; border-radius: 4px; overflow: hidden; background-color: #e9ecef; border: 1px solid #dee2e6;">
+                            ${riskyPercentage > 0 ? `
+                                <div style="width: ${riskyPercentage}%; background-color: #dc3545; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; font-weight: 600; transition: width 0.3s ease; min-width: ${riskyPercentage < 5 ? 'auto' : '0'};">
+                                    ${riskyPercentage >= 1 ? Math.round(riskyPercentage) + '%' : ''}
+                                </div>
+                            ` : ''}
+                            ${favorablePercentage > 0 ? `
+                                <div style="width: ${favorablePercentage}%; background-color: #28a745; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; font-weight: 600; transition: width 0.3s ease; min-width: ${favorablePercentage < 5 ? 'auto' : '0'};">
+                                    ${favorablePercentage >= 1 ? Math.round(favorablePercentage) + '%' : ''}
+                                </div>
+                            ` : ''}
+                            ${missingPercentage > 0 ? `
+                                <div style="width: ${missingPercentage}%; background-color: #6c757d; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; font-weight: 600; transition: width 0.3s ease; min-width: ${missingPercentage < 5 ? 'auto' : '0'};">
+                                    ${missingPercentage >= 1 ? Math.round(missingPercentage) + '%' : ''}
+                                </div>
+                            ` : ''}
                         </div>
-                        <p style="font-size: 13px; font-weight: 350; margin: 0; line-height: 1.4; color: #495057;">${escapeHtml(val?.Rule || '')}</p>
                     </div>
-                `;
-            }).join('')}
+                ` : ''}
+            </div>
+
+            <div style="border-top: 1px solid #6a666633;">
+                ${filteredPlaybook.map((val, i) => {
+                    const statusValue = val?.statusValue || 'na';
+                    const badgeIcon = getBadgeIcon(statusValue);
+                    return `
+                        <div class="result-item" onclick="handleItemClick(${i})" style="background: rgb(128 128 128 / 15%); margin: 10px 9px; border-radius: 5px; padding: 12px; position: relative; cursor: pointer; transition: all 0.2s;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                                <div style="display: flex; gap: 0.5rem; align-items: center; flex: 1;">
+                                    ${badgeIcon}
+                                    <span style="font-weight: 600; font-size: 14px;">Guideline</span>
+                                </div>
+                                <div style="padding: 4px; border-radius: 4px;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2" style="color: #666;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                </div>
+                            </div>
+                            <p style="font-size: 13px; font-weight: 350; margin: 0; line-height: 1.4;">${escapeHtml(val?.Rule || '')}</p>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
         `;
     }
 
@@ -737,14 +793,19 @@
         }
     }
 
-    // Filter with result
+    // Filter with result - matches MS Editor exactly
     window.filterWithResult = function(val, count) {
+        const playBook = playbookResults?.aiPlaybookResponse || [];
+        
         if (activeFilter === val) {
             activeFilter = 'all';
+            filteredPlaybook = playBook;
         } else if (val === 'all') {
             activeFilter = 'all';
+            filteredPlaybook = playBook;
         } else if (count > 0) {
             activeFilter = val;
+            filteredPlaybook = playBook.filter((item) => item?.statusValue === val);
         }
         updateResultsView();
     };
@@ -766,7 +827,7 @@
         fetchPlaybooks();
     };
 
-    // Handle item click
+    // Handle item click - matches MS Editor
     window.handleItemClick = function(index) {
         const item = filteredPlaybook[index];
         if (!item) return;
@@ -776,70 +837,70 @@
         renderDrawer();
     };
 
-    // Render drawer for playbook item details
+    // Render drawer for playbook item details - uses existing drawer infrastructure
     function renderDrawer() {
         if (!activeContentPlaybook) return;
 
-        // Create drawer overlay and content
-        const drawerOverlay = document.createElement('div');
-        drawerOverlay.className = 'drawer-overlay';
-        drawerOverlay.onclick = closeDrawer;
+        const drawerOverlay = document.getElementById('drawer-overlay');
+        const drawer = document.getElementById('drawer');
+        const drawerTitle = document.getElementById('drawer-title');
+        const drawerContent = document.getElementById('drawer-content');
         
-        const drawer = document.createElement('div');
-        drawer.className = 'drawer';
-        drawer.style.display = 'block';
+        if (!drawerOverlay || !drawer || !drawerTitle || !drawerContent) return;
         
         const status = activeContentPlaybook.Status || activeContentPlaybook.status;
         const statusValue = activeContentPlaybook.statusValue;
         const isNotMet = status === 'Not met' || status === 'notMet' || statusValue === 'notMet';
         
-        drawer.innerHTML = `
-            <div class="drawer-header">
-                <button class="drawer-close-button" onclick="closePlaybookDrawer()">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
-                <h3 class="drawer-title">Guideline Details</h3>
-            </div>
-            <div class="drawer-content" style="padding: 12px; max-height: calc(90vh - 60px); overflow-y: auto;">
+        drawerTitle.textContent = 'Guideline Details';
+        drawerContent.innerHTML = `
+            <div style="padding: 12px; max-height: calc(90vh - 60px); overflow-y: auto;">
                 ${isNotMet ? `
-                    <div style="marginBottom: 12px;">
+                    <div style="margin-bottom: 12px;">
                         <strong>Guideline:</strong> <span style="color: #666;">${escapeHtml(activeContentPlaybook.Rule || 'No guideline text available')}</span>
                     </div>
-                    <div style="marginBottom: 12px;">
+                    <div style="margin-bottom: 12px;">
                         <strong>Evaluation:</strong> <span style="color: #666;">${escapeHtml(activeContentPlaybook.Evaluation || 'No evaluation available')}</span>
                     </div>
                 ` : `
-                    <div style="marginBottom: 12px;">
+                    <div style="margin-bottom: 12px;">
                         <strong>Guideline:</strong>
-                        <div style="color: #666; marginTop: 4px;">${escapeHtml(activeContentPlaybook.Rule || 'No guideline text available')}</div>
+                        <div style="color: #666; margin-top: 4px;">${escapeHtml(activeContentPlaybook.Rule || 'No guideline text available')}</div>
                     </div>
-                    <div style="marginBottom: 12px;">
+                    <div style="margin-bottom: 12px;">
                         <strong>Conclusion:</strong>
-                        <div style="color: #666; marginTop: 4px;">${escapeHtml(activeContentPlaybook.Conclusion || 'No conclusion available')}</div>
+                        <div style="color: #666; margin-top: 4px;">${escapeHtml(activeContentPlaybook.Conclusion || 'No conclusion available')}</div>
                     </div>
-                    <div style="marginBottom: 12px;">
+                    <div style="margin-bottom: 12px;">
                         <strong>Evaluation:</strong>
-                        <div style="color: #666; marginTop: 4px;">${escapeHtml(activeContentPlaybook.Evaluation || 'No evaluation available')}</div>
+                        <div style="color: #666; margin-top: 4px;">${escapeHtml(activeContentPlaybook.Evaluation || 'No evaluation available')}</div>
                     </div>
                 `}
             </div>
         `;
-
-        document.body.appendChild(drawerOverlay);
-        document.body.appendChild(drawer);
+        
+        drawerOverlay.style.display = 'block';
+        drawer.style.display = 'flex';
     }
 
     // Close playbook drawer
     window.closePlaybookDrawer = function() {
-        const drawer = document.querySelector('.drawer');
-        const overlay = document.querySelector('.drawer-overlay');
-        if (drawer) drawer.remove();
-        if (overlay) overlay.remove();
+        const drawerOverlay = document.getElementById('drawer-overlay');
+        const drawer = document.getElementById('drawer');
+        if (drawerOverlay) drawerOverlay.style.display = 'none';
+        if (drawer) drawer.style.display = 'none';
         isDrawerOpen = false;
         activeContentPlaybook = null;
+    };
+    
+    // Also handle closeDrawer from main.js
+    const originalCloseDrawer = window.closeDrawer;
+    window.closeDrawer = function() {
+        if (isDrawerOpen && activeContentPlaybook) {
+            closePlaybookDrawer();
+        } else if (originalCloseDrawer) {
+            originalCloseDrawer();
+        }
     };
 
     // Handle new guide click
