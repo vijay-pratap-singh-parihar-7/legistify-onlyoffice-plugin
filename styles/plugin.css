@@ -1751,6 +1751,7 @@ body {
     overflow-x: hidden;
     min-height: 0;
     max-height: calc(100vh - 120px);
+    padding-bottom: 20px;
 }
 
 .filter-badge {
@@ -1789,6 +1790,29 @@ body {
     border-radius: 10px;
     font-size: 11px;
     font-weight: 600;
+}
+
+/* Filter Container - MS Editor style - matches screenshot */
+.filter-container-ms {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+    gap: 0.75rem;
+    background-color: rgb(128 128 128 / 15%);
+    border-radius: 4px;
+    margin: 8px;
+    flex-shrink: 0;
+    box-sizing: border-box;
+}
+
+.filter-container-ms .filter-badge {
+    margin: 0;
+}
+
+.filter-container-ms .filter-badge.active .badge-count {
+    background-color: rgba(255, 255, 255, 0.3);
 }
 
 .filter-badge.active .badge-count {
@@ -1912,6 +1936,17 @@ body {
     margin-top: -10px;
     display: flex;
     flex-direction: column;
+}
+
+/* Hidden Scrollbar - Matches MS Editor Library.js */
+.hiddenScrollbar {
+    flex: 1;
+    overflow-y: auto;
+    font-size: 12px;
+}
+
+.hiddenScrollbar h2 {
+    font-size: 13px;
 }
 
 /* Approval Styles - Matches MS Editor ClauseApproval.js */
@@ -2266,6 +2301,7 @@ body {
 .create-page-content {
     flex: 1;
     padding: 20px 12px;
+    padding-bottom: 100px; /* Space for fixed footer */
     overflow-y: auto;
     overflow-x: hidden;
     display: flex;
@@ -2479,7 +2515,7 @@ body {
     text-align: center;
     background-color: #fff;
     flex-shrink: 0;
-    position: sticky;
+    position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
@@ -2509,12 +2545,13 @@ body {
 .generated-content {
     flex: 1;
     padding: 6px;
-    padding-bottom: 100px;
+    padding-bottom: 80px; /* Space for fixed Save Guide button */
     overflow-y: auto;
     overflow-x: hidden;
     display: flex;
     flex-direction: column;
     width: 100%;
+    min-height: 0;
 }
 
 .title-input {
@@ -2526,7 +2563,7 @@ body {
     background-color: #f8f9fa;
     color: #212529;
     margin-bottom: 3px;
-    padding: 6px 40px 6px 16px;
+    padding: 8px 40px 8px 12px;
     border-radius: 6px;
     transition: all 0.2s ease;
     box-sizing: border-box;
@@ -2725,28 +2762,30 @@ body {
 
 .fixed-save-button {
     position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #2667ff;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: #9da4aaff;
     color: #fff;
     border: none;
-    border-radius: 8px;
-    padding: 12px 24px;
-    font-size: 14px;
-    font-weight: 600;
+    border-radius: 0;
+    padding: 12px 16px;
+    font-size: 12px;
+    font-weight: 500;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
+    gap: 4px;
     transition: all 0.2s ease;
-    box-shadow: 0 4px 12px rgba(38, 103, 255, 0.3);
     z-index: 1000;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .fixed-save-button:hover:not(:disabled) {
-    background-color: #1a4fd9;
-    box-shadow: 0 6px 16px rgba(38, 103, 255, 0.4);
+    background-color: #2667ff;
 }
 
 .fixed-save-button:disabled {
@@ -2787,13 +2826,41 @@ body {
 
 .create-form-content {
     flex: 1;
-    padding: 8px;
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    position: relative;
+}
+
+.create-form-scrollable {
+    flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
     display: flex;
     flex-direction: column;
+    padding: 8px;
+    padding-bottom: 12px;
     min-height: 0;
-    max-height: calc(100vh - 150px);
+}
+
+.create-form-scrollable::-webkit-scrollbar {
+    width: 6px;
+}
+
+.create-form-scrollable::-webkit-scrollbar-track {
+    background-color: #f1f1f1;
+    border-radius: 3px;
+}
+
+.create-form-scrollable::-webkit-scrollbar-thumb {
+    background-color: #c1c1c1;
+    border-radius: 3px;
+}
+
+.create-form-scrollable::-webkit-scrollbar-thumb:hover {
+    background-color: #a8a8a8;
 }
 
 .create-form-inner {
@@ -2838,6 +2905,202 @@ body {
 
 .guideline-input::placeholder {
     color: #6c757d;
+}
+
+/* Manual form specific styles - matching MS Editor CreateGuideForm */
+.guideline-input-manual {
+    width: 100%;
+    min-height: 60px;
+    max-height: 150px;
+    padding: 10px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.5;
+    resize: vertical;
+    font-family: inherit;
+    background-color: #fff;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    overflow: auto;
+    box-sizing: border-box;
+    outline: none;
+}
+
+.guideline-input-manual:focus {
+    outline: none;
+    border-color: #2667ff;
+    box-shadow: 0 0 0 2px rgba(111, 66, 193, 0.1);
+}
+
+.guideline-input-manual::placeholder {
+    color: #6c757d;
+}
+
+.character-counter {
+    font-size: 11px;
+    color: #6c757d;
+    margin-top: 4px;
+}
+
+.character-counter-warning {
+    color: #dc3545;
+}
+
+.rules-grid-manual {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 8px;
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+.rule-card-view-mode {
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 10px;
+    position: relative;
+    min-height: 60px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    transition: all 0.2s ease;
+    overflow: hidden;
+}
+
+.rule-card-view-mode:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    transform: translateY(-1px);
+}
+
+.rule-card-number {
+    font-size: 11px;
+    color: #6c757d;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.2px;
+    margin-bottom: 4px;
+}
+
+.rule-card-text {
+    font-size: 13px;
+    color: #495057;
+    line-height: 1.4;
+    margin-bottom: 4px;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    margin-top: 2px;
+    max-width: 100%;
+    padding-right: 30px;
+}
+
+.rule-card-delete-button {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 3px;
+    color: #dc3545;
+    font-size: 14px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rule-card-delete-button:hover {
+    background-color: #f8d7da;
+    transform: scale(1.05);
+}
+
+.edit-guidelines-link {
+    color: #2667ff;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.edit-guidelines-link:hover {
+    text-decoration: underline;
+}
+
+.create-form-footer {
+    padding: 16px 12px;
+    border-top: 1px solid #e9ecef;
+    flex-shrink: 0;
+    background-color: #fff;
+    position: sticky;
+    bottom: 0;
+    z-index: 100;
+}
+
+.create-form-footer-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.add-rule-button-fixed {
+    background-color: #9da4aaff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+}
+
+.add-rule-button-fixed:hover:not(:disabled) {
+    background-color: #2667ff;
+    transform: translateY(-1px);
+}
+
+.add-rule-button-fixed:disabled {
+    background-color: #adb5bd;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.save-button-fixed {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+}
+
+.save-button-fixed:hover:not(:disabled) {
+    background-color: #0056b3;
+    transform: translateY(-1px);
+}
+
+.save-button-fixed:disabled {
+    background-color: #adb5bd;
+    cursor: not-allowed;
+    transform: none;
 }
 
 .guideline-item {
@@ -2918,12 +3181,14 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: calc(95vh - 100px);
+    height: 100%;
+    min-height: calc(100vh - 100px);
     flex-direction: column;
     gap: 24px;
     text-align: center;
     max-width: 400px;
     margin: 0 auto;
+    padding: 20px;
 }
 
 .smartphone-illustration {
@@ -2968,6 +3233,66 @@ body {
     left: 50%;
     transform: translateX(-50%);
     border-radius: 1px;
+}
+
+/* Decorative dots around smartphone - matching MS Editor */
+.phone-decorative-dot {
+    position: absolute;
+    border: 2px solid #2667ff;
+    border-radius: 50%;
+}
+
+.phone-dot-1 {
+    top: 10px;
+    left: 10px;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #2667ff;
+}
+
+.phone-dot-2 {
+    top: 30px;
+    left: 5px;
+    width: 8px;
+    height: 8px;
+    background-color: #2667ff;
+    border: none;
+}
+
+.phone-dot-3 {
+    top: 10px;
+    right: 10px;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #2667ff;
+    background-color: transparent;
+}
+
+/* Progress dots at bottom - matching MS Editor */
+.progress-dots {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 24px;
+}
+
+.progress-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.dot-blue {
+    background-color: #2667ff;
+}
+
+.dot-light-blue {
+    background-color: #6ba3ff;
+}
+
+.dot-purple {
+    background-color: #9d7fff;
 }
 
 .loading-title {
@@ -3027,7 +3352,7 @@ body {
 .playbook-detail-content {
     flex: 1;
     padding: 16px;
-    padding-bottom: 20px;
+    padding-bottom: 100px; /* Space for fixed Run Guide button */
     overflow-y: auto;
     overflow-x: hidden;
     display: flex;
@@ -3093,14 +3418,18 @@ body {
 }
 
 .playbook-detail-actions {
-    position: sticky;
+    position: fixed;
     bottom: 0;
+    left: 0;
+    right: 0;
     flex-shrink: 0;
     padding: 16px;
     background-color: #fff;
     border-top: 1px solid #e9ecef;
-    z-index: 100;
+    z-index: 1000;
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .run-playbook-detail-button {

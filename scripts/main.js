@@ -543,7 +543,7 @@
             } else if (contentKey === 'obligation' && window.initObligationsView) {
                 window.initObligationsView();
             } else if (contentKey === 'library' && window.initLibraryView) {
-                window.initLibraryView();
+                window.initLibraryView(activeContentData.libraryData);
             } else if (contentKey === 'clauseApproval' && window.initApprovalView) {
                 window.initApprovalView();
             } else if ((contentKey === 'genai' || contentKey === 'askai') && window.initAskAIView) {
@@ -625,7 +625,7 @@
         } else if (contentKey === 'library') {
             await getClauseLibrary();
             if (window.initLibraryView) {
-                window.initLibraryView();
+                window.initLibraryView(activeContentData.libraryData);
             }
         } else if (contentKey === 'clauseApproval') {
             await getClauseApprovals();

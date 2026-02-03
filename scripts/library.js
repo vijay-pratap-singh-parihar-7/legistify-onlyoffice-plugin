@@ -16,18 +16,25 @@
     let timerRef = null;
 
     // Initialize library view
-    window.initLibraryView = function() {
+    window.initLibraryView = function(data) {
         const libraryView = document.getElementById('library-view');
         if (!libraryView) return;
 
-        // Render library view structure
-        renderLibraryView();
-        
-        // Fetch clause library
-        getClauseLibrary();
+        // Use data from parent if available (passed from main.js)
+        if (data && data.length > 0) {
+            clauseList = data;
+            renderLibraryView();
+            renderClauseList();
+        } else {
+            // Render library view structure
+            renderLibraryView();
+            
+            // Fetch clause library
+            getClauseLibrary();
+        }
     };
 
-    // Render library view - matches MS Editor
+    // Render library view - matches MS Editor Library.js exactly
     function renderLibraryView() {
         const libraryView = document.getElementById('library-view');
         if (!libraryView) return;
@@ -51,7 +58,7 @@
                     <div class="search-container">
                         <input type="text" id="library-search-input" class="search-input" value="${searchText}" placeholder="Search any ${searchType !== 'clause' ? 'sub ' : ''}clause by name" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;" />
                         <div class="search-menu" style="position: relative;">
-                            <button class="menu-button" onclick="toggleSearchMenu()" style="padding: 0; min-width: 21px; min-height: 26px; border: none; background: transparent; cursor: pointer;">
+                            <button class="menu-button" onclick="toggleSearchMenu()" style="padding: 0px !important; min-width: 21px; min-height: 26px; border: none !important; background: transparent; cursor: pointer;">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <circle cx="12" cy="12" r="1"></circle>
                                     <circle cx="12" cy="5" r="1"></circle>
@@ -63,14 +70,14 @@
                                 <div class="menu-item" onclick="handleSearchType('subClause')" style="padding: 8px 12px; cursor: pointer; font-size: 14px; ${searchType === 'subClause' ? 'background-color: #f0f0f0;' : ''}">Search by Sub Clause</div>
                             </div>
                         </div>
-                        <button class="custom-button" onclick="handleAddClause()" style="padding: 0px; min-width: 24px; min-height: 26px; background-color: #446995; border-color: #446995; color: #fff; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                        <button class="custom-button" onclick="handleAddClause()" style="padding: 0px !important; min-width: 24px; min-height: 26px; background-color: #446995 !important; border-color: #446995 !important; color: #fff !important; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <line x1="12" y1="5" x2="12" y2="19"></line>
                                 <line x1="5" y1="12" x2="19" y2="12"></line>
                             </svg>
                         </button>
                     </div>
-                    <div id="library-list-container"></div>
+                    <div id="library-list-container" class="hiddenScrollbar"></div>
                 </div>
             </div>
         `;
@@ -78,8 +85,20 @@
         // Setup search input handler
         const searchInput = document.getElementById('library-search-input');
         if (searchInput) {
-            searchInput.addEventListener('input', handleInputChange);
+            // Remove existing listeners by cloning
+            const newInput = searchInput.cloneNode(true);
+            searchInput.parentNode.replaceChild(newInput, searchInput);
+            newInput.addEventListener('input', handleInputChange);
         }
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('search-menu-dropdown');
+            const menuButton = event.target.closest('.menu-button');
+            if (dropdown && !dropdown.contains(event.target) && !menuButton) {
+                dropdown.style.display = 'none';
+            }
+        });
     }
 
     // Toggle favorite switch
@@ -361,7 +380,7 @@
                         </svg>
                     </div>
                 </div>
-                <div id="sub-clause-content" style="flex: 1; overflow-y: auto; margin-left: 16px; font-size: 12px;">
+                <div id="sub-clause-content" class="hiddenScrollbar" style="flex: 1; overflow-y: auto; margin-left: 16px;">
                     <div class="loading-spinner"></div>
                 </div>
             </div>

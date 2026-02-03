@@ -204,7 +204,7 @@
         }
     };
 
-    // Render playbook detail
+    // Render playbook detail - matches MS Editor exactly
     function renderPlaybookDetail(playbook) {
         const playbookView = document.getElementById('playbook-view');
         if (!playbookView) return;
@@ -220,16 +220,32 @@
                             <polyline points="15 18 9 12 15 6"></polyline>
                         </svg>
                         <span style="font-size: 14px; font-weight: 650; cursor: pointer;" onclick="handleBackFromDetail()">Back</span>
+                        <span style="font-size: 16px; font-weight: 650; margin-left: 8px; color: #212529;">${escapeHtml(playbook.name)}</span>
+                    </div>
+                    <div style="display: flex; gap: 4px; align-items: center;">
+                        <button onclick="handleEditPlaybook('${playbook._id}')" style="background: none; border: none; cursor: pointer; padding: 5px; display: flex; align-items: center; justify-content: center; color: #495057; border-radius: 5px; transition: all 0.2s;" onmouseover="this.style.backgroundColor='#f0f0f0'" onmouseout="this.style.backgroundColor='transparent'" title="Edit">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                        </button>
+                        ${!isStandard ? `
+                            <button onclick="handleDeletePlaybook('${playbook._id}')" style="background: none; border: none; cursor: pointer; padding: 5px; display: flex; align-items: center; justify-content: center; color: #ea5455; border-radius: 5px; transition: all 0.2s;" onmouseover="this.style.backgroundColor='#fee'" onmouseout="this.style.backgroundColor='transparent'" title="Delete">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                            </button>
+                        ` : ''}
                     </div>
                 </div>
                 <div class="playbook-detail-content">
                     <div class="playbook-detail-info">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
                             <span class="standard-text">${isStandard ? 'Standard' : 'Custom'}</span>
                             <span>•</span>
                             <span style="font-size: 14px; color: #6c757d;">${rules.length} Guidelines</span>
                         </div>
-                        <h2 style="font-size: 18px; font-weight: 600; color: #212529; margin: 0 0 20px 0;">${escapeHtml(playbook.name)}</h2>
                     </div>
                     <div class="playbook-detail-guidelines">
                         <h3 style="font-size: 14px; font-weight: 600; color: #2667ff; margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 0.3px;">Guidelines</h3>
@@ -248,13 +264,61 @@
                 </div>
                 <div class="playbook-detail-actions">
                     <button class="run-playbook-detail-button" onclick="handleRunPlaybookFromDetail('${playbook._id}')" ${runningPlaybook !== null ? 'disabled' : ''}>
-                        ${runningPlaybook === playbook._id ? '<div class="loading-spinner-small"></div>' : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>'}
-                        Run Playbook
+                        ${runningPlaybook === playbook._id ? '<div class="loading-spinner-small"></div>' : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>'}
+                        Run Guide
                     </button>
                 </div>
             </div>
         `;
     }
+    
+    // Handle edit playbook
+    window.handleEditPlaybook = function(playbookId) {
+        // TODO: Implement edit functionality
+        showToast('Edit functionality coming soon', 'info');
+    };
+    
+    // Handle delete playbook
+    window.handleDeletePlaybook = async function(playbookId) {
+        if (!confirm('Are you sure you want to delete this guide?')) {
+            return;
+        }
+        
+        const pluginData = window.getPluginData();
+        const backendUrl = window.getBackendUrl();
+        const accessToken = window.getAccessToken();
+        
+        if (!accessToken) {
+            showToast('Access token not available', 'error');
+            return;
+        }
+        
+        try {
+            const url = `${backendUrl}/ai-assistant/delete-playbook/${playbookId}`;
+            const response = await fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-auth-token': accessToken
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data?.status) {
+                    showToast('Guide deleted successfully', 'success');
+                    handleBackFromDetail();
+                } else {
+                    throw new Error(data?.msg || 'Failed to delete guide');
+                }
+            } else {
+                throw new Error('Failed to delete guide');
+            }
+        } catch (error) {
+            console.error('Error deleting playbook:', error);
+            showToast(error?.message || 'Failed to delete guide', 'error');
+        }
+    };
     
     // Handle back from detail
     window.handleBackFromDetail = function() {
@@ -509,10 +573,13 @@
         };
     }
 
-    // Render results view - matches MS Editor
+    // Render results view - matches MS Editor/OnlyOffice exactly
     function renderResultsView() {
         const playbookView = document.getElementById('playbook-view');
         if (!playbookView) return;
+
+        const playbook = playbooks.find(pb => pb._id === runningPlaybook) || selectedPlaybook;
+        const playbookName = playbook?.name || 'Guide';
 
         playbookView.innerHTML = `
             <div class="results-root">
@@ -522,8 +589,9 @@
                             <polyline points="15 18 9 12 15 6"></polyline>
                         </svg>
                         <p class="summary-text" onclick="handleBackFromResults()" style="cursor: pointer; margin: 0;">Back</p>
+                        <span style="font-size: 16px; font-weight: 650; margin-left: 8px;">${escapeHtml(playbookName)}</span>
                     </div>
-                    <div id="streaming-indicator" style="flex: 0 0 auto; width: 60px;"></div>
+                    <div id="streaming-indicator" style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #6e6b7b; font-weight: 500;"></div>
                 </div>
                 <div class="results-content" id="results-content"></div>
             </div>
@@ -550,14 +618,14 @@
             filteredPlaybook = playBook.filter((item) => item?.statusValue === activeFilter);
         }
 
-        // Update streaming indicator
+        // Update streaming indicator - matches MS Editor/OnlyOffice
         if (streamingIndicator) {
             const streamingPlaybookMeta = runningPlaybook && !hasFinalData
                 ? playbooks.find((pb) => pb._id === runningPlaybook) || selectedPlaybook
                 : selectedPlaybook;
             const streamingTotalCount = streamingPlaybookMeta?.rules?.length || 0;
             const streamingCompletedCount = playbookResults?.aiPlaybookResponse?.length || 0;
-            const showStreamingIndicator = isStreamingPlaybook && streamingTotalCount > 0 && playBook.length > 0;
+            const showStreamingIndicator = isStreamingPlaybook && streamingTotalCount > 0;
             const streamingProgressLabel =
                 streamingTotalCount > 0
                     ? `${Math.min(streamingCompletedCount, streamingTotalCount)}/${streamingTotalCount} Done`
@@ -571,19 +639,21 @@
                     </div>
                 `;
             } else {
-                streamingIndicator.innerHTML = '<div style="flex: 0 0 auto; width: 60px;"></div>';
+                streamingIndicator.innerHTML = '';
             }
         }
 
         if (playBook.length === 0) {
             if (isStreamingPlaybook) {
+                // Center the progress loader
                 resultsContent.innerHTML = `
-                    <div class="loading-container" style="position: relative;">
-                        ${window.createProgressLoader ? '' : '<div class="loading-spinner"></div>'}
+                    <div style="display: flex; justify-content: center; align-items: center; min-height: 60vh; width: 100%;">
+                        <div id="progress-loader-container" style="width: 100%; max-width: 500px;"></div>
                     </div>
                 `;
-                if (window.createProgressLoader) {
-                    window.createProgressLoader(resultsContent, {
+                const loaderContainer = document.getElementById('progress-loader-container');
+                if (loaderContainer && window.createProgressLoader) {
+                    window.createProgressLoader(loaderContainer, {
                         title: 'Analyzing your contract playbook',
                         steps: [
                             'Reading playbook guidelines',
@@ -594,6 +664,8 @@
                         stepDelay: 1000,
                         minDisplayTime: 3000
                     });
+                } else if (loaderContainer) {
+                    loaderContainer.innerHTML = '<div class="loading-spinner"></div>';
                 }
             } else {
                 resultsContent.innerHTML = '<p class="empty-state-text">No playbook results available</p>';
@@ -606,74 +678,61 @@
         const favorablePercentage = ((statusCount?.met || 0) / playBook.length) * 100;
         const missingPercentage = ((statusCount?.NA || 0) / playBook.length) * 100;
 
+        // Render filters and results - matches MS Editor/OnlyOffice screenshot exactly
         resultsContent.innerHTML = `
-            <div style="padding: 10px; margin: 8px; background-color: rgb(128 128 128 / 15%); border-radius: 4px;">
-                <div style="display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 0.75rem; margin-bottom: 12px;">
-                    <button class="filter-badge ${activeFilter === 'all' ? 'active' : ''}" onclick="filterWithResult('all', ${playBook.length})">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="gray" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-                        <span>All</span>
-                        <span class="badge-count">${playBook.length}</span>
-                    </button>
-                    <button class="filter-badge ${activeFilter === 'met' ? 'active' : ''}" onclick="filterWithResult('met', ${statusCount?.met || 0})">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="green" stroke="#ffff" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                        <span>Favourable</span>
-                        <span class="badge-count">${statusCount?.met || 0}</span>
-                    </button>
-                    <button class="filter-badge ${activeFilter === 'notMet' ? 'active' : ''}" onclick="filterWithResult('notMet', ${statusCount?.notMet || 0})">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="red" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                        <span>Risky</span>
-                        <span class="badge-count">${statusCount?.notMet || 0}</span>
-                    </button>
-                    <button class="filter-badge ${activeFilter === 'na' ? 'active' : ''}" onclick="filterWithResult('na', ${statusCount?.NA || 0})">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="gray" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
-                        <span>Missing</span>
-                        <span class="badge-count">${statusCount?.NA || 0}</span>
-                    </button>
-                </div>
-                ${!isStreamingPlaybook && hasFinalData ? `
-                    <div style="display: flex; height: 20px; border-radius: 4px; overflow: hidden; background-color: #e9ecef; border: 1px solid #dee2e6;">
-                        ${riskyPercentage > 0 ? `<div style="width: ${riskyPercentage}%; background-color: #dc3545; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; font-weight: 600; min-width: ${riskyPercentage < 5 ? 'auto' : '0'};">
-                            ${riskyPercentage >= 1 ? Math.round(riskyPercentage) + '%' : ''}
-                        </div>` : ''}
-                        ${favorablePercentage > 0 ? `<div style="width: ${favorablePercentage}%; background-color: #28a745; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; font-weight: 600; min-width: ${favorablePercentage < 5 ? 'auto' : '0'};">
-                            ${favorablePercentage >= 1 ? Math.round(favorablePercentage) + '%' : ''}
-                        </div>` : ''}
-                        ${missingPercentage > 0 ? `<div style="width: ${missingPercentage}%; background-color: #6c757d; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; font-weight: 600; min-width: ${missingPercentage < 5 ? 'auto' : '0'};">
-                            ${missingPercentage >= 1 ? Math.round(missingPercentage) + '%' : ''}
-                        </div>` : ''}
-                    </div>
-                ` : ''}
+            <div class="filter-container-ms">
+                <button class="filter-badge ${activeFilter === 'all' ? 'active' : ''}" onclick="filterWithResult('all', ${playBook.length})">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${activeFilter === 'all' ? '#fff' : 'gray'}" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                    <span>All</span>
+                    <span class="badge-count">${playBook.length}</span>
+                </button>
+                <button class="filter-badge ${activeFilter === 'met' ? 'active' : ''}" onclick="filterWithResult('met', ${statusCount?.met || 0})">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="${activeFilter === 'met' ? '#fff' : 'green'}" stroke="${activeFilter === 'met' ? '#fff' : '#ffff'}" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                    <span>Favourable</span>
+                    <span class="badge-count">${statusCount?.met || 0}</span>
+                </button>
+                <button class="filter-badge ${activeFilter === 'notMet' ? 'active' : ''}" onclick="filterWithResult('notMet', ${statusCount?.notMet || 0})">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="${activeFilter === 'notMet' ? '#fff' : 'red'}" stroke="${activeFilter === 'notMet' ? '#fff' : '#fff'}" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    <span>Risky</span>
+                    <span class="badge-count">${statusCount?.notMet || 0}</span>
+                </button>
+                <button class="filter-badge ${activeFilter === 'na' ? 'active' : ''}" onclick="filterWithResult('na', ${statusCount?.NA || 0})">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${activeFilter === 'na' ? '#fff' : 'gray'}" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+                    <span>Missing</span>
+                    <span class="badge-count">${statusCount?.NA || 0}</span>
+                </button>
             </div>
-            <div style="border-top: 1px solid #6a666633;">
-                ${filteredPlaybook.map((val, i) => {
-                    const statusValue = val?.statusValue || 'na';
-                    const badgeIcon = getBadgeIcon(statusValue);
-                    return `
-                        <div class="result-item" onclick="handleItemClick(${i})" style="background: rgb(128 128 128 / 15%); margin: 10px 9px; border-radius: 5px; padding: 12px; position: relative; cursor: pointer;">
-                            <div style="display: flex; justifyContent: space-between; alignItems: flex-start; marginBottom: 8px;">
-                                <div style="display: flex; gap: 0.5rem; alignItems: center; flex: 1;">
-                                    ${badgeIcon}
-                                    <span style="fontWeight: 600; fontSize: 14px;">Guideline</span>
-                                </div>
-                                <div style="padding: 4px; borderRadius: 4px;">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2" style="color: #666;"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                                </div>
+            ${filteredPlaybook.map((val, i) => {
+                const statusValue = val?.statusValue || 'na';
+                const badgeIcon = getBadgeIcon(statusValue);
+                return `
+                    <div class="result-item" onclick="handleItemClick(${i})" style="background: rgb(128 128 128 / 15%); margin: 10px 9px; border-radius: 5px; padding: 12px; position: relative; cursor: pointer; transition: all 0.2s;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                            <div style="display: flex; gap: 0.5rem; align-items: center; flex: 1;">
+                                ${badgeIcon}
+                                <span style="font-weight: 600; font-size: 14px;">Guideline</span>
                             </div>
-                            <p style="fontSize: 13px; fontWeight: 350; margin: 0; lineHeight: 1.4;">${escapeHtml(val?.Rule || '')}</p>
+                            <div style="padding: 4px; border-radius: 4px;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2" style="color: #666;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                            </div>
                         </div>
-                    `;
-                }).join('')}
-            </div>
+                        <p style="font-size: 13px; font-weight: 350; margin: 0; line-height: 1.4; color: #495057;">${escapeHtml(val?.Rule || '')}</p>
+                    </div>
+                `;
+            }).join('')}
         `;
     }
 
-    // Get badge icon
+    // Get badge icon - matches MS Editor/OnlyOffice screenshot
     function getBadgeIcon(statusValue) {
         if (statusValue === 'met') {
+            // Favourable - green checkmark
             return '<svg width="18" height="18" viewBox="0 0 24 24" fill="green" stroke="#ffff" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>';
         } else if (statusValue === 'notMet') {
+            // Risky - red exclamation
             return '<svg width="18" height="18" viewBox="0 0 24 24" fill="red" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>';
         } else {
+            // Missing - grey circle-slash
             return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="gray" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>';
         }
     }
@@ -885,7 +944,7 @@
         `;
     }
     
-    // Render generating view - Matches MS Editor smartphone loading animation
+    // Render generating view - Matches MS Editor smartphone loading animation exactly
     function renderGeneratingView() {
         return `
             <div class="loading-container-visual">
@@ -899,6 +958,10 @@
                         </div>
                         <div class="phone-button"></div>
                     </div>
+                    <!-- Decorative elements matching MS Editor -->
+                    <div class="phone-decorative-dot phone-dot-1"></div>
+                    <div class="phone-decorative-dot phone-dot-2"></div>
+                    <div class="phone-decorative-dot phone-dot-3"></div>
                 </div>
                 <h2 class="loading-title">Generating your Guide</h2>
                 <p class="loading-description">
@@ -906,7 +969,15 @@
                 </p>
                 <div class="loading-spinner-wrapper">
                     <div class="loading-spinner"></div>
-                    <span>Processing...</span>
+                    <span>Please wait...</span>
+                </div>
+                <!-- Progress dots at bottom matching MS Editor -->
+                <div class="progress-dots">
+                    <div class="progress-dot dot-blue"></div>
+                    <div class="progress-dot dot-light-blue"></div>
+                    <div class="progress-dot dot-purple"></div>
+                    <div class="progress-dot dot-blue"></div>
+                    <div class="progress-dot dot-light-blue"></div>
                 </div>
             </div>
         `;
@@ -1099,13 +1170,46 @@
     window.handleStartFromScratch = function() {
         showCreateForm = true;
         window.showCreateForm = true;
-        renderCreateForm();
+        initializeManualForm().then(() => {
+            renderCreateForm();
+        });
     };
     
-    // Render create form - matches MS Editor CreateGuideForm
+    // State for manual form
+    let manualFormRules = [];
+    let manualFormCurrentRule = '';
+    let manualFormGuideName = 'Manual Playbook';
+    
+    // Initialize manual form with versioned name
+    async function initializeManualForm() {
+        const versionedName = await generateVersionedName('Manual Playbook');
+        manualFormGuideName = versionedName;
+        manualFormRules = [];
+        manualFormCurrentRule = '';
+    }
+    
+    // Render create form - matches MS Editor CreateGuideForm exactly
     function renderCreateForm() {
         const playbookView = document.getElementById('playbook-view');
         if (!playbookView) return;
+        
+        // Initialize form if needed
+        if (!manualFormGuideName || manualFormGuideName === 'Manual Playbook') {
+            initializeManualForm().then(() => {
+                renderCreateForm();
+            });
+            return;
+        }
+        
+        const rulesHTML = manualFormRules.map((rule, index) => `
+            <div class="rule-card-view-mode">
+                <div class="rule-card-number">RULE ${index + 1}</div>
+                <div class="rule-card-text">${escapeHtml(rule)}</div>
+                <button class="rule-card-delete-button" onclick="handleDeleteManualRule(${index})" title="Delete rule">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                </button>
+            </div>
+        `).join('');
         
         playbookView.innerHTML = `
             <div class="create-form-root">
@@ -1118,77 +1222,129 @@
                     </div>
                 </div>
                 <div class="create-form-content" id="create-form-content">
-                    <div class="create-form-inner">
-                        <div style="margin-bottom: 16px;">
-                            <label class="section-label">Guide Name</label>
-                            <input type="text" class="title-input" id="form-playbook-name" placeholder="Enter guide name" value="Manual Playbook">
-                        </div>
-                        <div style="margin-bottom: 16px;">
-                            <label class="section-label">Guidelines</label>
-                            <div id="guidelines-container">
-                                <div class="guideline-item">
-                                    <textarea class="guideline-input" placeholder="Enter guideline text" rows="3"></textarea>
-                                    <button class="delete-guideline-button" onclick="handleDeleteGuideline(this)" style="display: none;">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                    </button>
-                                </div>
+                    <div class="create-form-scrollable">
+                        <div style="position: relative; width: 100%; margin-bottom: 8px;">
+                            <label class="section-label" style="display: block; margin-bottom: 6px;">Guide Name*</label>
+                            <input type="text" class="title-input" id="form-playbook-name" placeholder="Enter a descriptive name for your playbook" value="${escapeHtml(manualFormGuideName)}" onchange="handleManualFormNameChange(this.value)">
+                            <div style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #6c757d; pointer-events: none; margin-top: 12px;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                             </div>
-                            <button class="add-rule-button" onclick="handleAddGuideline()">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                                Add Guideline
-                            </button>
+                            <p style="font-size: 12px; color: #6c757d; margin: 4px 0 0 0;">Enter a descriptive name for your playbook</p>
                         </div>
-                        <button class="save-form-button" onclick="handleSaveFormGuide()" ${isSavingPlaybook ? 'disabled' : ''}>
-                            ${isSavingPlaybook ? '<div class="loading-spinner-small"></div> Saving...' : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Save Guide'}
+                        
+                        ${manualFormRules.length > 0 ? `
+                            <div class="rules-grid-manual">
+                                ${rulesHTML}
+                            </div>
+                            <div style="margin: 8px 0;">
+                                <span class="edit-guidelines-link" onclick="handleEditGuidelines()">Edit Guidelines</span>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="section-label" style="margin-top: ${manualFormRules.length > 0 ? '16px' : '0'}; margin-bottom: 6px;">ADD RULES</div>
+                        <textarea 
+                            class="guideline-input-manual" 
+                            id="manual-rule-textarea"
+                            placeholder="Start typing a rule that you would like to check your document against..."
+                            rows="4"
+                            maxlength="500"
+                            oninput="handleManualRuleInput(this.value)"
+                            onkeydown="handleManualRuleKeyDown(event)"
+                        >${escapeHtml(manualFormCurrentRule)}</textarea>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                            <span class="character-counter ${manualFormCurrentRule.length > 450 ? 'character-counter-warning' : ''}">
+                                ${manualFormCurrentRule.length}/500 characters
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="create-form-footer">
+                    <div class="create-form-footer-buttons">
+                        <button class="add-rule-button-fixed" onclick="handleAddManualRule()" ${!manualFormCurrentRule.trim() || manualFormCurrentRule.length > 500 ? 'disabled' : ''}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                            Add Rule
+                        </button>
+                        <button class="save-button-fixed" onclick="handleSaveFormGuide()" ${isSavingPlaybook ? 'disabled' : ''}>
+                            ${isSavingPlaybook ? '<div class="loading-spinner-small"></div> Saving...' : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Save Guide'}
                         </button>
                     </div>
                 </div>
             </div>
         `;
-        
-        // Show delete buttons when there are multiple guidelines
-        updateGuidelineDeleteButtons();
     }
     
-    // Handle add guideline
-    window.handleAddGuideline = function() {
-        const container = document.getElementById('guidelines-container');
-        if (!container) return;
-        
-        const newItem = document.createElement('div');
-        newItem.className = 'guideline-item';
-        newItem.innerHTML = `
-            <textarea class="guideline-input" placeholder="Enter guideline text" rows="3"></textarea>
-            <button class="delete-guideline-button" onclick="handleDeleteGuideline(this)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-            </button>
-        `;
-        container.appendChild(newItem);
-        updateGuidelineDeleteButtons();
+    // Handle manual form name change
+    window.handleManualFormNameChange = function(value) {
+        manualFormGuideName = value;
     };
     
-    // Handle delete guideline
-    window.handleDeleteGuideline = function(button) {
-        const item = button.closest('.guideline-item');
-        if (item) {
-            item.remove();
-            updateGuidelineDeleteButtons();
+    // Handle manual rule input
+    window.handleManualRuleInput = function(value) {
+        manualFormCurrentRule = value;
+        const counter = document.querySelector('.character-counter');
+        const addButton = document.querySelector('.add-rule-button-fixed');
+        if (counter) {
+            counter.textContent = `${value.length}/500 characters`;
+            if (value.length > 450) {
+                counter.classList.add('character-counter-warning');
+            } else {
+                counter.classList.remove('character-counter-warning');
+            }
+        }
+        if (addButton) {
+            addButton.disabled = !value.trim() || value.length > 500;
         }
     };
     
-    // Update guideline delete buttons visibility
-    function updateGuidelineDeleteButtons() {
-        const container = document.getElementById('guidelines-container');
-        if (!container) return;
-        
-        const items = container.querySelectorAll('.guideline-item');
-        items.forEach(item => {
-            const deleteBtn = item.querySelector('.delete-guideline-button');
-            if (deleteBtn) {
-                deleteBtn.style.display = items.length > 1 ? 'flex' : 'none';
+    // Handle manual rule keydown (Enter to add)
+    window.handleManualRuleKeyDown = function(event) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            handleAddManualRule();
+        }
+    };
+    
+    // Handle add manual rule
+    window.handleAddManualRule = function() {
+        const ruleText = manualFormCurrentRule.trim();
+        if (!ruleText) {
+            showToast('Please enter a rule before adding', 'error');
+            return;
+        }
+        if (ruleText.length > 500) {
+            showToast('Rule text is too long. Please keep it under 500 characters.', 'error');
+            return;
+        }
+        manualFormRules.push(ruleText);
+        manualFormCurrentRule = '';
+        renderCreateForm();
+        // Focus back on textarea
+        setTimeout(() => {
+            const textarea = document.getElementById('manual-rule-textarea');
+            if (textarea) {
+                textarea.focus();
             }
-        });
-    }
+        }, 100);
+        showToast('Rule added successfully!', 'success');
+    };
+    
+    // Handle delete manual rule
+    window.handleDeleteManualRule = function(index) {
+        manualFormRules.splice(index, 1);
+        renderCreateForm();
+    };
+    
+    // Handle edit guidelines (show all rules in textarea for editing)
+    window.handleEditGuidelines = function() {
+        // This could open a modal or switch to edit mode
+        // For now, just scroll to the textarea
+        const textarea = document.getElementById('manual-rule-textarea');
+        if (textarea) {
+            textarea.focus();
+            textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    };
+    
     
     // Handle save form guide
     window.handleSaveFormGuide = async function() {
@@ -1201,29 +1357,20 @@
             return;
         }
         
-        const nameInput = document.getElementById('form-playbook-name');
-        const name = nameInput ? nameInput.value.trim() : 'Manual Playbook';
+        const name = manualFormGuideName.trim();
         
         if (!name) {
             showToast('Please enter a guide name', 'error');
             return;
         }
         
-        const container = document.getElementById('guidelines-container');
-        if (!container) return;
-        
-        const textareas = container.querySelectorAll('.guideline-input');
-        const rules = Array.from(textareas)
-            .map(ta => ta.value.trim())
-            .filter(rule => rule.length > 0);
-        
-        if (rules.length === 0) {
-            showToast('Please add at least one guideline', 'error');
+        if (manualFormRules.length === 0) {
+            showToast('Please add at least one rule', 'error');
             return;
         }
         
         isSavingPlaybook = true;
-        const saveButton = document.querySelector('.save-form-button');
+        const saveButton = document.querySelector('.save-button-fixed');
         if (saveButton) {
             saveButton.disabled = true;
         }
@@ -1238,7 +1385,7 @@
                 },
                 body: JSON.stringify({
                     name: name,
-                    rules: rules
+                    rules: manualFormRules
                 })
             });
             
@@ -1265,6 +1412,9 @@
                 window.showCreatePage = false;
                 generatedPlaybook = null;
                 isGeneratingPlaybook = false;
+                manualFormRules = [];
+                manualFormCurrentRule = '';
+                manualFormGuideName = 'Manual Playbook';
                 renderPlaybookList();
                 fetchPlaybooks();
             } else {
@@ -1297,6 +1447,9 @@
     window.handleBackFromCreateForm = function() {
         showCreateForm = false;
         window.showCreateForm = false;
+        manualFormRules = [];
+        manualFormCurrentRule = '';
+        manualFormGuideName = 'Manual Playbook';
         renderCreatePage();
     };
     
