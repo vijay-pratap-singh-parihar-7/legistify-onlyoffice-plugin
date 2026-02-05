@@ -51,12 +51,12 @@
                         <div class="loading-container" style="margin-top: 150px;"><div class="loading-spinner"></div></div>
                     ` : `
                         ${historySearch?.length > 0 ? `
-                            <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto; overflow-x: hidden;">
+                            <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding-bottom: 40px;">
                                 ${renderChatHistory()}
                                 ${loader ? `
-                                    <div style="margin-left: 50px;">
+                                    <div style="margin-left: 50px; margin-bottom: 20px;">
                                         <div style="display: flex; justify-content: center; align-items: center;">
-                                            <div style="margin-right: 7px;" class="prompt-container" style="border-radius: 8px 8px 0 8px; margin-left: auto; background-color: #eff4ff; padding: 5px 10px; width: fit-content; box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;">
+                                            <div style="margin-right: 7px; border-radius: 8px 8px 0 8px; margin-left: auto; background-color: #eff4ff; padding: 5px 10px; width: fit-content; box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;">
                                                 <p style="font-size: 12px; margin: 0;">${escapeHtml(prompt)}</p>
                                             </div>
                                             <div style="width: 32px; height: 32px; border-radius: 50%; background: #2667ff; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">
@@ -70,9 +70,9 @@
                                 ` : ''}
                                 <div id="bottom-ref"></div>
                             </div>
-                            <div class="prompt-outer-container" style="width: 100%; background-color: #fff; z-index: 10; max-width: 49.7rem; display: flex; align-items: center; position: sticky; bottom: 0; margin: 0 auto;">
+                            <div class="prompt-outer-container" style="width: 100%; background-color: #fff; z-index: 10; max-width: 49.7rem; display: flex; align-items: center; position: sticky; bottom: 0; margin: 0 auto; padding-top: 12px;">
                                 <div class="g-prompt-container" style="width: 95%; min-height: 38px; background-color: #fff; border: 1px solid rgba(0, 0, 0, 0.2); border-radius: 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);">
-                                    <textarea id="prompt-input-ref" class="prompt-input" value="${prompt}" oninput="handlePromptInput(event)" placeholder="Ask any questions about this agreement" style="width: 100%; background: white; padding: 2px; border-bottom: none; border: none; outline: none; resize: vertical; min-height: 38px; font-size: 14px; font-family: inherit;"></textarea>
+                                    <textarea id="prompt-input-ref" class="prompt-input" value="${prompt}" oninput="handlePromptInput(event)" placeholder="Ask any questions about this agreement" style="width: 100%; background: white; padding: 7px 13px; border-bottom: none; border: none; outline: none; resize: vertical; min-height: 38px; font-size: 14px; font-family: inherit; line-height: unset;"></textarea>
                                 </div>
                                 <div class="prompt-actions" style="padding-left: 10px; padding-right: 5px;">
                                     <label class="prompt-action-send" onclick="handleGenerate()" style="border-radius: 10px; padding: 8px; cursor: pointer; margin: 0; display: flex; align-items: center; justify-content: center; background: ${error ? 'gray' : '#2667FF'}; color: #fff;">
@@ -85,7 +85,11 @@
                                     Maximum Limit Reached (2000 words only)
                                 </p>
                             ` : ''}
-                        ` : ''}
+                        ` : `
+                            <div style="display: flex; flex-direction: column; flex: 1; justify-content: center; align-items: center; padding: 20px;">
+                                <p style="color: #666; font-size: 14px;">No chat history. Start a conversation by asking a question.</p>
+                            </div>
+                        `}
                     `}
                 </div>
             </div>
@@ -319,7 +323,11 @@
         const backendUrl = window.getBackendUrl();
         const accessToken = window.getAccessToken();
 
-        if (!pluginData.contractId || !accessToken) return;
+        if (!pluginData.contractId || !accessToken) {
+            isHistoryLoading = false;
+            renderAskAIView();
+            return;
+        }
 
         const param = query ? `contractId=${pluginData.contractId}&${query}` : `contractId=${pluginData.contractId}`;
         const url = `${backendUrl}/ai-assistant/chat-history?${param}`;
@@ -346,9 +354,12 @@
                         messageDivRef.scrollTop = messageDivRef.scrollHeight - scrollPos;
                     }
                 } else {
-                    // No history, sync document
+                    // No history, sync document to show initial questions
                     await syncDocumentWithAi(false);
                 }
+            } else {
+                // Error fetching, try to sync document
+                await syncDocumentWithAi(false);
             }
         } catch (err) {
             console.error('Error fetching history:', err);
@@ -365,6 +376,12 @@
             const pluginData = window.getPluginData();
             const backendUrl = window.getBackendUrl();
             const accessToken = window.getAccessToken();
+
+            if (!pluginData.contractId || !accessToken) {
+                isHistoryLoading = false;
+                renderAskAIView();
+                return;
+            }
 
             const bodyData = new FormData();
             bodyData.append('contractId', pluginData.contractId);
@@ -383,12 +400,16 @@
                 const data = await response.json();
                 if (data?.status) {
                     const responseData = data.data?.data || data.data?.result;
-                    historySearch = [responseData, ...historySearch];
-                    renderAskAIView();
+                    if (responseData) {
+                        historySearch = [responseData, ...historySearch];
+                    }
                 }
             }
         } catch (err) {
             console.error('Error syncing document:', err);
+        } finally {
+            isHistoryLoading = false;
+            renderAskAIView();
         }
     };
 
@@ -434,22 +455,40 @@
         return userName[0].toUpperCase();
     }
 
-    // Format time
+    // Format time - matches MS Editor moment().calendar() format
     function formatTime(dateString) {
         if (!dateString) return '';
         const date = new Date(dateString);
         const now = new Date();
-        const diff = now - date;
-        const minutes = Math.floor(diff / 60000);
-        const hours = Math.floor(diff / 3600000);
-        const days = Math.floor(diff / 86400000);
-
-        if (minutes < 1) return 'just now';
-        if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-        if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-        if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`;
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
         
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+        const hours = date.getHours();
+        const minutes = date.getMinutes();
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const displayHours = hours % 12 || 12;
+        const displayMinutes = minutes < 10 ? `0${minutes}` : minutes;
+        const timeStr = `${displayHours}:${displayMinutes} ${ampm}`;
+        
+        if (dateOnly.getTime() === today.getTime()) {
+            return `Today at ${timeStr}`;
+        } else if (dateOnly.getTime() === yesterday.getTime()) {
+            return `Yesterday at ${timeStr}`;
+        } else {
+            const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+            if (diffDays < 7) {
+                const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                return `${dayNames[date.getDay()]} at ${timeStr}`;
+            } else {
+                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                const day = date.getDate();
+                const month = monthNames[date.getMonth()];
+                const year = date.getFullYear() !== now.getFullYear() ? ` ${date.getFullYear()}` : '';
+                return `${month} ${day}${year} at ${timeStr}`;
+            }
+        }
     }
 
     // Escape HTML

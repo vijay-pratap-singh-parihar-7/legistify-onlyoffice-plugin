@@ -547,8 +547,20 @@
                         Favourites
                     </span>
                 `;
+            } else if (drawerHeaderActions && (contentKey === 'genai' || contentKey === 'askai')) {
+                // Setup Refresh button for AI Copilot view
+                drawerHeaderActions.style.display = 'flex';
+                drawerHeaderActions.innerHTML = `
+                    <div class="summary-button" id="drawer-refresh-btn" title="Refresh" onclick="if(window.syncDocumentWithAi) window.syncDocumentWithAi(true);" style="display: flex; padding: 5px; border-radius: 5px; cursor: pointer; border: 1px solid #0000003d;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <polyline points="1 20 1 14 7 14"></polyline>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                        </svg>
+                    </div>
+                `;
             } else if (drawerHeaderActions) {
-                // Hide header actions for other views (Approval, Copilot)
+                // Hide header actions for other views (Approval)
                 drawerHeaderActions.style.display = 'none';
             }
         }
