@@ -165,9 +165,9 @@
                             ` : ''}
                             <div id="bottom-ref"></div>
                         </div>
-                        <div class="prompt-outer-container" style="width: 100%; background-color: #fff; z-index: 10; max-width: 49.7rem; display: flex; align-items: center; position: sticky; bottom: 0; margin: 0 auto; padding-top: 12px;">
+                        <div class="prompt-outer-container" style="width: 100%; background-color: #fff; z-index: 10; max-width: 49.7rem; display: flex; align-items: center; position: sticky; bottom: 0; margin: 0 auto;">
                             <div class="g-prompt-container" style="width: 95%; min-height: 38px !important; background-color: #fff !important; border: 1px solid rgba(0, 0, 0, 0.2); border-radius: 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);">
-                                <textarea id="prompt-input-ref" class="prompt-input" oninput="handlePromptInput(event)" placeholder="Ask any questions about this agreement" style="width: 100%; background: white; padding: 7px 13px; border-bottom: none !important; border: none; outline: none; resize: vertical; min-height: 38px; font-size: 14px; font-family: inherit; line-height: unset;">${escapeHtml(prompt || '')}</textarea>
+                                <textarea id="prompt-input-ref" class="prompt-input" oninput="handlePromptInput(event)" placeholder="Ask any questions about this agreement" style="width: 100%; background: white; padding: 8px 12px; border-bottom: none !important; border: none; outline: none; resize: vertical; min-height: 38px; font-size: 14px; font-family: inherit; line-height: 1.5;">${escapeHtml(prompt || '')}</textarea>
                             </div>
                             <div class="prompt-actions" style="padding-left: 10px; padding-right: 5px;">
                                 <label class="prompt-action-send" onclick="handleGenerate()" style="border-radius: 10px; padding: 8px; cursor: pointer; margin: 0; display: flex; align-items: center; justify-content: center; background: ${error || !prompt?.trim() || loader ? 'gray' : '#2667FF'}; color: #fff; transition: background 0.2s;">
@@ -298,6 +298,13 @@
                 </div>
             </div>
         `;
+    }
+
+    // Format HTML content - for sync document response
+    function formatHtmlContent(html) {
+        if (!html) return '';
+        // Return HTML as-is (will be inserted via innerHTML)
+        return html;
     }
 
     // Format response
@@ -450,7 +457,7 @@
         }
     };
 
-    // Fetch history
+    // Fetch history - matches MS Editor exactly
     async function fetchHistory(query, first, scrollPos) {
         const pluginData = window.getPluginData();
         const backendUrl = window.getBackendUrl();
@@ -475,55 +482,53 @@
             
             if (response.ok) {
                 const data = await response.json();
-                if (data?.status) {
+                // Match MS Editor: if (response?.status && response?.data?.result.length > 0)
+                if (data?.status && data?.data?.result?.length > 0) {
                     totalCount = data.data?.totalCount || 0;
                     const result = data.data?.result || [];
                     
-                    if (result.length > 0) {
-                        // Add new results to history (avoid duplicates)
-                        const existingIds = new Set(historySearch.map(item => item._id || item.message_id));
-                        const newItems = result.filter(item => !existingIds.has(item._id || item.message_id));
-                        historySearch = [...historySearch, ...newItems];
-                        
-                        if (first) {
-                            setTimeout(() => {
-                                const bottomRefElement = document.getElementById('bottom-ref');
-                                if (bottomRefElement) {
-                                    bottomRefElement.scrollIntoView({ behavior: 'auto' });
-                                }
-                            }, 200);
-                        } else if (scrollPos && messageDivRef) {
-                            messageDivRef.scrollTop = messageDivRef.scrollHeight - scrollPos;
-                        }
-                    } else if (first && historySearch.length === 0) {
-                        // No history on first load, sync document to show initial questions
-                        await syncDocumentWithAi(false);
+                    // Add new results to history (avoid duplicates)
+                    const existingIds = new Set(historySearch.map(item => item._id || item.message_id));
+                    const newItems = result.filter(item => !existingIds.has(item._id || item.message_id));
+                    historySearch = [...historySearch, ...newItems];
+                    
+                    if (first) {
+                        setTimeout(() => {
+                            const bottomRefElement = document.getElementById('bottom-ref');
+                            if (bottomRefElement) {
+                                bottomRefElement.scrollIntoView({ behavior: 'auto' });
+                            }
+                        }, 200);
+                    } else if (scrollPos && messageDivRef) {
+                        messageDivRef.scrollTop = messageDivRef.scrollHeight - scrollPos;
                     }
                 } else {
-                    // API returned error, try to sync document if first load
-                    if (first && historySearch.length === 0) {
+                    // Match MS Editor: else await syncDocumentWithAi(false)
+                    // No history or error, sync document to show initial questions
+                    if (first) {
                         await syncDocumentWithAi(false);
                     }
                 }
             } else {
-                // HTTP error, try to sync document if first load
-                if (first && historySearch.length === 0) {
+                // HTTP error, sync document if first load
+                if (first) {
                     await syncDocumentWithAi(false);
                 }
             }
         } catch (err) {
             console.error('Error fetching history:', err);
-            // On error, try to sync document if first load
-            if (first && historySearch.length === 0) {
+            // On error, sync document if first load
+            if (first) {
                 await syncDocumentWithAi(false);
             }
         } finally {
+            // Match MS Editor: setisHistoryLoading(false) - always set after check
             isHistoryLoading = false;
             renderAskAIView();
         }
     }
 
-    // Sync document with AI
+    // Sync document with AI - matches MS Editor exactly
     window.syncDocumentWithAi = async function(regenerate = false) {
         try {
             const pluginData = window.getPluginData();
@@ -551,9 +556,12 @@
 
             if (response.ok) {
                 const data = await response.json();
+                // Match MS Editor: if (response?.status)
                 if (data?.status) {
+                    // Match MS Editor: const responseData = response.data?.data || response.data?.result
                     const responseData = data.data?.data || data.data?.result;
                     if (responseData) {
+                        // Match MS Editor: setHistorySearch((value) => { return [responseData, ...value] })
                         // Check if already exists to avoid duplicates
                         const exists = historySearch.some(item => 
                             (item._id || item.message_id) === (responseData._id || responseData.message_id)
@@ -569,10 +577,17 @@
                             }, 200);
                         }
                     }
+                } else {
+                    // Match MS Editor: setErrorMessage(response.msg)
+                    errorMessage = data.msg || 'Failed to sync document';
                 }
+            } else {
+                const errorData = await response.json().catch(() => ({}));
+                errorMessage = errorData.msg || 'Failed to sync document';
             }
         } catch (err) {
             console.error('Error syncing document:', err);
+            errorMessage = err.message || 'Failed to sync document';
         } finally {
             isHistoryLoading = false;
             renderAskAIView();
