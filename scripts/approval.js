@@ -64,12 +64,15 @@
         if (!approvalView) return;
         
         // Check if we're in drawer (has -drawer suffix) or original view
-        const isDrawer = approvalView.id === 'clauseApproval-view-drawer' || approvalView.id === 'clauseApproval-container-drawer';
-        const containerId = isDrawer ? 'clauseApproval-container-drawer' : 'clauseApproval-container';
-        const contentId = isDrawer ? 'approval-content-drawer' : 'approval-content';
+        // Also check if we're inside drawer-content
+        const isInDrawer = approvalView.closest('#drawer-content') !== null || 
+                          approvalView.id === 'clauseApproval-view-drawer' || 
+                          approvalView.id === 'clauseApproval-container-drawer';
+        const containerId = isInDrawer ? 'clauseApproval-container-drawer' : 'clauseApproval-container';
+        const contentId = isInDrawer ? 'approval-content-drawer' : 'approval-content';
 
-        // Don't render feature-header if in drawer (drawer has its own header)
-        const shouldShowHeader = !isDrawer;
+        // NEVER render feature-header if in drawer (drawer has its own header)
+        const shouldShowHeader = !isInDrawer;
         
         // Build action buttons HTML
         const actionButtons = !selectedClause ? `
@@ -103,7 +106,7 @@
         ` : '';
         
         approvalView.innerHTML = `
-            <div id="${containerId}" class="clause-approval-container" style="position: relative; min-height: 0; height: auto; overflow: visible; margin-top: ${isDrawer ? '0' : '-10px'}; display: flex; flex-direction: column;">
+            <div id="${containerId}" class="clause-approval-container" style="position: relative; min-height: 0; height: auto; overflow: visible; margin-top: ${isInDrawer ? '0' : '-10px'}; display: flex; flex-direction: column; width: 100%;">
                 ${shouldShowHeader ? `
                 <div class="feature-header">
                     <div style="width: 100%; display: flex; justify-content: space-between;">
@@ -118,12 +121,7 @@
                     ${statusBadge ? `<div style="display: flex; gap: 8px; align-items: center;">${statusBadge}</div>` : ''}
                 </div>
                 ` : ''}
-                ${!shouldShowHeader && (actionButtons || statusBadge) ? `
-                    <div style="display: flex; justify-content: flex-end; align-items: center; gap: 8px; padding: 8px 16px; border-bottom: 1px solid #e0e0e0; flex-shrink: 0;">
-                        ${actionButtons || statusBadge}
-                    </div>
-                ` : ''}
-                <div id="${contentId}" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding: 16px; min-height: 0;"></div>
+                <div id="${contentId}" style="flex: 0 1 auto; overflow: visible; padding: 16px; min-height: 0; box-sizing: border-box; width: 100%;"></div>
             </div>
         `;
 
@@ -432,7 +430,7 @@
     // Render form (simplified - full implementation would need AsyncSelect component)
     function renderForm() {
         return `
-            <div class="form-container" style="flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px;">
+            <div class="form-container" style="width: 100%; padding: 12px; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; overflow: visible;">
                 <div style="display: flex; gap: 10px; justify-content: flex-start; align-items: center; width: 100%;">
                     <div style="flex: 1; width: 50%;">
                         <input type="text" placeholder="Clause No" value="${form.clauseNo}" onchange="handleFormInputChange('clauseNo', this.value)" style="width: 100%; padding: 8px; border: 1px solid ${errors.clauseNo ? 'red' : 'rgb(153 153 153 / 64%)'}; border-radius: 4px;" />

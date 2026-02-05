@@ -271,6 +271,9 @@ body {
     flex-direction: column;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
     animation: slideUp 0.3s ease;
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
 }
 
 @keyframes slideUp {
@@ -344,6 +347,7 @@ body {
     overflow-x: hidden;
     padding: 0;
     min-height: 0;
+    max-height: 100%;
     position: relative;
     -webkit-overflow-scrolling: touch;
 }
@@ -367,11 +371,12 @@ body {
 
 .drawer-view {
     width: 100%;
-    min-height: 100%;
+    min-height: 0;
     height: auto;
     display: flex;
     flex-direction: column;
     overflow: visible;
+    flex: 0 1 auto;
 }
 
 /* Playbook Container - Matches MS Editor playbookContainer */
@@ -2023,6 +2028,8 @@ body {
     display: flex;
     flex-direction: column;
     flex: 1;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .approval-card {
