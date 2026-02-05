@@ -165,20 +165,22 @@
                             <div id="bottom-ref"></div>
                         </div>
                     `}
-                    <div class="prompt-outer-container" style="width: 100%; background-color: #fff; z-index: 10; max-width: 49.7rem; display: flex; align-items: center; position: sticky; bottom: 0; margin: 0 auto; padding-top: 12px;">
-                        <div class="g-prompt-container" style="width: 95%; min-height: 38px; background-color: #fff; border: 1px solid rgba(0, 0, 0, 0.2); border-radius: 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);">
-                            <textarea id="prompt-input-ref" class="prompt-input" oninput="handlePromptInput(event)" placeholder="Ask any questions about this agreement" style="width: 100%; background: white; padding: 7px 13px; border-bottom: none; border: none; outline: none; resize: vertical; min-height: 38px; font-size: 14px; font-family: inherit; line-height: unset;">${escapeHtml(prompt || '')}</textarea>
+                    ${!isHistoryLoading ? `
+                        <div class="prompt-outer-container" style="width: 100%; background-color: #fff; z-index: 10; max-width: 49.7rem; display: flex; align-items: center; position: sticky; bottom: 0; margin: 0 auto; padding-top: 12px;">
+                            <div class="g-prompt-container" style="width: 95%; min-height: 38px !important; background-color: #fff !important; border: 1px solid rgba(0, 0, 0, 0.2); border-radius: 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);">
+                                <textarea id="prompt-input-ref" class="prompt-input" oninput="handlePromptInput(event)" placeholder="Ask any questions about this agreement" style="width: 100%; background: white; padding: 7px 13px; border-bottom: none !important; border: none; outline: none; resize: vertical; min-height: 38px; font-size: 14px; font-family: inherit; line-height: unset;">${escapeHtml(prompt || '')}</textarea>
+                            </div>
+                            <div class="prompt-actions" style="padding-left: 10px; padding-right: 5px;">
+                                <label class="prompt-action-send" onclick="handleGenerate()" style="border-radius: 10px; padding: 8px; cursor: pointer; margin: 0; display: flex; align-items: center; justify-content: center; background: ${error || !prompt?.trim() || loader ? 'gray' : '#2667FF'}; color: #fff; transition: background 0.2s;">
+                                    ${loader ? '<div class="loading-spinner-small"></div>' : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>'}
+                                </label>
+                            </div>
                         </div>
-                        <div class="prompt-actions" style="padding-left: 10px; padding-right: 5px;">
-                            <label class="prompt-action-send" onclick="handleGenerate()" style="border-radius: 10px; padding: 8px; cursor: pointer; margin: 0; display: flex; align-items: center; justify-content: center; background: ${error || !prompt?.trim() ? 'gray' : '#2667FF'}; color: #fff;">
-                                ${loader ? '<div class="loading-spinner-small"></div>' : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>'}
-                            </label>
-                        </div>
-                    </div>
-                    ${prompt?.length >= 2000 ? `
-                        <p style="font-size: 12px; color: ${error ? 'red' : 'black'}; margin: 0; color: #6c757d; text-align: end; padding-right: 1.5rem;">
-                            Maximum Limit Reached (2000 words only)
-                        </p>
+                        ${prompt?.length >= 2000 ? `
+                            <p style="font-size: 12px; color: ${error ? 'red' : 'black'}; margin: 0; color: #6c757d; text-align: end; padding-right: 1.5rem;">
+                                Maximum Limit Reached (2000 words only)
+                            </p>
+                        ` : ''}
                     ` : ''}
                 </div>
             </div>
@@ -474,28 +476,48 @@
             
             if (response.ok) {
                 const data = await response.json();
-                if (data?.status && data?.data?.result?.length > 0) {
-                    totalCount = data.data.totalCount || 0;
-                    historySearch = [...historySearch, ...(data.data.result || [])];
+                if (data?.status) {
+                    totalCount = data.data?.totalCount || 0;
+                    const result = data.data?.result || [];
                     
-                    if (first) {
-                        setTimeout(() => {
-                            if (bottomRef) bottomRef.scrollIntoView({ behavior: 'auto' });
-                        }, 200);
-                    } else if (scrollPos && messageDivRef) {
-                        messageDivRef.scrollTop = messageDivRef.scrollHeight - scrollPos;
+                    if (result.length > 0) {
+                        // Add new results to history (avoid duplicates)
+                        const existingIds = new Set(historySearch.map(item => item._id || item.message_id));
+                        const newItems = result.filter(item => !existingIds.has(item._id || item.message_id));
+                        historySearch = [...historySearch, ...newItems];
+                        
+                        if (first) {
+                            setTimeout(() => {
+                                const bottomRefElement = document.getElementById('bottom-ref');
+                                if (bottomRefElement) {
+                                    bottomRefElement.scrollIntoView({ behavior: 'auto' });
+                                }
+                            }, 200);
+                        } else if (scrollPos && messageDivRef) {
+                            messageDivRef.scrollTop = messageDivRef.scrollHeight - scrollPos;
+                        }
+                    } else if (first && historySearch.length === 0) {
+                        // No history on first load, sync document to show initial questions
+                        await syncDocumentWithAi(false);
                     }
                 } else {
-                    // No history, sync document to show initial questions
-                    await syncDocumentWithAi(false);
+                    // API returned error, try to sync document if first load
+                    if (first && historySearch.length === 0) {
+                        await syncDocumentWithAi(false);
+                    }
                 }
             } else {
-                // Error fetching, try to sync document
-                await syncDocumentWithAi(false);
+                // HTTP error, try to sync document if first load
+                if (first && historySearch.length === 0) {
+                    await syncDocumentWithAi(false);
+                }
             }
         } catch (err) {
             console.error('Error fetching history:', err);
-            await syncDocumentWithAi(false);
+            // On error, try to sync document if first load
+            if (first && historySearch.length === 0) {
+                await syncDocumentWithAi(false);
+            }
         } finally {
             isHistoryLoading = false;
             renderAskAIView();
@@ -533,7 +555,13 @@
                 if (data?.status) {
                     const responseData = data.data?.data || data.data?.result;
                     if (responseData) {
-                        historySearch = [responseData, ...historySearch];
+                        // Check if already exists to avoid duplicates
+                        const exists = historySearch.some(item => 
+                            (item._id || item.message_id) === (responseData._id || responseData.message_id)
+                        );
+                        if (!exists) {
+                            historySearch = [responseData, ...historySearch];
+                        }
                     }
                 }
             }

@@ -121,7 +121,7 @@
                     ${statusBadge ? `<div style="display: flex; gap: 8px; align-items: center;">${statusBadge}</div>` : ''}
                 </div>
                 ` : ''}
-                <div id="${contentId}" style="flex: 0 1 auto; overflow: visible; padding: 16px; padding-bottom: 50px; min-height: 0; box-sizing: border-box; width: 100%;"></div>
+                <div id="${contentId}" style="flex: 0 1 auto; overflow: visible; padding: 0; padding-bottom: 50px; min-height: 0; box-sizing: border-box; width: 100%;"></div>
             </div>
         `;
 
@@ -427,10 +427,10 @@
         return `(${day} ${month}, ${year} @ ${time.toLowerCase()})`;
     }
 
-    // Render form (simplified - full implementation would need AsyncSelect component)
+    // Render form - matches MS Editor exactly
     function renderForm() {
         return `
-            <div class="form-container" style="width: 100%; padding: 12px; padding-bottom: 50px; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; overflow: visible; margin-bottom: 30px;">
+            <div class="form-container" style="width: 100%; padding: 16px; padding-bottom: 50px; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; overflow: visible; margin-bottom: 30px;">
                 <div style="display: flex; gap: 10px; justify-content: flex-start; align-items: center; width: 100%;">
                     <div style="flex: 1; width: 50%;">
                         <input type="text" placeholder="Clause No" value="${escapeHtml(form.clauseNo || '')}" onchange="handleFormInputChange('clauseNo', this.value)" class="approval-form-input" style="width: 100%; padding: 8px 12px; border: 1px solid ${errors.clauseNo ? 'red' : 'rgb(153 153 153 / 64%)'}; border-radius: 4px; font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; box-sizing: border-box;" />
@@ -459,8 +459,19 @@
                 ${errors.standPosition ? `<div style="color: red; margin: -5px 0; font-size: 12px;">${errors.standPosition}</div>` : ''}
                 ${form.levels.map((level, index) => `
                     <div style="margin-bottom: 8px; width: 100%; display: flex; gap: 10px;">
-                        <div style="width: 90%;">
-                            <input type="text" placeholder="Search team members" value="${escapeHtml(level.fullName || '')}" onchange="handleLevelInputChange(${index}, this.value)" class="approval-form-input" style="width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; box-sizing: border-box;" />
+                        <div style="width: 90%; position: relative;">
+                            <input type="text" 
+                                id="team-member-input-${index}" 
+                                placeholder="Search team members" 
+                                value="${escapeHtml(level.fullName || '')}" 
+                                oninput="handleTeamMemberSearch(${index}, this.value)" 
+                                onfocus="handleTeamMemberFocus(${index})"
+                                class="approval-form-input team-member-input" 
+                                style="width: 100%; padding: 8px 12px; border: 1px solid ${errors.level ? 'red' : '#2667FF'}; border-radius: 4px; font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; box-sizing: border-box; position: relative;" 
+                                autocomplete="off" />
+                            <div id="team-member-dropdown-${index}" class="team-member-dropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 4px; max-height: 200px; overflow-y: auto; z-index: 1000; margin-top: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                <div class="dropdown-loading" style="padding: 12px; text-align: center; color: #666; font-size: 12px;">Loading...</div>
+                            </div>
                         </div>
                         <div onclick="handleLevelDelete(${index})" style="padding: 8px; cursor: pointer; border-radius: 5px; background-color: rgb(223 20 20); color: white; display: flex; align-items: center;">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
@@ -712,12 +723,163 @@
         updateApprovalContent();
     };
 
-    // Handle level input change
+    // Handle level input change (deprecated - use handleTeamMemberSearch)
     window.handleLevelInputChange = function(index, value) {
         if (form.levels[index]) {
             form.levels[index].fullName = value;
         }
     };
+
+    // Handle team member search with debounce
+    let searchTimers = {};
+    window.handleTeamMemberSearch = function(index, value) {
+        const input = document.getElementById(`team-member-input-${index}`);
+        const dropdown = document.getElementById(`team-member-dropdown-${index}`);
+        
+        if (!input || !dropdown) return;
+        
+        // Clear previous timer
+        if (searchTimers[index]) {
+            clearTimeout(searchTimers[index]);
+        }
+        
+        // Update input value
+        if (form.levels[index]) {
+            form.levels[index].fullName = value;
+        }
+        
+        // Show dropdown if there's text
+        if (value && value.trim().length > 0) {
+            // Clear previous timer and set new one
+            searchTimers[index] = setTimeout(() => {
+                fetchTeamMembers(index, value.trim());
+            }, 300);
+        } else {
+            dropdown.style.display = 'none';
+        }
+    };
+
+    // Handle team member input focus
+    window.handleTeamMemberFocus = function(index) {
+        const input = document.getElementById(`team-member-input-${index}`);
+        const dropdown = document.getElementById(`team-member-dropdown-${index}`);
+        
+        if (!input || !dropdown) return;
+        
+        // If there's a value, show dropdown
+        if (input.value && input.value.trim().length > 0) {
+            fetchTeamMembers(index, input.value.trim());
+        }
+    };
+
+    // Fetch team members from API
+    async function fetchTeamMembers(index, searchValue) {
+        const dropdown = document.getElementById(`team-member-dropdown-${index}`);
+        if (!dropdown) return;
+
+        try {
+            dropdown.innerHTML = '<div class="dropdown-loading" style="padding: 12px; text-align: center; color: #666; font-size: 12px;">Loading...</div>';
+            dropdown.style.display = 'block';
+
+            const pluginData = window.getPluginData();
+            const backendUrl = window.getBackendUrl();
+            const accessToken = window.getAccessToken();
+
+            if (!accessToken) {
+                throw new Error('Access token not available');
+            }
+
+            // Get already selected user IDs to filter them out
+            const selectedUserIds = form.levels
+                ?.flatMap((level) => level?.orgUsers)
+                ?.filter(Boolean)
+                ?.map((user) => (typeof user === 'object' ? user._id : user)) || [];
+
+            // Clean search value (remove non-word characters)
+            const cleanValue = searchValue.replace(/\W/g, '');
+
+            const url = `${backendUrl}/clause-approval/fetch-all-org-users?email=${encodeURIComponent(cleanValue)}`;
+            const response = await fetch(url, {
+                headers: {
+                    'x-auth-token': accessToken,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data?.status && data?.data?.orgUsers?.length > 0) {
+                    // Filter out already selected users
+                    const filteredUsers = data.data.orgUsers.filter(
+                        (item) => !selectedUserIds.includes(item._id)
+                    );
+
+                    if (filteredUsers.length > 0) {
+                        dropdown.innerHTML = filteredUsers.map((user) => {
+                            const safeName = escapeHtml(user.fullName);
+                            const safeId = String(user._id).replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+                            return `
+                                <div class="dropdown-item" 
+                                    onclick="selectTeamMember(${index}, '${safeName}', '${safeId}')"
+                                    style="padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 12px; transition: background-color 0.2s;"
+                                    onmouseover="this.style.backgroundColor='#f5f5f5'"
+                                    onmouseout="this.style.backgroundColor='white'">
+                                    ${safeName}
+                                </div>
+                            `;
+                        }).join('');
+                    } else {
+                        dropdown.innerHTML = '<div style="padding: 12px; text-align: center; color: #666; font-size: 12px;">No team members found</div>';
+                    }
+                } else {
+                    dropdown.innerHTML = '<div style="padding: 12px; text-align: center; color: #666; font-size: 12px;">No team members found</div>';
+                }
+            } else {
+                dropdown.innerHTML = '<div style="padding: 12px; text-align: center; color: #d32f2f; font-size: 12px;">Error loading team members</div>';
+            }
+        } catch (err) {
+            console.error('Error fetching team members:', err);
+            if (dropdown) {
+                dropdown.innerHTML = '<div style="padding: 12px; text-align: center; color: #d32f2f; font-size: 12px;">Error loading team members</div>';
+            }
+        }
+    }
+
+    // Select team member from dropdown
+    window.selectTeamMember = function(index, fullName, userId) {
+        const input = document.getElementById(`team-member-input-${index}`);
+        const dropdown = document.getElementById(`team-member-dropdown-${index}`);
+        
+        if (form.levels[index]) {
+            form.levels[index].fullName = fullName;
+            form.levels[index].orgUsers = [userId];
+        }
+        
+        if (input) {
+            input.value = fullName;
+        }
+        
+        if (dropdown) {
+            dropdown.style.display = 'none';
+        }
+        
+        // Clear any errors
+        if (errors.level) {
+            delete errors.level;
+        }
+        
+        updateApprovalContent();
+    };
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.team-member-input') && !event.target.closest('.team-member-dropdown')) {
+            const dropdowns = document.querySelectorAll('.team-member-dropdown');
+            dropdowns.forEach(dropdown => {
+                dropdown.style.display = 'none';
+            });
+        }
+    });
 
     // Handle level delete
     window.handleLevelDelete = function(deleteIndex) {
@@ -803,7 +965,7 @@
         if (!text) return '';
         const div = document.createElement('div');
         div.textContent = text;
-        return div.innerHTML;
+        return div.innerHTML.replace(/'/g, "&#39;").replace(/"/g, "&quot;");
     }
 
     // Show toast

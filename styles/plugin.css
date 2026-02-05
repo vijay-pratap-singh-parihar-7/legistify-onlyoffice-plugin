@@ -307,6 +307,10 @@ body {
     border-bottom: 1px solid #e0e0e0;
     flex-shrink: 0;
     gap: 12px;
+    position: sticky;
+    top: 0;
+    background-color: #fff;
+    z-index: 10001;
 }
 
 .drawer-header-actions {
@@ -2128,6 +2132,54 @@ body {
     padding-left: 0;
 }
 
+/* Team Member Dropdown Styles - Matches MS Editor */
+.team-member-input {
+    position: relative;
+}
+
+.team-member-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    margin-top: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.team-member-dropdown .dropdown-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 12px;
+    transition: background-color 0.2s;
+}
+
+.team-member-dropdown .dropdown-item:hover {
+    background-color: #f5f5f5;
+}
+
+.team-member-dropdown .dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.team-member-dropdown .dropdown-loading {
+    padding: 12px;
+    text-align: center;
+    color: #666;
+    font-size: 12px;
+}
+
+/* Form Container - Matches MS Editor spacing */
+.form-container {
+    padding: 16px !important;
+}
+
 .approval-trail li {
     margin: 4px 0;
 }
@@ -2280,8 +2332,8 @@ body {
 
 .g-prompt-container {
     width: 95%;
-    min-height: 38px;
-    background-color: #fff;
+    min-height: 38px !important;
+    background-color: #fff !important;
     border: 1px solid rgba(0, 0, 0, 0.2);
     border-radius: 10px;
     display: flex;
@@ -2294,13 +2346,15 @@ body {
 .prompt-input {
     width: 100%;
     background: white;
-    padding: 2px;
+    padding: 7px 13px;
     border: none;
     outline: none;
     resize: vertical;
     min-height: 38px;
     font-size: 14px;
     font-family: inherit;
+    line-height: unset;
+    border-bottom: none !important;
 }
 
 .prompt-actions {
@@ -2323,6 +2377,12 @@ body {
 
 .prompt-action-send:hover {
     background: #1a4fd9;
+}
+
+.prompt-action-send:disabled,
+.prompt-action-send[style*="gray"] {
+    background: gray !important;
+    cursor: not-allowed;
 }
 
 .formatted-response h1 {

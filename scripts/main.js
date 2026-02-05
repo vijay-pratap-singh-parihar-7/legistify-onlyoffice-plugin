@@ -556,7 +556,7 @@
                     </span>
                 `;
             } else if (drawerHeaderActions && (contentKey === 'genai' || contentKey === 'askai')) {
-                // Setup Refresh button for AI Copilot view
+                // Setup Refresh button for AI Copilot view - matches MS Editor
                 drawerHeaderActions.style.display = 'flex';
                 drawerHeaderActions.innerHTML = `
                     <div class="summary-button" id="drawer-refresh-btn" title="Refresh" onclick="if(window.syncDocumentWithAi) window.syncDocumentWithAi(true);" style="display: flex; padding: 5px; border-radius: 5px; cursor: pointer; border: 1px solid #0000003d;">
@@ -567,6 +567,15 @@
                         </svg>
                     </div>
                 `;
+                // Change close button to back arrow for AI Copilot (matches MS Editor)
+                const drawerCloseBtn = document.querySelector('.drawer-close-button');
+                if (drawerCloseBtn) {
+                    drawerCloseBtn.innerHTML = `
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                    `;
+                }
             } else if (drawerHeaderActions) {
                 // Hide header actions for other views (Approval)
                 drawerHeaderActions.style.display = 'none';
