@@ -121,7 +121,7 @@
                     ${statusBadge ? `<div style="display: flex; gap: 8px; align-items: center;">${statusBadge}</div>` : ''}
                 </div>
                 ` : ''}
-                <div id="${contentId}" style="flex: 0 1 auto; overflow: visible; padding: 16px; min-height: 0; box-sizing: border-box; width: 100%;"></div>
+                <div id="${contentId}" style="flex: 0 1 auto; overflow: visible; padding: 16px; padding-bottom: 50px; min-height: 0; box-sizing: border-box; width: 100%;"></div>
             </div>
         `;
 
@@ -158,7 +158,7 @@
             <button class="new-approval-button" onclick="showNewApprovalFormHandler()" style="margin-bottom: 16px; width: 100%; padding: 10px; background: #2667ff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
                 +New Approval
             </button>
-            <div id="${listContainerId}"></div>
+            <div id="${listContainerId}" style="padding-bottom: 40px; margin-bottom: 30px;"></div>
         `;
 
         renderApprovalList();
@@ -430,7 +430,7 @@
     // Render form (simplified - full implementation would need AsyncSelect component)
     function renderForm() {
         return `
-            <div class="form-container" style="width: 100%; padding: 12px; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; overflow: visible;">
+            <div class="form-container" style="width: 100%; padding: 12px; padding-bottom: 50px; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; overflow: visible; margin-bottom: 30px;">
                 <div style="display: flex; gap: 10px; justify-content: flex-start; align-items: center; width: 100%;">
                     <div style="flex: 1; width: 50%;">
                         <input type="text" placeholder="Clause No" value="${form.clauseNo}" onchange="handleFormInputChange('clauseNo', this.value)" style="width: 100%; padding: 8px; border: 1px solid ${errors.clauseNo ? 'red' : 'rgb(153 153 153 / 64%)'}; border-radius: 4px;" />
@@ -472,7 +472,7 @@
                     + Add Level
                 </button>
                 ${loading2 ? '<div class="loading-spinner"></div>' : `
-                    <button onclick="handleSubmitApproval()" style="align-self: center; min-width: 80px; min-height: 30px; font-size: 16px; padding: 8px 12px; font-weight: 600; background: #2667ff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    <button onclick="handleSubmitApproval()" style="align-self: center; min-width: 80px; min-height: 30px; font-size: 16px; padding: 8px 12px; font-weight: 600; background: #2667ff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-bottom: 20px;">
                         Submit
                     </button>
                 `}

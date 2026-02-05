@@ -490,6 +490,12 @@
                     featureHeaders.forEach(header => header.remove());
                 }
                 
+                // Remove feature-header from Library view (header is in drawer)
+                if (contentKey === 'library') {
+                    const featureHeaders = clonedView.querySelectorAll('.feature-header');
+                    featureHeaders.forEach(header => header.remove());
+                }
+                
                 // Update IDs in cloned view to work with drawer
                 const updateIds = (element, suffix) => {
                     if (element.id) {
@@ -532,8 +538,17 @@
                         }
                     };
                 }
+            } else if (drawerHeaderActions && contentKey === 'library') {
+                // Setup Favourites button for Library view
+                drawerHeaderActions.style.display = 'flex';
+                const isActive = window.clauseSwitch || false;
+                drawerHeaderActions.innerHTML = `
+                    <span id="drawer-favorites-btn" onclick="toggleFavoriteSwitch()" class="${isActive ? 'active-tab' : 'tab'}" style="white-space: nowrap; font-weight: 600; cursor: pointer; padding: 6.3px 12px; border-radius: 5px; color: ${isActive ? '#fff' : '#808e99'}; border: 1px solid #5c8dff; font-size: 12px; background-color: ${isActive ? '#2667ff' : 'transparent'};">
+                        Favourites
+                    </span>
+                `;
             } else if (drawerHeaderActions) {
-                // Hide header actions for other views (Library, Approval, Copilot)
+                // Hide header actions for other views (Approval, Copilot)
                 drawerHeaderActions.style.display = 'none';
             }
         }

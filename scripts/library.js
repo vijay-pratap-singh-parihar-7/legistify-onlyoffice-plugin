@@ -14,6 +14,16 @@
     let errorMessage = '';
     let clauseSwitch = false;
     let timerRef = null;
+    
+    // Expose clauseSwitch to window for drawer button state
+    Object.defineProperty(window, 'clauseSwitch', {
+        get: function() { return clauseSwitch; },
+        set: function(value) { clauseSwitch = value; },
+        configurable: true
+    });
+    
+    // Expose clauseSwitch to window for drawer button state
+    window.clauseSwitch = clauseSwitch;
 
     // Initialize library view
     window.initLibraryView = function(data) {
@@ -53,14 +63,21 @@
         if (!libraryView) return;
 
         // Check if we're in drawer (has -drawer suffix) or original view
-        const isDrawer = libraryView.id === 'library-view-drawer' || libraryView.querySelector('#library-container-drawer');
-        const containerId = isDrawer ? 'library-container-drawer' : 'library-container';
-        const listContainerId = isDrawer ? 'library-list-container-drawer' : 'library-list-container';
-        const searchInputId = isDrawer ? 'library-search-input-drawer' : 'library-search-input';
-        const searchMenuId = isDrawer ? 'search-menu-dropdown-drawer' : 'search-menu-dropdown';
+        // Also check if we're inside drawer-content
+        const isInDrawer = libraryView.closest('#drawer-content') !== null || 
+                          libraryView.id === 'library-view-drawer' || 
+                          libraryView.querySelector('#library-container-drawer');
+        const containerId = isInDrawer ? 'library-container-drawer' : 'library-container';
+        const listContainerId = isInDrawer ? 'library-list-container-drawer' : 'library-list-container';
+        const searchInputId = isInDrawer ? 'library-search-input-drawer' : 'library-search-input';
+        const searchMenuId = isInDrawer ? 'search-menu-dropdown-drawer' : 'search-menu-dropdown';
+        
+        // Don't render feature-header if in drawer (drawer has its own header)
+        const shouldShowHeader = !isInDrawer;
         
         libraryView.innerHTML = `
             <div id="${containerId}" class="library-container">
+                ${shouldShowHeader ? `
                 <div class="feature-header">
                     <div class="header-box">
                         <svg class="back-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="handleBackFromLibrary()" style="cursor: pointer;">
@@ -74,6 +91,7 @@
                         </span>
                     </div>
                 </div>
+                ` : ''}
                 <div style="flex: 1; overflow-y: auto;">
                     <div class="search-container">
                         <input type="text" id="${searchInputId}" class="search-input" value="${searchText}" placeholder="Search any ${searchType !== 'clause' ? 'sub ' : ''}clause by name" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;" />
