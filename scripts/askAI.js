@@ -104,7 +104,7 @@
                     ${isHistoryLoading ? `
                         <div class="loading-container" style="margin-top: 150px;"><div class="loading-spinner"></div></div>
                     ` : `
-                        <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding-bottom: 40px; ${historySearch?.length === 0 ? 'display: flex; flex-direction: column; justify-content: center; align-items: center;' : ''}">
+                        <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding-top: 20px; padding-bottom: 40px; padding-left: 10px; padding-right: 10px; ${historySearch?.length === 0 ? 'display: flex; flex-direction: column; justify-content: center; align-items: center;' : ''}">
                             ${historySearch?.length > 0 ? renderChatHistory() : ''}
                             ${loader ? `
                                 <div style="margin-left: 50px; margin-bottom: 20px;">
@@ -194,9 +194,9 @@
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle></svg>
                                     </button>
                                 </div>
-                                <div style="margin-left: 7px;" class="response-container" style="border-radius: 8px; position: relative; background-color: #f9f9f9; padding: 12px; width: fit-content; box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px; font-size: 12px;">
-                                    <div class="formatted-response">${formatResponse(item.response || '')}</div>
-                                    <div onclick="copyToClipboard('${escapeHtml(item.response || '')}')" class="copy-clause" style="padding: 2px 5px; border-radius: 0 0 8px 0; position: absolute; bottom: 0; right: 0; cursor: pointer;">
+                                <div style="margin-left: 7px;" class="response-container" style="border-radius: 8px; position: relative; background-color: #f9f9f9; padding: 12px; min-width: 300px; max-width: 85%; width: fit-content; box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px; font-size: 12px; word-wrap: break-word;">
+                                    <div class="formatted-response" style="line-height: 1.6; color: #333;">${formatResponse(item.response || '')}</div>
+                                    <div onclick="copyToClipboard('${escapeHtml(item.response || '')}')" class="copy-clause" style="padding: 2px 5px; border-radius: 0 0 8px 0; position: absolute; bottom: 0; right: 0; cursor: pointer; background-color: rgba(255, 255, 255, 0.8);">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                                     </div>
                                 </div>
@@ -231,20 +231,22 @@
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle></svg>
                     </button>
                 </div>
-                <div key="${item._id}" class="outer-container" style="margin-bottom: 10px; padding: 0 6px; margin-top: 12px;">
-                    <div id="syncDocResponse" class="response-container" style="border-radius: 8px; position: relative; background-color: #f9f9f9; padding: 12px; width: fit-content; box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px; font-size: 12px;">
-                        <div style="margin-top: -22px; line-height: normal;">${removeInlineStyles(noOlHtmlData)}</div>
+                <div key="${item._id}" class="outer-container" style="margin-bottom: 20px; padding: 0 6px; margin-top: 12px;">
+                    <div id="syncDocResponse" class="response-container" style="border-radius: 8px; position: relative; background-color: #f9f9f9; padding: 12px; min-width: 300px; max-width: 85%; width: fit-content; box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px; font-size: 12px; word-wrap: break-word; line-height: 1.6;">
+                        <div style="line-height: 1.6; color: #333; margin-bottom: ${Questions?.length ? '12px' : '0'};">
+                            ${formatHtmlContent(removeInlineStyles(noOlHtmlData))}
+                        </div>
                         ${Questions?.length ? Questions.map((qs, i) => `
-                            <div key="${i}" id="${i}" onclick="setPromptFromQuestion('${escapeHtml(qs)}')" class="doc-questions" style="display: flex; align-items: top; cursor: pointer;">
-                                <p style="margin-bottom: 25px; font-size: 12px;">${i + 1}</p>
-                                <p style="margin: 0;">- ${escapeHtml(qs)}</p>
+                            <div key="${i}" id="question-${i}" onclick="setPromptFromQuestion('${escapeHtml(qs)}')" class="doc-questions" style="display: flex; align-items: flex-start; cursor: pointer; margin-bottom: 12px; padding: 8px; border-radius: 4px; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f0f0f0'" onmouseout="this.style.backgroundColor='transparent'">
+                                <p style="margin: 0; margin-right: 8px; font-size: 12px; font-weight: 600; color: #2667ff; min-width: 20px;">${i + 1}.</p>
+                                <p style="margin: 0; font-size: 12px; color: #333; line-height: 1.6; flex: 1;">${escapeHtml(qs)}</p>
                             </div>
                         `).join('') : ''}
-                        <div onclick="copyToClipboard('${escapeHtml(item.response)}')" class="copy-clause" style="padding: 2px 5px; border-radius: 0 0 8px 0; position: absolute; bottom: 0; right: 0; cursor: pointer;">
+                        <div onclick="copyToClipboard('${escapeHtml(item.response)}')" class="copy-clause" style="padding: 2px 5px; border-radius: 0 0 8px 0; position: absolute; bottom: 0; right: 0; cursor: pointer; background-color: rgba(255, 255, 255, 0.8);">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                         </div>
                     </div>
-                    <p style="font-size: 11px; color: #6c757d; text-align: end; margin: 0;">
+                    <p style="font-size: 11px; color: #6c757d; text-align: end; margin: 0; margin-top: 3px;">
                         ${formatTime(item.createdAt)}
                     </p>
                 </div>
@@ -261,27 +263,30 @@
 
         lines.forEach((line, index) => {
             const trimmedLine = line.trim();
-            if (!trimmedLine) return;
+            if (!trimmedLine) {
+                if (inList) { html += '</ul>'; inList = false; }
+                return;
+            }
 
             if (trimmedLine.startsWith('# ')) {
                 if (inList) { html += '</ul>'; inList = false; }
-                html += `<h1 style="font-size: 14px;">${escapeHtml(trimmedLine.replace(/^#\s*/, ''))}</h1>`;
+                html += `<h1 style="font-size: 18px; font-weight: 700; margin: 12px 0 8px 0; line-height: 1.4;">${escapeHtml(trimmedLine.replace(/^#\s*/, ''))}</h1>`;
             } else if (trimmedLine.startsWith('## ')) {
                 if (inList) { html += '</ul>'; inList = false; }
-                html += `<h2 style="font-size: 12px;">${escapeHtml(trimmedLine.replace(/^##\s*/, ''))}</h2>`;
+                html += `<h2 style="font-size: 16px; font-weight: 700; margin: 10px 0 6px 0; line-height: 1.4;">${escapeHtml(trimmedLine.replace(/^##\s*/, ''))}</h2>`;
             } else if (trimmedLine.startsWith('### ')) {
                 if (inList) { html += '</ul>'; inList = false; }
-                html += `<h3 style="font-size: 12px;">${escapeHtml(trimmedLine.replace(/^###\s*/, ''))}</h3>`;
+                html += `<h3 style="font-size: 14px; font-weight: 600; margin: 8px 0 4px 0; line-height: 1.4;">${escapeHtml(trimmedLine.replace(/^###\s*/, ''))}</h3>`;
             } else if (trimmedLine.startsWith('#### ')) {
                 if (inList) { html += '</ul>'; inList = false; }
-                html += `<h4 style="font-size: 12px;">${escapeHtml(trimmedLine.replace(/^####\s*/, ''))}</h4>`;
+                html += `<h4 style="font-size: 12px; font-weight: 600; margin: 6px 0 4px 0; line-height: 1.4;">${escapeHtml(trimmedLine.replace(/^####\s*/, ''))}</h4>`;
             } else if (/^\d+\.\s+/.test(trimmedLine) || /^-\s+/.test(trimmedLine)) {
-                if (!inList) { html += '<ul style="margin-left: -17px;">'; inList = true; }
+                if (!inList) { html += '<ul style="margin: 8px 0 8px 20px; padding-left: 0; list-style-type: disc;">'; inList = true; }
                 const itemText = trimmedLine.replace(/^\d+\.\s*/, '').replace(/^-\s*/, '').replace(/\*/g, '').trim();
-                html += `<li style="font-size: 12px; margin-bottom: 0; margin-top: -8px;">${escapeHtml(itemText)}</li>`;
+                html += `<li style="font-size: 12px; margin: 4px 0; line-height: 1.6; color: #333;">${escapeHtml(itemText)}</li>`;
             } else {
                 if (inList) { html += '</ul>'; inList = false; }
-                html += `<p style="font-size: 12px; margin-bottom: 0; margin-top: -8px;">${escapeHtml(trimmedLine)}</p>`;
+                html += `<p style="font-size: 12px; margin: 6px 0; line-height: 1.6; color: #333;">${escapeHtml(trimmedLine)}</p>`;
             }
         });
 

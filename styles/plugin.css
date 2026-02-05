@@ -2200,6 +2200,10 @@ body {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
+    padding-top: 20px;
+    padding-bottom: 40px;
+    padding-left: 10px;
+    padding-right: 10px;
 }
 
 .outer-container {
@@ -2222,9 +2226,13 @@ body {
     position: relative;
     background-color: #f9f9f9;
     padding: 12px;
+    min-width: 300px;
+    max-width: 85%;
     width: fit-content;
     box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
     font-size: 12px;
+    word-wrap: break-word;
+    line-height: 1.6;
 }
 
 .copy-clause {
