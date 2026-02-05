@@ -484,6 +484,12 @@
                     featureHeaders.forEach(header => header.remove());
                 }
                 
+                // Remove feature-header from Clause Approval view (header is in drawer)
+                if (contentKey === 'clauseApproval') {
+                    const featureHeaders = clonedView.querySelectorAll('.feature-header');
+                    featureHeaders.forEach(header => header.remove());
+                }
+                
                 // Update IDs in cloned view to work with drawer
                 const updateIds = (element, suffix) => {
                     if (element.id) {

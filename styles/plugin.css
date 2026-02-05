@@ -313,6 +313,11 @@ body {
     font-size: 16px;
     font-weight: 650;
     color: #212529;
+    text-align: center;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .drawer-close-button {
@@ -2011,11 +2016,13 @@ body {
 /* Approval Styles - Matches MS Editor ClauseApproval.js */
 .clause-approval-container {
     position: relative;
-    height: 100vh;
-    overflow: hidden;
+    min-height: 0;
+    height: auto;
+    overflow: visible;
     margin-top: -10px;
     display: flex;
     flex-direction: column;
+    flex: 1;
 }
 
 .approval-card {

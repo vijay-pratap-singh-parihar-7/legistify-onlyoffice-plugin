@@ -29,7 +29,15 @@
 
     // Initialize approval view
     window.initApprovalView = function() {
-        const approvalView = document.getElementById('approval-view');
+        // Check for drawer view first (cloned), then original view
+        let approvalView = document.getElementById('clauseApproval-view-drawer') || document.getElementById('clauseApproval-view');
+        if (!approvalView) {
+            // Try to find by container
+            const container = document.getElementById('clauseApproval-container-drawer') || document.getElementById('clauseApproval-container');
+            if (container) {
+                approvalView = container;
+            }
+        }
         if (!approvalView) return;
 
         const pluginData = window.getPluginData();
@@ -44,11 +52,59 @@
 
     // Render approval view - matches MS Editor
     function renderApprovalView() {
-        const approvalView = document.getElementById('approval-view');
+        // Check for drawer view first (cloned), then original view
+        let approvalView = document.getElementById('clauseApproval-view-drawer') || document.getElementById('clauseApproval-view');
+        if (!approvalView) {
+            // Try to find by container
+            const container = document.getElementById('clauseApproval-container-drawer') || document.getElementById('clauseApproval-container');
+            if (container) {
+                approvalView = container;
+            }
+        }
         if (!approvalView) return;
+        
+        // Check if we're in drawer (has -drawer suffix) or original view
+        const isDrawer = approvalView.id === 'clauseApproval-view-drawer' || approvalView.id === 'clauseApproval-container-drawer';
+        const containerId = isDrawer ? 'clauseApproval-container-drawer' : 'clauseApproval-container';
+        const contentId = isDrawer ? 'approval-content-drawer' : 'approval-content';
 
+        // Don't render feature-header if in drawer (drawer has its own header)
+        const shouldShowHeader = !isDrawer;
+        
+        // Build action buttons HTML
+        const actionButtons = !selectedClause ? `
+            ${showRemindAction() ? `
+                <div title="Send Reminder" class="start-clause-button" onclick="sendApprovalsReminder()" style="padding: 4px 5px; cursor: pointer; border-radius: 5px; background-color: #0f6cbd; color: white; display: flex; align-items: center;">
+                    ${loaderFor.isReminderLoading ? '<div class="loading-spinner-small"></div>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"></path></svg>'}
+                </div>
+            ` : ''}
+            ${showDownloadReportAction() ? `
+                <div title="Download Report" class="start-clause-button" onclick="downloadApprovalMatrix()" style="padding: 4px 5px; cursor: pointer; border-radius: 5px; background-color: #0f6cbd; color: white; display: flex; align-items: center;">
+                    ${loaderFor.downloadFileLoading ? '<div class="loading-spinner-small"></div>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>'}
+                </div>
+            ` : ''}
+            ${showStartClauseAction() ? `
+                <div title="Start Clause Approvals" class="start-clause-button" onclick="startClauseApprovals()" style="padding: 4px 5px; cursor: pointer; border-radius: 5px; background-color: #0f6cbd; color: white; display: flex; align-items: center;">
+                    ${loaderFor.startApprovalLoading ? '<div class="loading-spinner-small"></div>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>'}
+                </div>
+            ` : ''}
+        ` : '';
+        
+        // Build status badge HTML
+        const statusBadge = selectedClause ? `
+            ${getStatus(selectedClause[0]?.approvalWorkflowStatus) === 'Rejected' ? `
+                <div class="edit-clause-button" onclick="handleEditClause()" style="padding: 4px 5px; cursor: pointer; border-radius: 5px; background-color: #0f6cbd; color: white; display: flex; align-items: center;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                </div>
+            ` : ''}
+            <span class="status-badge ${getStatusClass(selectedClause[0]?.approvalWorkflowStatus)}">
+                ${getStatus(selectedClause[0]?.approvalWorkflowStatus)}
+            </span>
+        ` : '';
+        
         approvalView.innerHTML = `
-            <div class="clause-approval-container" style="position: relative; height: 100vh; overflow: hidden; margin-top: -10px; display: flex; flex-direction: column;">
+            <div id="${containerId}" class="clause-approval-container" style="position: relative; min-height: 0; height: auto; overflow: visible; margin-top: ${isDrawer ? '0' : '-10px'}; display: flex; flex-direction: column;">
+                ${shouldShowHeader ? `
                 <div class="feature-header">
                     <div style="width: 100%; display: flex; justify-content: space-between;">
                         <div class="header-box">
@@ -57,40 +113,17 @@
                             </svg>
                             <p class="summary-text">Clause Approval</p>
                         </div>
-                        ${!selectedClause ? `
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                ${showRemindAction() ? `
-                                    <div title="Send Reminder" class="start-clause-button" onclick="sendApprovalsReminder()" style="padding: 4px 5px; cursor: pointer; border-radius: 5px; background-color: #0f6cbd; color: white; display: flex; align-items: center;">
-                                        ${loaderFor.isReminderLoading ? '<div class="loading-spinner-small"></div>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"></path></svg>'}
-                                    </div>
-                                ` : ''}
-                                ${showDownloadReportAction() ? `
-                                    <div title="Download Report" class="start-clause-button" onclick="downloadApprovalMatrix()" style="padding: 4px 5px; cursor: pointer; border-radius: 5px; background-color: #0f6cbd; color: white; display: flex; align-items: center;">
-                                        ${loaderFor.downloadFileLoading ? '<div class="loading-spinner-small"></div>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>'}
-                                    </div>
-                                ` : ''}
-                                ${showStartClauseAction() ? `
-                                    <div title="Start Clause Approvals" class="start-clause-button" onclick="startClauseApprovals()" style="padding: 4px 5px; cursor: pointer; border-radius: 5px; background-color: #0f6cbd; color: white; display: flex; align-items: center;">
-                                        ${loaderFor.startApprovalLoading ? '<div class="loading-spinner-small"></div>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>'}
-                                    </div>
-                                ` : ''}
-                            </div>
-                        ` : ''}
+                        ${actionButtons ? `<div style="display: flex; align-items: center; gap: 8px;">${actionButtons}</div>` : ''}
                     </div>
-                    ${selectedClause ? `
-                        <div style="display: flex; gap: 8px; align-items: center;">
-                            ${getStatus(selectedClause[0]?.approvalWorkflowStatus) === 'Rejected' ? `
-                                <div class="edit-clause-button" onclick="handleEditClause()" style="padding: 4px 5px; cursor: pointer; border-radius: 5px; background-color: #0f6cbd; color: white; display: flex; align-items: center;">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                                </div>
-                            ` : ''}
-                            <span class="status-badge ${getStatusClass(selectedClause[0]?.approvalWorkflowStatus)}">
-                                ${getStatus(selectedClause[0]?.approvalWorkflowStatus)}
-                            </span>
-                        </div>
-                    ` : ''}
+                    ${statusBadge ? `<div style="display: flex; gap: 8px; align-items: center;">${statusBadge}</div>` : ''}
                 </div>
-                <div id="approval-content" style="flex: 1; overflow-y: auto; padding: 16px;"></div>
+                ` : ''}
+                ${!shouldShowHeader && (actionButtons || statusBadge) ? `
+                    <div style="display: flex; justify-content: flex-end; align-items: center; gap: 8px; padding: 8px 16px; border-bottom: 1px solid #e0e0e0; flex-shrink: 0;">
+                        ${actionButtons || statusBadge}
+                    </div>
+                ` : ''}
+                <div id="${contentId}" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding: 16px; min-height: 0;"></div>
             </div>
         `;
 
@@ -99,7 +132,8 @@
 
     // Update approval content
     function updateApprovalContent() {
-        const content = document.getElementById('approval-content');
+        // Check for drawer content first, then original
+        const content = document.getElementById('approval-content-drawer') || document.getElementById('approval-content');
         if (!content) return;
 
         if (loading) {
@@ -117,12 +151,16 @@
             return;
         }
 
+        // Check if we're in drawer to use correct container ID
+        const isDrawer = content.id === 'approval-content-drawer';
+        const listContainerId = isDrawer ? 'approval-list-container-drawer' : 'approval-list-container';
+        
         // Render list view
         content.innerHTML = `
             <button class="new-approval-button" onclick="showNewApprovalFormHandler()" style="margin-bottom: 16px; width: 100%; padding: 10px; background: #2667ff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
                 +New Approval
             </button>
-            <div id="approval-list-container"></div>
+            <div id="${listContainerId}"></div>
         `;
 
         renderApprovalList();
@@ -130,7 +168,8 @@
 
     // Render approval list
     function renderApprovalList() {
-        const container = document.getElementById('approval-list-container');
+        // Check for drawer container first, then original
+        const container = document.getElementById('approval-list-container-drawer') || document.getElementById('approval-list-container');
         if (!container) return;
 
         if (!Array.isArray(clauseApprovalsList) || clauseApprovalsList.length === 0) {
