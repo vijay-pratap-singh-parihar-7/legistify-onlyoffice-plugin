@@ -339,13 +339,21 @@
         const backendUrl = window.getBackendUrl();
         const accessToken = window.getAccessToken();
         
-        if (!pluginData.contractId || !accessToken) {
-            showToast('Missing contract details', 'error');
-                return;
-            }
+        console.log('🔍 Running playbook:', { playbookId, contractId: pluginData?.contractId, backendUrl, hasToken: !!accessToken });
+        
+        if (!pluginData?.contractId || !accessToken) {
+            const errorMsg = !pluginData?.contractId ? 'Missing contract ID' : 'Missing access token';
+            console.error('❌', errorMsg, pluginData);
+            showToast(errorMsg, 'error');
+            return;
+        }
 
         const playbook = playbooks.find(pb => pb._id === playbookId);
-        if (!playbook) return;
+        if (!playbook) {
+            console.error('❌ Playbook not found:', playbookId);
+            showToast('Playbook not found', 'error');
+            return;
+        }
 
         selectedPlaybook = playbook;
         runningPlaybook = playbookId;
@@ -379,6 +387,8 @@
             }
 
             const url = `${backendUrl}/ai-assistant/run-playbook-stream?${params.toString()}`;
+            console.log('📡 Fetching:', url);
+            
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
@@ -387,6 +397,8 @@
                     'x-auth-token': accessToken
                 }
             });
+
+            console.log('📥 Response status:', response.status, response.ok);
 
             if (!response.ok) {
                 const text = await response.text();
@@ -397,6 +409,7 @@
                 } catch {
                     // non json
                 }
+                console.error('❌ API Error:', errorMsg);
                 throw new Error(errorMsg);
             }
 
@@ -405,14 +418,22 @@
                 throw new Error('Streaming is not supported in this environment.');
             }
 
-                const decoder = new TextDecoder();
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
+            const decoder = new TextDecoder();
+            let receivedAnyData = false;
+            
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) {
+                    console.log('✅ Stream done. Buffer length:', streamBuffer.length);
+                    break;
+                }
                 if (!value) continue;
                 
                 const chunk = decoder.decode(value, { stream: true });
                 streamBuffer += chunk;
+                receivedAnyData = true;
+                
+                console.log('📦 Received chunk:', chunk.length, 'bytes. Total buffer:', streamBuffer.length);
 
                 if (streamHasEndMarker) {
                     continue;
@@ -420,6 +441,7 @@
 
                 const partial = parsePlaybookStreamPayload(streamBuffer);
                 if (partial?.aiPlaybookResponse?.length) {
+                    console.log('✅ Parsed partial results:', partial.aiPlaybookResponse.length, 'items');
                     const snapshotKey = JSON.stringify(partial.aiPlaybookResponse);
                     if (snapshotKey === lastStreamSnapshot) {
                         continue;
@@ -434,13 +456,18 @@
                     if (playbookView) {
                         playbookView.style.display = 'block';
                     }
+                } else if (partial) {
+                    console.log('⚠️ Partial parsed but no aiPlaybookResponse:', partial);
                 }
             }
 
             const remaining = decoder.decode();
             if (remaining) {
                 streamBuffer += remaining;
+                console.log('📦 Remaining decoded:', remaining.length, 'bytes');
             }
+            
+            console.log('📊 Final buffer length:', streamBuffer.length, 'Has end marker:', streamHasEndMarker);
         } catch (error) {
             console.error('Playbook stream error:', error);
             errorMessage = error?.message || 'Failed to run playbook';
@@ -455,9 +482,13 @@
             
             // Only try to parse final payload if there was no error
             if (!errorMessage && streamBuffer) {
+                console.log('🔍 Parsing final payload. Buffer:', streamBuffer.substring(0, 500));
                 const finalPayload = parsePlaybookStreamPayload(streamBuffer, { includePostMarker: true });
+                console.log('📊 Final payload:', finalPayload);
+                
                 if (finalPayload && finalPayload.aiPlaybookResponse && finalPayload.aiPlaybookResponse.length > 0) {
                     playbookResults = finalPayload;
+                    console.log('✅ Final results:', finalPayload.aiPlaybookResponse.length, 'items');
                     // Ensure playbook view is visible
                     const playbookView = document.getElementById('playbook-view');
                     if (playbookView) {
@@ -466,7 +497,12 @@
                     updateResultsView();
                     showToast('Playbook executed successfully!', 'success');
                 } else if (!errorMessage) {
-                    errorMessage = 'No results received from playbook execution';
+                    // Log what we got for debugging
+                    console.error('❌ No valid results. Payload:', finalPayload);
+                    console.error('❌ Buffer content:', streamBuffer.substring(0, 1000));
+                    errorMessage = streamBuffer.length > 0 
+                        ? 'Unable to parse playbook response. Check console for details.'
+                        : 'No data received from playbook execution';
                     // Ensure playbook view is visible even for errors
                     const playbookView = document.getElementById('playbook-view');
                     if (playbookView) {
@@ -476,12 +512,22 @@
                     showToast(errorMessage, 'error');
                 }
             } else if (errorMessage) {
+                console.error('❌ Error occurred:', errorMessage);
                 // Ensure error is displayed and view is visible
                 const playbookView = document.getElementById('playbook-view');
                 if (playbookView) {
                     playbookView.style.display = 'block';
                 }
                 updateResultsView();
+            } else if (!streamBuffer || streamBuffer.length === 0) {
+                console.error('❌ No stream buffer received');
+                errorMessage = 'No data received from server';
+                const playbookView = document.getElementById('playbook-view');
+                if (playbookView) {
+                    playbookView.style.display = 'block';
+                }
+                updateResultsView();
+                showToast(errorMessage, 'error');
             }
         }
     };
@@ -489,7 +535,10 @@
     // Parse playbook stream payload - matches MS Editor
     function parsePlaybookStreamPayload(raw, options = {}) {
         const { includePostMarker = false } = options;
-        if (!raw) return null;
+        if (!raw || !raw.trim()) {
+            console.log('⚠️ Empty raw payload');
+            return null;
+        }
 
         let working = raw.replace(/\u0000/g, '');
         const markerIndex = working.indexOf(STREAM_END_MARKER);
@@ -502,7 +551,10 @@
             }
         }
 
-        if (!working.trim()) return null;
+        if (!working.trim()) {
+            console.log('⚠️ Working payload is empty after processing');
+            return null;
+        }
 
         const sanitizedLines = working
             .split(/\r?\n/)
@@ -512,42 +564,96 @@
             .map((line) => (line.startsWith('data:') ? line.replace(/^data:\s*/, '') : line));
 
         const sanitizedPayload = sanitizedLines.join('\n');
+        console.log('📝 Sanitized payload (first 500 chars):', sanitizedPayload.substring(0, 500));
+        
+        // Try to match JSON objects - be more flexible with matching
         const matches = sanitizedPayload.match(/\{[\s\S]*?\}/g) || [];
-        if (!matches.length) return null;
+        if (!matches.length) {
+            console.log('⚠️ No JSON matches found in payload');
+            // Try to parse the entire payload as JSON
+            try {
+                const fullJson = JSON.parse(sanitizedPayload);
+                if (fullJson) {
+                    console.log('✅ Parsed as full JSON');
+                    return fullJson;
+                }
+            } catch (e) {
+                console.log('⚠️ Could not parse as full JSON:', e.message);
+            }
+            return null;
+        }
+        
+        console.log('📦 Found', matches.length, 'JSON matches');
 
         const parsedObjects = [];
-        matches.forEach((snippet) => {
+        matches.forEach((snippet, index) => {
             try {
-                parsedObjects.push(JSON.parse(snippet));
-            } catch {
-                // ignore malformed json fragment
+                const parsed = JSON.parse(snippet);
+                parsedObjects.push(parsed);
+                if (index === 0) {
+                    console.log('✅ First parsed object:', Object.keys(parsed));
+                }
+            } catch (e) {
+                console.log('⚠️ Failed to parse snippet', index, ':', e.message);
+                // Try to extract JSON from the snippet if it's wrapped
+                try {
+                    // Sometimes JSON might be wrapped in extra text
+                    const jsonMatch = snippet.match(/\{[\s\S]*\}/);
+                    if (jsonMatch) {
+                        const parsed = JSON.parse(jsonMatch[0]);
+                        parsedObjects.push(parsed);
+                    }
+                } catch (e2) {
+                    // ignore malformed json fragment
+                }
             }
         });
 
-        if (!parsedObjects.length) return null;
+        if (!parsedObjects.length) {
+            console.log('⚠️ No parsed objects after processing matches');
+            return null;
+        }
+        
+        console.log('✅ Parsed', parsedObjects.length, 'objects');
 
         let tokenDetails = null;
         const analysisEntries = [];
 
-        parsedObjects.forEach((obj) => {
+        parsedObjects.forEach((obj, idx) => {
             if (obj.token_details || obj.tokenDetails) {
                 tokenDetails = obj.token_details || obj.tokenDetails;
                 return;
             }
             if (Array.isArray(obj.aiPlaybookResponse)) {
+                console.log(`✅ Found aiPlaybookResponse array with ${obj.aiPlaybookResponse.length} items`);
                 analysisEntries.push(...obj.aiPlaybookResponse);
                 if (!tokenDetails && obj.token_details) tokenDetails = obj.token_details;
                 return;
             }
             if (Array.isArray(obj.data)) {
+                console.log(`✅ Found data array with ${obj.data.length} items`);
                 analysisEntries.push(...obj.data);
                 if (!tokenDetails && obj.token_details) tokenDetails = obj.token_details;
                 return;
             }
-            analysisEntries.push(obj);
+            // Check if it's a single entry object
+            if (obj.Rule || obj.Status || obj.Conclusion || obj.Evaluation) {
+                console.log(`✅ Found single entry object (Rule: ${obj.Rule?.substring(0, 50)}...)`);
+                analysisEntries.push(obj);
+                return;
+            }
+            // Log what we're skipping
+            if (idx < 3) {
+                console.log(`⚠️ Object ${idx} keys:`, Object.keys(obj));
+            }
         });
 
-        if (!analysisEntries.length) return null;
+        if (!analysisEntries.length) {
+            console.log('⚠️ No analysis entries found after processing objects');
+            return null;
+        }
+        
+        console.log('✅ Total analysis entries:', analysisEntries.length);
 
         const statusCounts = { met: 0, notMet: 0, NA: 0 };
         const statusMapping = {
