@@ -377,6 +377,9 @@
         activeContent = contentKey;
         updateContentView();
     }
+    
+    // Expose setActiveContent globally for playbook.js
+    window.setActiveContent = setActiveContent;
 
     // Update content view based on activeContent
     function updateContentView() {

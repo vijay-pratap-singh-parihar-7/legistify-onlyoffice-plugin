@@ -361,6 +361,14 @@
         streamHasEndMarker = false;
         lastStreamSnapshot = null;
 
+        // Ensure Playbook tab is active and view is visible
+        if (window.handleTabChange) {
+            window.handleTabChange('Playbook');
+        }
+        if (window.setActiveContent) {
+            window.setActiveContent('playbook');
+        }
+
         // Render results view
         renderResultsView();
 
@@ -418,7 +426,14 @@
                     }
                     lastStreamSnapshot = snapshotKey;
                     playbookResults = partial;
+                    // Force update the view immediately
                     updateResultsView();
+                    
+                    // Ensure playbook view is visible
+                    const playbookView = document.getElementById('playbook-view');
+                    if (playbookView) {
+                        playbookView.style.display = 'block';
+                    }
                 }
             }
 
@@ -429,23 +444,44 @@
         } catch (error) {
             console.error('Playbook stream error:', error);
             errorMessage = error?.message || 'Failed to run playbook';
+            isStreamingPlaybook = false;
+            runningPlaybook = null;
             showToast(errorMessage, 'error');
-            showResultsView = false;
-            playbookResults = null;
-            filteredPlaybook = [];
-            activeFilter = 'all';
+            // Update results view to show error
+            updateResultsView();
         } finally {
             isStreamingPlaybook = false;
             runningPlaybook = null;
             
-            const finalPayload = parsePlaybookStreamPayload(streamBuffer, { includePostMarker: true });
-            if (finalPayload) {
-                playbookResults = finalPayload;
+            // Only try to parse final payload if there was no error
+            if (!errorMessage && streamBuffer) {
+                const finalPayload = parsePlaybookStreamPayload(streamBuffer, { includePostMarker: true });
+                if (finalPayload && finalPayload.aiPlaybookResponse && finalPayload.aiPlaybookResponse.length > 0) {
+                    playbookResults = finalPayload;
+                    // Ensure playbook view is visible
+                    const playbookView = document.getElementById('playbook-view');
+                    if (playbookView) {
+                        playbookView.style.display = 'block';
+                    }
+                    updateResultsView();
+                    showToast('Playbook executed successfully!', 'success');
+                } else if (!errorMessage) {
+                    errorMessage = 'No results received from playbook execution';
+                    // Ensure playbook view is visible even for errors
+                    const playbookView = document.getElementById('playbook-view');
+                    if (playbookView) {
+                        playbookView.style.display = 'block';
+                    }
+                    updateResultsView();
+                    showToast(errorMessage, 'error');
+                }
+            } else if (errorMessage) {
+                // Ensure error is displayed and view is visible
+                const playbookView = document.getElementById('playbook-view');
+                if (playbookView) {
+                    playbookView.style.display = 'block';
+                }
                 updateResultsView();
-                showToast('Playbook executed successfully!', 'success');
-            } else if (!errorMessage) {
-                errorMessage = 'Unable to parse AI playbook response';
-                showToast(errorMessage, 'error');
             }
         }
     };
@@ -576,7 +612,10 @@
     // Render results view - matches MS Editor/OnlyOffice exactly
     function renderResultsView() {
         const playbookView = document.getElementById('playbook-view');
-        if (!playbookView) return;
+        if (!playbookView) {
+            console.error('playbook-view element not found');
+            return;
+        }
         
         // Ensure playbook view is visible
         playbookView.style.display = 'block';
@@ -587,6 +626,11 @@
             if (window.handleTabChange) {
                 window.handleTabChange('Playbook');
             }
+        }
+
+        // Ensure activeContent is set to playbook
+        if (window.setActiveContent) {
+            window.setActiveContent('playbook');
         }
 
         const playbook = playbooks.find(pb => pb._id === runningPlaybook) || selectedPlaybook;
@@ -607,7 +651,15 @@
             </div>
         `;
 
+        // Force update the view to show loading state
         updateResultsView();
+        
+        // Double-check visibility
+        setTimeout(() => {
+            if (playbookView) {
+                playbookView.style.display = 'block';
+            }
+        }, 100);
     }
 
     // Update results view
@@ -636,11 +688,11 @@
 
         // Update streaming indicator - matches MS Editor/OnlyOffice exactly
         if (streamingIndicator) {
-            const streamingPlaybookMeta = runningPlaybook && !hasFinalData
+            const streamingPlaybookMeta = runningPlaybook
                 ? playbooks.find((pb) => pb._id === runningPlaybook) || selectedPlaybook
                 : selectedPlaybook;
             const streamingTotalCount = streamingPlaybookMeta?.rules?.length || 0;
-            const streamingCompletedCount = playbookResults?.aiPlaybookResponse?.length || 0;
+            const streamingCompletedCount = playBook.length || 0;
             // Only show loader after first chunk of data arrives
             const showStreamingIndicator = isStreamingPlaybook && streamingTotalCount > 0 && playBook.length > 0;
             const streamingProgressLabel =
@@ -689,7 +741,9 @@
                     }
                 }
             } else {
-                resultsContent.innerHTML = '<p class="empty-state-text" style="text-align: center; color: #6c757d; margin: 40px 0;">No playbook results available</p>';
+                // Show empty state or error message
+                const errorMsg = errorMessage || 'No playbook results available';
+                resultsContent.innerHTML = `<p class="empty-state-text" style="text-align: center; color: #6c757d; margin: 40px 0;">${escapeHtml(errorMsg)}</p>`;
             }
             return;
         }
