@@ -566,51 +566,85 @@
         const sanitizedPayload = sanitizedLines.join('\n');
         console.log('📝 Sanitized payload (first 500 chars):', sanitizedPayload.substring(0, 500));
         
-        // Try to match JSON objects - be more flexible with matching
-        const matches = sanitizedPayload.match(/\{[\s\S]*?\}/g) || [];
-        if (!matches.length) {
-            console.log('⚠️ No JSON matches found in payload');
-            // Try to parse the entire payload as JSON
-            try {
-                const fullJson = JSON.parse(sanitizedPayload);
-                if (fullJson) {
-                    console.log('✅ Parsed as full JSON');
-                    return fullJson;
-                }
-            } catch (e) {
-                console.log('⚠️ Could not parse as full JSON:', e.message);
+        // Try to parse the entire payload as JSON first (in case it's a single object or array)
+        try {
+            const fullJson = JSON.parse(sanitizedPayload);
+            if (fullJson) {
+                console.log('✅ Parsed as full JSON');
+                return fullJson;
             }
-            return null;
+        } catch (e) {
+            // Not a single JSON object, continue with parsing individual objects
         }
         
-        console.log('📦 Found', matches.length, 'JSON matches');
-
+        // Extract complete JSON objects from the stream
+        // The stream sends individual JSON objects, possibly concatenated or on separate lines
         const parsedObjects = [];
-        matches.forEach((snippet, index) => {
-            try {
-                const parsed = JSON.parse(snippet);
-                parsedObjects.push(parsed);
-                if (index === 0) {
-                    console.log('✅ First parsed object:', Object.keys(parsed));
-                }
-            } catch (e) {
-                console.log('⚠️ Failed to parse snippet', index, ':', e.message);
-                // Try to extract JSON from the snippet if it's wrapped
-                try {
-                    // Sometimes JSON might be wrapped in extra text
-                    const jsonMatch = snippet.match(/\{[\s\S]*\}/);
-                    if (jsonMatch) {
-                        const parsed = JSON.parse(jsonMatch[0]);
-                        parsedObjects.push(parsed);
-                    }
-                } catch (e2) {
-                    // ignore malformed json fragment
-                }
+        let currentJson = '';
+        let braceCount = 0;
+        let inString = false;
+        let escapeNext = false;
+        
+        for (let i = 0; i < sanitizedPayload.length; i++) {
+            const char = sanitizedPayload[i];
+            
+            if (escapeNext) {
+                escapeNext = false;
+                currentJson += char;
+                continue;
             }
-        });
-
+            
+            if (char === '\\') {
+                escapeNext = true;
+                currentJson += char;
+                continue;
+            }
+            
+            if (char === '"' && !escapeNext) {
+                inString = !inString;
+                currentJson += char;
+                continue;
+            }
+            
+            if (!inString) {
+                if (char === '{') {
+                    if (braceCount === 0) {
+                        currentJson = '{';
+                    } else {
+                        currentJson += char;
+                    }
+                    braceCount++;
+                } else if (char === '}') {
+                    currentJson += char;
+                    braceCount--;
+                    if (braceCount === 0) {
+                        // Complete JSON object found
+                        try {
+                            const parsed = JSON.parse(currentJson);
+                            parsedObjects.push(parsed);
+                            if (parsedObjects.length === 1) {
+                                console.log('✅ First parsed object:', Object.keys(parsed));
+                            }
+                            currentJson = '';
+                        } catch (e) {
+                            console.log('⚠️ Failed to parse complete JSON object:', e.message);
+                            currentJson = '';
+                        }
+                    }
+                } else {
+                    if (braceCount > 0) {
+                        currentJson += char;
+                    }
+                }
+            } else {
+                currentJson += char;
+            }
+        }
+        
+        console.log('📦 Found', parsedObjects.length, 'complete JSON objects');
+        
         if (!parsedObjects.length) {
-            console.log('⚠️ No parsed objects after processing matches');
+            console.log('⚠️ No complete JSON objects found');
             return null;
         }
         
