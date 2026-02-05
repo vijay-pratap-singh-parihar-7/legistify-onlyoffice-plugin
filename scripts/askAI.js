@@ -27,11 +27,29 @@
         
         if (!askAIView) return;
 
+        // Check if we have required data
+        const pluginData = window.getPluginData();
+        const accessToken = window.getAccessToken();
+        
+        if (!pluginData || !pluginData.contractId || !accessToken || accessToken === "null") {
+            console.error('Missing required data for AI Copilot:', { contractId: pluginData?.contractId, hasToken: !!accessToken });
+            isHistoryLoading = false;
+            renderAskAIView();
+            return;
+        }
+
+        // Reset state
+        historySearch = [];
+        totalCount = 0;
+        currentPage = 1;
+        isHistoryLoading = true;
+        errorMessage = '';
+        
         // Render Ask AI view structure
         renderAskAIView();
         
-        // Fetch chat history
-        fetchHistory();
+        // Fetch chat history with first=true
+        fetchHistory(null, true);
     };
 
     // Render Ask AI view - matches MS Editor
@@ -50,46 +68,40 @@
                     ${isHistoryLoading ? `
                         <div class="loading-container" style="margin-top: 150px;"><div class="loading-spinner"></div></div>
                     ` : `
-                        ${historySearch?.length > 0 ? `
-                            <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding-bottom: 40px;">
-                                ${renderChatHistory()}
-                                ${loader ? `
-                                    <div style="margin-left: 50px; margin-bottom: 20px;">
-                                        <div style="display: flex; justify-content: center; align-items: center;">
-                                            <div style="margin-right: 7px; border-radius: 8px 8px 0 8px; margin-left: auto; background-color: #eff4ff; padding: 5px 10px; width: fit-content; box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;">
-                                                <p style="font-size: 12px; margin: 0;">${escapeHtml(prompt)}</p>
-                                            </div>
-                                            <div style="width: 32px; height: 32px; border-radius: 50%; background: #2667ff; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">
-                                                ${getUserInitials()}
-                                            </div>
+                        <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding-bottom: 40px; ${historySearch?.length === 0 ? 'display: flex; flex-direction: column; justify-content: center; align-items: center;' : ''}">
+                            ${historySearch?.length > 0 ? renderChatHistory() : ''}
+                            ${loader ? `
+                                <div style="margin-left: 50px; margin-bottom: 20px;">
+                                    <div style="display: flex; justify-content: center; align-items: center;">
+                                        <div style="margin-right: 7px; border-radius: 8px 8px 0 8px; margin-left: auto; background-color: #eff4ff; padding: 5px 10px; width: fit-content; box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;">
+                                            <p style="font-size: 12px; margin: 0;">${escapeHtml(prompt)}</p>
                                         </div>
-                                        <p style="margin-right: 34px; margin-top: 3px; font-size: 11px; color: #6c757d; text-align: end;">
-                                            ${formatTime(new Date())}
-                                        </p>
+                                        <div style="width: 32px; height: 32px; border-radius: 50%; background: #2667ff; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">
+                                            ${getUserInitials()}
+                                        </div>
                                     </div>
-                                ` : ''}
-                                <div id="bottom-ref"></div>
-                            </div>
-                            <div class="prompt-outer-container" style="width: 100%; background-color: #fff; z-index: 10; max-width: 49.7rem; display: flex; align-items: center; position: sticky; bottom: 0; margin: 0 auto; padding-top: 12px;">
-                                <div class="g-prompt-container" style="width: 95%; min-height: 38px; background-color: #fff; border: 1px solid rgba(0, 0, 0, 0.2); border-radius: 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);">
-                                    <textarea id="prompt-input-ref" class="prompt-input" value="${prompt}" oninput="handlePromptInput(event)" placeholder="Ask any questions about this agreement" style="width: 100%; background: white; padding: 7px 13px; border-bottom: none; border: none; outline: none; resize: vertical; min-height: 38px; font-size: 14px; font-family: inherit; line-height: unset;"></textarea>
+                                    <p style="margin-right: 34px; margin-top: 3px; font-size: 11px; color: #6c757d; text-align: end;">
+                                        ${formatTime(new Date())}
+                                    </p>
                                 </div>
-                                <div class="prompt-actions" style="padding-left: 10px; padding-right: 5px;">
-                                    <label class="prompt-action-send" onclick="handleGenerate()" style="border-radius: 10px; padding: 8px; cursor: pointer; margin: 0; display: flex; align-items: center; justify-content: center; background: ${error ? 'gray' : '#2667FF'}; color: #fff;">
-                                        ${loader ? '<div class="loading-spinner-small"></div>' : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>'}
-                                    </label>
-                                </div>
-                            </div>
-                            ${prompt?.length >= 2000 ? `
-                                <p style="font-size: 12px; color: ${error ? 'red' : 'black'}; margin: 0; color: #6c757d; text-align: end; padding-right: 1.5rem;">
-                                    Maximum Limit Reached (2000 words only)
-                                </p>
                             ` : ''}
-                        ` : `
-                            <div style="display: flex; flex-direction: column; flex: 1; justify-content: center; align-items: center; padding: 20px;">
-                                <p style="color: #666; font-size: 14px;">No chat history. Start a conversation by asking a question.</p>
+                            <div id="bottom-ref"></div>
+                        </div>
+                        <div class="prompt-outer-container" style="width: 100%; background-color: #fff; z-index: 10; max-width: 49.7rem; display: flex; align-items: center; position: sticky; bottom: 0; margin: 0 auto; padding-top: 12px;">
+                            <div class="g-prompt-container" style="width: 95%; min-height: 38px; background-color: #fff; border: 1px solid rgba(0, 0, 0, 0.2); border-radius: 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);">
+                                <textarea id="prompt-input-ref" class="prompt-input" oninput="handlePromptInput(event)" placeholder="Ask any questions about this agreement" style="width: 100%; background: white; padding: 7px 13px; border-bottom: none; border: none; outline: none; resize: vertical; min-height: 38px; font-size: 14px; font-family: inherit; line-height: unset;">${escapeHtml(prompt || '')}</textarea>
                             </div>
-                        `}
+                            <div class="prompt-actions" style="padding-left: 10px; padding-right: 5px;">
+                                <label class="prompt-action-send" onclick="handleGenerate()" style="border-radius: 10px; padding: 8px; cursor: pointer; margin: 0; display: flex; align-items: center; justify-content: center; background: ${error ? 'gray' : '#2667FF'}; color: #fff;">
+                                    ${loader ? '<div class="loading-spinner-small"></div>' : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>'}
+                                </label>
+                            </div>
+                        </div>
+                        ${prompt?.length >= 2000 ? `
+                            <p style="font-size: 12px; color: ${error ? 'red' : 'black'}; margin: 0; color: #6c757d; text-align: end; padding-right: 1.5rem;">
+                                Maximum Limit Reached (2000 words only)
+                            </p>
+                        ` : ''}
                     `}
                 </div>
             </div>
@@ -101,8 +113,10 @@
         promptInputRef = drawerContent ? drawerContent.querySelector('#prompt-input-ref') : document.getElementById('prompt-input-ref');
         messageDivRef = drawerContent ? drawerContent.querySelector('#message-div-ref') : document.getElementById('message-div-ref');
 
-        // Auto-focus input
+        // Set textarea value properly (value attribute doesn't work for textarea)
         if (promptInputRef) {
+            promptInputRef.value = prompt || '';
+            // Auto-focus input
             promptInputRef.focus();
         }
 
@@ -184,7 +198,7 @@
                 </div>
                 <div key="${item._id}" class="outer-container" style="margin-bottom: 10px; padding: 0 6px; margin-top: 12px;">
                     <div id="syncDocResponse" class="response-container" style="border-radius: 8px; position: relative; background-color: #f9f9f9; padding: 12px; width: fit-content; box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px; font-size: 12px;">
-                        <div style="margin-top: -22px; line-height: normal;" dangerouslySetInnerHTML="${removeInlineStyles(noOlHtmlData)}"></div>
+                        <div style="margin-top: -22px; line-height: normal;">${removeInlineStyles(noOlHtmlData)}</div>
                         ${Questions?.length ? Questions.map((qs, i) => `
                             <div key="${i}" id="${i}" onclick="setPromptFromQuestion('${escapeHtml(qs)}')" class="doc-questions" style="display: flex; align-items: top; cursor: pointer;">
                                 <p style="margin-bottom: 25px; font-size: 12px;">${i + 1}</p>
@@ -242,10 +256,19 @@
 
     // Handle generate
     window.handleGenerate = async function() {
-        if (prompt?.length > 2000 || loader) return;
+        if (prompt?.length > 2000 || loader || !prompt?.trim()) return;
         
+        const currentPrompt = prompt.trim();
         loader = true;
         error = false;
+        errorMessage = '';
+        
+        // Update prompt input to show loading state
+        const promptInput = document.getElementById('prompt-input-ref');
+        if (promptInput) {
+            promptInput.disabled = true;
+        }
+        
         renderAskAIView();
 
         try {
@@ -253,7 +276,11 @@
             const backendUrl = window.getBackendUrl();
             const accessToken = window.getAccessToken();
 
-            const formData = { contractId: pluginData.contractId, question: prompt };
+            if (!pluginData?.contractId || !accessToken) {
+                throw new Error('Missing required data');
+            }
+
+            const formData = { contractId: pluginData.contractId, question: currentPrompt };
             const url = `${backendUrl}/ai-assistant/ask-question`;
             
             const response = await fetch(url, {
@@ -267,14 +294,16 @@
             });
 
             if (!response.ok) {
-                throw new Error('Failed to get AI response');
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.msg || 'Failed to get AI response');
             }
 
             const data = await response.json();
-            if (data?.status) {
-                const currentPrompt = prompt;
+            if (data?.status && data?.data?.chat) {
+                // Clear prompt
                 prompt = '';
                 
+                // Add new chat to history
                 historySearch = [data.data.chat, ...historySearch];
                 if (historySearch.length > 4) {
                     historySearch.pop();
@@ -282,18 +311,36 @@
                 }
                 remainingBalance = data.data.balance;
                 
-                renderAskAIView();
-                if (bottomRef) {
-                    bottomRef.scrollIntoView({ behavior: 'smooth' });
+                // Re-enable input
+                if (promptInput) {
+                    promptInput.disabled = false;
+                    promptInput.focus();
                 }
+                
+                loader = false;
+                renderAskAIView();
+                
+                // Scroll to bottom after render
+                setTimeout(() => {
+                    if (bottomRef) {
+                        bottomRef.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }, 100);
             } else {
                 errorMessage = data.msg || 'Failed to get response';
                 error = true;
+                if (promptInput) {
+                    promptInput.disabled = false;
+                }
             }
         } catch (err) {
             console.error('Error generating response:', err);
             errorMessage = err.message || 'Something went wrong';
             error = true;
+            const promptInput = document.getElementById('prompt-input-ref');
+            if (promptInput) {
+                promptInput.disabled = false;
+            }
         } finally {
             loader = false;
             renderAskAIView();
@@ -416,6 +463,11 @@
     // Set prompt from question
     window.setPromptFromQuestion = function(question) {
         prompt = question;
+        const promptInput = document.getElementById('prompt-input-ref');
+        if (promptInput) {
+            promptInput.value = question;
+            promptInput.focus();
+        }
         renderAskAIView();
         if (promptInputRef) {
             promptInputRef.focus();
