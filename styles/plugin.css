@@ -2261,12 +2261,33 @@ body {
     padding-bottom: 40px;
     padding-left: 10px;
     padding-right: 10px;
+    box-sizing: border-box;
+    width: 100%;
 }
 
 .outer-container {
     margin-bottom: 10px;
     padding: 0 6px;
     margin-top: 12px;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+}
+
+.div1 {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.div2 {
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
+    box-sizing: border-box;
+    gap: 7px;
 }
 
 .prompt-container {
@@ -2274,6 +2295,10 @@ body {
     margin-left: auto;
     background-color: #eff4ff;
     padding: 5px 10px;
+    max-width: calc(100% - 50px);
+    box-sizing: border-box;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
     width: fit-content;
     box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
 }
@@ -2283,12 +2308,13 @@ body {
     position: relative;
     background-color: #f9f9f9;
     padding: 12px;
-    min-width: 300px;
-    max-width: 85%;
+    max-width: calc(100% - 50px);
     width: fit-content;
     box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
     font-size: 12px;
     word-wrap: break-word;
+    overflow-wrap: break-word;
+    box-sizing: border-box;
     line-height: 1.6;
 }
 
@@ -2341,12 +2367,15 @@ body {
     align-items: flex-start;
     gap: 0.25rem;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    box-sizing: border-box;
+    padding: 0;
 }
 
 .prompt-input {
     width: 100%;
     background: white;
-    padding: 7px 13px;
+    padding: 10px 14px;
+    box-sizing: border-box;
     border: none;
     outline: none;
     resize: vertical;
@@ -2370,18 +2399,22 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #2667FF;
-    color: #fff;
-    transition: background 0.2s;
+    background-color: #2667FF !important;
+    color: #fff !important;
+    transition: background-color 0.2s;
+    border: none;
+    min-width: 36px;
+    min-height: 36px;
+    box-sizing: border-box;
 }
 
-.prompt-action-send:hover {
-    background: #1a4fd9;
+.prompt-action-send:hover:not([style*="gray"]) {
+    background-color: #1a4fd9 !important;
 }
 
 .prompt-action-send:disabled,
 .prompt-action-send[style*="gray"] {
-    background: gray !important;
+    background-color: gray !important;
     cursor: not-allowed;
 }
 

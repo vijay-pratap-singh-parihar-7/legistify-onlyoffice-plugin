@@ -146,15 +146,15 @@
                         </div>
                     ` : ''}
                     ${!isHistoryLoading && historySearch?.length > 0 ? `
-                        <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding-top: 20px; padding-bottom: 40px; padding-left: 10px; padding-right: 10px;">
+                        <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding-top: 20px; padding-bottom: 40px; padding-left: 10px; padding-right: 10px; box-sizing: border-box;">
                             ${renderChatHistory()}
                             ${loader ? `
-                                <div style="margin-left: 50px; margin-bottom: 20px;">
-                                    <div style="display: flex; justify-content: center; align-items: center;">
-                                        <div style="margin-right: 7px; border-radius: 8px 8px 0 8px; margin-left: auto; background-color: #eff4ff; padding: 5px 10px; width: fit-content; box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;">
-                                            <p style="font-size: 12px; margin: 0;">${escapeHtml(prompt)}</p>
+                                <div class="outer-container" style="margin-bottom: 10px; padding: 0 6px; margin-top: 12px;">
+                                    <div class="div1" style="display: flex; justify-content: flex-end; align-items: center;">
+                                        <div style="margin-right: 7px; border-radius: 8px 8px 0 8px; background-color: #eff4ff; padding: 5px 10px; width: fit-content; max-width: calc(100% - 50px); box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px; box-sizing: border-box;">
+                                            <p style="font-size: 12px; margin: 0; word-wrap: break-word;">${escapeHtml(prompt)}</p>
                                         </div>
-                                        <div style="width: 32px; height: 32px; border-radius: 50%; background: #2667ff; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">
+                                        <div style="width: 32px; height: 32px; border-radius: 50%; background: #2667ff; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0;">
                                             ${getUserInitials()}
                                         </div>
                                     </div>
@@ -166,11 +166,11 @@
                             <div id="bottom-ref"></div>
                         </div>
                         <div class="prompt-outer-container" style="width: 100%; background-color: #fff; z-index: 10; max-width: 49.7rem; display: flex; align-items: center; position: sticky; bottom: 0; margin: 0 auto;">
-                            <div class="g-prompt-container" style="width: 95%; min-height: 38px !important; background-color: #fff !important; border: 1px solid rgba(0, 0, 0, 0.2); border-radius: 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);">
-                                <textarea id="prompt-input-ref" class="prompt-input" oninput="handlePromptInput(event)" placeholder="Ask any questions about this agreement" style="width: 100%; background: white; padding: 8px 12px; border-bottom: none !important; border: none; outline: none; resize: vertical; min-height: 38px; font-size: 14px; font-family: inherit; line-height: 1.5;">${escapeHtml(prompt || '')}</textarea>
+                            <div class="g-prompt-container" style="width: 95%; min-height: 38px !important; background-color: #fff !important; border: 1px solid rgba(0, 0, 0, 0.2); border-radius: 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); box-sizing: border-box; padding: 0;">
+                                <textarea id="prompt-input-ref" class="prompt-input" oninput="handlePromptInput(event)" placeholder="Ask any questions about this agreement" style="width: 100%; background: white; padding: 10px 14px; border-bottom: none !important; border: none; outline: none; resize: vertical; min-height: 38px; font-size: 14px; font-family: inherit; line-height: 1.5; box-sizing: border-box;">${escapeHtml(prompt || '')}</textarea>
                             </div>
                             <div class="prompt-actions" style="padding-left: 10px; padding-right: 5px;">
-                                <label class="prompt-action-send" onclick="handleGenerate()" style="border-radius: 10px; padding: 8px; cursor: pointer; margin: 0; display: flex; align-items: center; justify-content: center; background: ${error || !prompt?.trim() || loader ? 'gray' : '#2667FF'}; color: #fff; transition: background 0.2s;">
+                                <label id="prompt-send-btn" class="prompt-action-send" onclick="handleGenerate()" style="border-radius: 10px; padding: 8px; cursor: ${error || !prompt?.trim() || loader ? 'not-allowed' : 'pointer'}; margin: 0; display: flex; align-items: center; justify-content: center; background-color: ${error || !prompt?.trim() || loader ? 'gray' : '#2667FF'}; color: #fff; transition: background-color 0.2s; border: none; min-width: 36px; min-height: 36px; box-sizing: border-box;">
                                     ${loader ? '<div class="loading-spinner-small"></div>' : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>'}
                                 </label>
                             </div>
@@ -222,26 +222,26 @@
                     return syncDocumentWithAiResponse(item);
                 } else {
                     return `
-                        <div key="${item?._id || i}" class="outer-container" style="margin-bottom: 10px; padding: 0 6px; margin-top: 12px;">
-                            <div class="div1" style="display: flex; justify-content: center; align-items: center;">
-                                <div style="margin-right: 7px;" class="prompt-container" style="border-radius: 8px 8px 0 8px; margin-left: auto; background-color: #eff4ff; padding: 5px 10px; width: fit-content; box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;">
-                                    <p style="font-size: 12px; margin: 0;">${escapeHtml(item?.instruction || '')}</p>
+                        <div key="${item?._id || i}" class="outer-container" style="margin-bottom: 10px; padding: 0 6px; margin-top: 12px; box-sizing: border-box;">
+                            <div class="div1" style="display: flex; justify-content: flex-end; align-items: center;">
+                                <div style="margin-right: 7px; border-radius: 8px 8px 0 8px; background-color: #eff4ff; padding: 5px 10px; max-width: calc(100% - 50px); width: fit-content; box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px; box-sizing: border-box;">
+                                    <p style="font-size: 12px; margin: 0; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(item?.instruction || '')}</p>
                                 </div>
-                                <div style="width: 32px; height: 32px; border-radius: 50%; background: #2667ff; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">
+                                <div style="width: 32px; height: 32px; border-radius: 50%; background: #2667ff; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0;">
                                     ${getUserInitials()}
                                 </div>
                             </div>
-                            <p style="margin-top: 3px; font-size: 11px; color: #6c757d; text-align: end;">
+                            <p style="margin-top: 3px; font-size: 11px; color: #6c757d; text-align: end; margin-right: 34px;">
                                 ${formatTime(item?.createdAt)}
                             </p>
-                            <div class="div2" style="display: flex; align-items: top;">
-                                <div>
-                                    <button style="border: 0; background-color: rgba(40, 199, 111, .1); color: #28c76f; padding: 8px 9px; border-radius: 50%; margin-top: 10px; cursor: pointer;">
+                            <div class="div2" style="display: flex; align-items: flex-start;">
+                                <div style="flex-shrink: 0;">
+                                    <button style="border: 0; background-color: rgba(40, 199, 111, .1); color: #28c76f; padding: 8px 9px; border-radius: 50%; margin-top: 10px; cursor: pointer; flex-shrink: 0;">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle></svg>
                                     </button>
                                 </div>
-                                <div style="margin-left: 7px;" class="response-container" style="border-radius: 8px; position: relative; background-color: #f9f9f9; padding: 12px; min-width: 300px; max-width: 85%; width: fit-content; box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px; font-size: 12px; word-wrap: break-word;">
-                                    <div class="formatted-response" style="line-height: 1.6; color: #333;">${formatResponse(item.response || '')}</div>
+                                <div style="margin-left: 7px; flex: 1; min-width: 0; border-radius: 8px; position: relative; background-color: #f9f9f9; padding: 12px; max-width: calc(100% - 50px); width: fit-content; box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px; font-size: 12px; word-wrap: break-word; overflow-wrap: break-word; box-sizing: border-box;" class="response-container">
+                                    <div class="formatted-response" style="line-height: 1.6; color: #333; word-wrap: break-word; overflow-wrap: break-word;">${formatResponse(item.response || '')}</div>
                                     <div onclick="copyToClipboard('${escapeHtml(item.response || '')}')" class="copy-clause" style="padding: 2px 5px; border-radius: 0 0 8px 0; position: absolute; bottom: 0; right: 0; cursor: pointer; background-color: rgba(255, 255, 255, 0.8);">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                                     </div>
@@ -277,8 +277,8 @@
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle></svg>
                     </button>
                 </div>
-                <div key="${item._id}" class="outer-container" style="margin-bottom: 20px; padding: 0 6px; margin-top: 12px;">
-                    <div id="syncDocResponse" class="response-container" style="border-radius: 8px; position: relative; background-color: #f9f9f9; padding: 12px; min-width: 300px; max-width: 85%; width: fit-content; box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px; font-size: 12px; word-wrap: break-word; line-height: 1.6;">
+                <div key="${item._id}" class="outer-container" style="margin-bottom: 20px; padding: 0 6px; margin-top: 12px; box-sizing: border-box;">
+                    <div id="syncDocResponse" class="response-container" style="border-radius: 8px; position: relative; background-color: #f9f9f9; padding: 12px; max-width: calc(100% - 50px); width: fit-content; box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px; font-size: 12px; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.6; box-sizing: border-box;">
                         <div style="line-height: 1.6; color: #333; margin-bottom: ${Questions?.length ? '12px' : '0'};">
                             ${formatHtmlContent(removeInlineStyles(noOlHtmlData))}
                         </div>
