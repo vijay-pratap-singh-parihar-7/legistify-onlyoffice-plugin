@@ -34,14 +34,14 @@ body {
 /* Ensure no gap between header and tabs */
 #plugin-container > .plugin-header + .tab-list-container,
 #plugin-container > * + .tab-list-container {
-    margin-top: -1px !important;
+    margin-top: 0 !important;
     padding-top: 0 !important;
 }
 
 /* Remove any spacing from header */
 .plugin-header + .tab-list-container {
-    margin-top: -1px !important;
-    top: -1px !important;
+    margin-top: 0 !important;
+    top: 0 !important;
 }
 
 /* Plugin Header - Matches MS Editor */
@@ -59,6 +59,8 @@ body {
     padding-bottom: 0;
     line-height: 1;
     vertical-align: top;
+    position: relative;
+    z-index: 1;
 }
 
 .plugin-title {
@@ -101,31 +103,34 @@ body {
 .tab-list-container {
     display: flex;
     background: rgb(211 211 211 / 48%);
-    align-items: end;
+    align-items: stretch;
     justify-content: start;
-    height: 35px;
+    height: 40px;
     border-top: 1px solid #80808036;
     width: 100%;
     margin: 0;
-    margin-top: -1px;
+    margin-top: 0;
     padding: 0;
     padding-top: 0;
     line-height: 1;
     vertical-align: top;
+    position: relative;
+    z-index: 0;
 }
 
 .tab-list {
     display: flex;
-    align-items: end;
+    align-items: stretch;
     justify-content: start;
-    height: 35px;
+    height: 100%;
     width: 100%;
     flex: 1;
 }
 
 .tab-button {
     color: #2667ff;
-    height: 32px;
+    height: 100%;
+    min-height: 40px;
     font-weight: 700 !important;
     background: transparent;
     border: none;
@@ -3024,6 +3029,27 @@ body {
 
 .guideline-input-manual::placeholder {
     color: #6c757d;
+}
+
+/* Approval Form Placeholder Styling - Matches MS Editor */
+.approval-form-input::placeholder,
+.approval-form-textarea::placeholder,
+.approval-form-select::placeholder {
+    font-size: 12px;
+    color: #999;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.approval-form-input,
+.approval-form-textarea,
+.approval-form-select {
+    font-size: 11px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.approval-form-select option {
+    font-size: 11px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 .character-counter {

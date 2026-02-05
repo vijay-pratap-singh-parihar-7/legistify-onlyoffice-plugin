@@ -18,17 +18,32 @@
 
     // Initialize Ask AI view
     window.initAskAIView = function() {
+        console.log('🔵 initAskAIView called');
+        
         // Find ask-ai-view in drawer first, then original view
         const drawerContent = document.getElementById('drawer-content');
         let askAIView = null;
         
         // Check if drawer-content has the cloned view (it will be the first child if cloned)
-        if (drawerContent && drawerContent.children.length > 0) {
-            // The cloned view might be directly in drawer-content or have ask-ai-view class
-            askAIView = drawerContent.querySelector('#ask-ai-view, #ask-ai-view-drawer, .drawer-view');
-            if (!askAIView && drawerContent.children[0]) {
-                // Use the first child if it exists (the cloned view)
-                askAIView = drawerContent.children[0];
+        if (drawerContent) {
+            console.log('🔵 drawer-content found, children:', drawerContent.children.length);
+            if (drawerContent.children.length > 0) {
+                // The cloned view might be directly in drawer-content
+                const firstChild = drawerContent.children[0];
+                console.log('🔵 First child:', firstChild.id, firstChild.className);
+                if (firstChild && (firstChild.id === 'ask-ai-view' || firstChild.id === 'ask-ai-view-drawer' || firstChild.classList.contains('drawer-view'))) {
+                    askAIView = firstChild;
+                } else {
+                    // Try to find by ID or class
+                    askAIView = drawerContent.querySelector('#ask-ai-view, #ask-ai-view-drawer, .drawer-view');
+                }
+            } else {
+                // No children yet, create the view directly in drawer-content
+                console.log('🔵 No children in drawer-content, creating view');
+                askAIView = document.createElement('div');
+                askAIView.id = 'ask-ai-view';
+                askAIView.className = 'drawer-view';
+                drawerContent.appendChild(askAIView);
             }
         }
         
@@ -38,17 +53,22 @@
         }
         
         if (!askAIView) {
-            console.error('Could not find ask-ai-view element for initialization');
+            console.error('❌ Could not find or create ask-ai-view element for initialization');
             return;
         }
+        
+        console.log('✅ ask-ai-view found/created:', askAIView.id);
 
         // Check if we have required data
         const pluginData = window.getPluginData();
         const accessToken = window.getAccessToken();
         
+        console.log('🔵 Plugin data:', { hasContractId: !!pluginData?.contractId, hasToken: !!accessToken });
+        
         if (!pluginData || !pluginData.contractId || !accessToken || accessToken === "null") {
-            console.error('Missing required data for AI Copilot:', { contractId: pluginData?.contractId, hasToken: !!accessToken });
+            console.warn('⚠️ Missing required data for AI Copilot, rendering empty state');
             isHistoryLoading = false;
+            historySearch = [];
             renderAskAIView();
             return;
         }
@@ -60,7 +80,7 @@
         isHistoryLoading = true;
         errorMessage = '';
         
-        // Render Ask AI view structure
+        // Render Ask AI view structure first
         renderAskAIView();
         
         // Fetch chat history with first=true
@@ -74,14 +94,22 @@
         let askAIView = null;
         
         // Check if drawer-content has the cloned view (it will be the first child if cloned)
-        if (drawerContent && drawerContent.children.length > 0) {
-            // The cloned view might be directly in drawer-content
-            const firstChild = drawerContent.children[0];
-            if (firstChild && (firstChild.id === 'ask-ai-view' || firstChild.id === 'ask-ai-view-drawer' || firstChild.classList.contains('drawer-view'))) {
-                askAIView = firstChild;
+        if (drawerContent) {
+            if (drawerContent.children.length > 0) {
+                // The cloned view might be directly in drawer-content
+                const firstChild = drawerContent.children[0];
+                if (firstChild && (firstChild.id === 'ask-ai-view' || firstChild.id === 'ask-ai-view-drawer' || firstChild.classList.contains('drawer-view'))) {
+                    askAIView = firstChild;
+                } else {
+                    // Try to find by ID or class
+                    askAIView = drawerContent.querySelector('#ask-ai-view, #ask-ai-view-drawer, .drawer-view');
+                }
             } else {
-                // Try to find by ID or class
-                askAIView = drawerContent.querySelector('#ask-ai-view, #ask-ai-view-drawer, .drawer-view');
+                // No children, create the view
+                askAIView = document.createElement('div');
+                askAIView.id = 'ask-ai-view';
+                askAIView.className = 'drawer-view';
+                drawerContent.appendChild(askAIView);
             }
         }
         
@@ -90,19 +118,32 @@
             askAIView = document.getElementById('ask-ai-view');
         }
         
+        // Last resort: create in drawer-content if it exists
+        if (!askAIView && drawerContent) {
+            askAIView = document.createElement('div');
+            askAIView.id = 'ask-ai-view';
+            askAIView.className = 'drawer-view';
+            drawerContent.appendChild(askAIView);
+        }
+        
         if (!askAIView) {
-            console.error('Could not find ask-ai-view element');
+            console.error('❌ Could not find or create ask-ai-view element for rendering');
             return;
         }
         
         // Ensure the view is visible
         askAIView.style.display = 'block';
+        
+        console.log('🔵 Rendering Ask AI view into:', askAIView.id, 'isHistoryLoading:', isHistoryLoading, 'historySearch length:', historySearch?.length);
 
-        askAIView.innerHTML = `
+        const htmlContent = `
             <div class="ask-ai-container" style="margin-bottom: 0; box-shadow: none; flex: 1; border-radius: 0; margin-top: 0; width: 100%; height: 100%; display: flex; flex-direction: column;">
                 <div class="ask-ai-body" style="display: flex; flex-direction: column; padding: 11px; flex: 1; overflow: hidden;">
                     ${isHistoryLoading ? `
-                        <div class="loading-container" style="margin-top: 150px;"><div class="loading-spinner"></div></div>
+                        <div class="min-height-scrollbar" id="message-div-ref" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding-top: 20px; padding-bottom: 40px; padding-left: 10px; padding-right: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                            <div class="loading-container" style="margin-top: 150px;"><div class="loading-spinner"></div></div>
+                            <div id="bottom-ref"></div>
+                        </div>
                     ` : `
                         <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding-top: 20px; padding-bottom: 40px; padding-left: 10px; padding-right: 10px; ${historySearch?.length === 0 ? 'display: flex; flex-direction: column; justify-content: center; align-items: center;' : ''}">
                             ${historySearch?.length > 0 ? renderChatHistory() : ''}
@@ -123,25 +164,29 @@
                             ` : ''}
                             <div id="bottom-ref"></div>
                         </div>
-                        <div class="prompt-outer-container" style="width: 100%; background-color: #fff; z-index: 10; max-width: 49.7rem; display: flex; align-items: center; position: sticky; bottom: 0; margin: 0 auto; padding-top: 12px;">
-                            <div class="g-prompt-container" style="width: 95%; min-height: 38px; background-color: #fff; border: 1px solid rgba(0, 0, 0, 0.2); border-radius: 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);">
-                                <textarea id="prompt-input-ref" class="prompt-input" oninput="handlePromptInput(event)" placeholder="Ask any questions about this agreement" style="width: 100%; background: white; padding: 7px 13px; border-bottom: none; border: none; outline: none; resize: vertical; min-height: 38px; font-size: 14px; font-family: inherit; line-height: unset;">${escapeHtml(prompt || '')}</textarea>
-                            </div>
-                            <div class="prompt-actions" style="padding-left: 10px; padding-right: 5px;">
-                                <label class="prompt-action-send" onclick="handleGenerate()" style="border-radius: 10px; padding: 8px; cursor: pointer; margin: 0; display: flex; align-items: center; justify-content: center; background: ${error ? 'gray' : '#2667FF'}; color: #fff;">
-                                    ${loader ? '<div class="loading-spinner-small"></div>' : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>'}
-                                </label>
-                            </div>
-                        </div>
-                        ${prompt?.length >= 2000 ? `
-                            <p style="font-size: 12px; color: ${error ? 'red' : 'black'}; margin: 0; color: #6c757d; text-align: end; padding-right: 1.5rem;">
-                                Maximum Limit Reached (2000 words only)
-                            </p>
-                        ` : ''}
                     `}
+                    <div class="prompt-outer-container" style="width: 100%; background-color: #fff; z-index: 10; max-width: 49.7rem; display: flex; align-items: center; position: sticky; bottom: 0; margin: 0 auto; padding-top: 12px;">
+                        <div class="g-prompt-container" style="width: 95%; min-height: 38px; background-color: #fff; border: 1px solid rgba(0, 0, 0, 0.2); border-radius: 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);">
+                            <textarea id="prompt-input-ref" class="prompt-input" oninput="handlePromptInput(event)" placeholder="Ask any questions about this agreement" style="width: 100%; background: white; padding: 7px 13px; border-bottom: none; border: none; outline: none; resize: vertical; min-height: 38px; font-size: 14px; font-family: inherit; line-height: unset;">${escapeHtml(prompt || '')}</textarea>
+                        </div>
+                        <div class="prompt-actions" style="padding-left: 10px; padding-right: 5px;">
+                            <label class="prompt-action-send" onclick="handleGenerate()" style="border-radius: 10px; padding: 8px; cursor: pointer; margin: 0; display: flex; align-items: center; justify-content: center; background: ${error || !prompt?.trim() ? 'gray' : '#2667FF'}; color: #fff;">
+                                ${loader ? '<div class="loading-spinner-small"></div>' : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>'}
+                            </label>
+                        </div>
+                    </div>
+                    ${prompt?.length >= 2000 ? `
+                        <p style="font-size: 12px; color: ${error ? 'red' : 'black'}; margin: 0; color: #6c757d; text-align: end; padding-right: 1.5rem;">
+                            Maximum Limit Reached (2000 words only)
+                        </p>
+                    ` : ''}
                 </div>
             </div>
         `;
+        
+        console.log('🔵 Setting innerHTML, length:', htmlContent.length);
+        askAIView.innerHTML = htmlContent;
+        console.log('✅ innerHTML set, askAIView.children.length:', askAIView.children.length);
 
         // Find elements within the askAIView we just rendered
         bottomRef = askAIView.querySelector('#bottom-ref');

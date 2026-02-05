@@ -507,8 +507,10 @@
                 if (contentKey !== 'genai' && contentKey !== 'askai') {
                     updateIds(clonedView, '-drawer');
                 } else {
-                    // For ask-ai-view, keep the original ID but update children
-                    Array.from(clonedView.children).forEach(child => updateIds(child, '-drawer'));
+                    // For ask-ai-view, keep the original ID and ensure it's visible
+                    clonedView.id = 'ask-ai-view'; // Ensure ID is set
+                    clonedView.style.display = 'block'; // Ensure it's visible
+                    // Don't update children IDs for ask-ai-view as they'll be created dynamically
                 }
             }
             if (drawerTitle) {
@@ -591,10 +593,11 @@
             } else if ((contentKey === 'genai' || contentKey === 'askai') && window.initAskAIView) {
                 // For AI Copilot, ensure the view is ready before initializing
                 const drawerContent = document.getElementById('drawer-content');
-                if (drawerContent && drawerContent.children.length > 0) {
+                if (drawerContent) {
+                    // Always try to initialize, the function will create the view if needed
                     window.initAskAIView();
                 } else {
-                    // Retry if view not ready
+                    // Retry if drawer not ready
                     setTimeout(() => {
                         if (window.initAskAIView) window.initAskAIView();
                     }, 100);

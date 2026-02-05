@@ -433,34 +433,34 @@
             <div class="form-container" style="width: 100%; padding: 12px; padding-bottom: 50px; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; overflow: visible; margin-bottom: 30px;">
                 <div style="display: flex; gap: 10px; justify-content: flex-start; align-items: center; width: 100%;">
                     <div style="flex: 1; width: 50%;">
-                        <input type="text" placeholder="Clause No" value="${form.clauseNo}" onchange="handleFormInputChange('clauseNo', this.value)" style="width: 100%; padding: 8px; border: 1px solid ${errors.clauseNo ? 'red' : 'rgb(153 153 153 / 64%)'}; border-radius: 4px;" />
+                        <input type="text" placeholder="Clause No" value="${escapeHtml(form.clauseNo || '')}" onchange="handleFormInputChange('clauseNo', this.value)" class="approval-form-input" style="width: 100%; padding: 8px 12px; border: 1px solid ${errors.clauseNo ? 'red' : 'rgb(153 153 153 / 64%)'}; border-radius: 4px; font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; box-sizing: border-box;" />
                         ${errors.clauseNo ? `<div style="color: red; margin: -5px 0; font-size: 12px;">${errors.clauseNo}</div>` : ''}
                     </div>
                     <div style="flex: 1; width: 50%;">
-                        <select value="${form.reminderDays}" onchange="handleFormInputChange('reminderDays', this.value)" style="width: 100%; padding: 8px; border: 1px solid ${errors.reminderDays ? 'red' : 'rgb(153 153 153 / 64%)'}; border-radius: 4px;">
+                        <select value="${form.reminderDays}" onchange="handleFormInputChange('reminderDays', this.value)" class="approval-form-select" style="width: 100%; padding: 8px 12px; border: 1px solid ${errors.reminderDays ? 'red' : 'rgb(153 153 153 / 64%)'}; border-radius: 4px; font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; box-sizing: border-box; background-color: white;">
                             <option value="">Reminder</option>
                             ${Array.from({ length: 10 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('')}
                         </select>
                         ${errors.reminderDays ? `<div style="color: red; margin: -5px 0; font-size: 12px;">${errors.reminderDays}</div>` : ''}
                     </div>
                 </div>
-                <textarea placeholder="Clause" value="${form.clause}" onchange="handleFormInputChange('clause', this.value)" style="width: 100%; padding: 8px; border: 1px solid ${errors.clause ? 'red' : 'rgb(153 153 153 / 64%)'}; border-radius: 4px; height: 120px; resize: vertical;">${form.clause}</textarea>
+                <textarea placeholder="Clause" onchange="handleFormInputChange('clause', this.value)" class="approval-form-textarea" style="width: 100%; padding: 8px 12px; border: 1px solid ${errors.clause ? 'red' : 'rgb(153 153 153 / 64%)'}; border-radius: 4px; height: 120px; resize: vertical; font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; box-sizing: border-box;">${escapeHtml(form.clause || '')}</textarea>
                 ${errors.clause ? `<div style="color: red; margin: -5px 0; font-size: 12px;">${errors.clause}</div>` : ''}
                 <div style="width: 100%; margin-bottom: 8px; position: relative;">
-                    <textarea placeholder="Summary" value="${form.summary}" onchange="handleFormInputChange('summary', this.value)" style="width: 100%; padding: 8px; border: 1px solid ${errors.summary ? 'red' : 'rgb(153 153 153 / 64%)'}; border-radius: 4px; height: 120px; resize: vertical;">${form.summary}</textarea>
+                    <textarea placeholder="Summary" onchange="handleFormInputChange('summary', this.value)" class="approval-form-textarea" style="width: 100%; padding: 8px 12px; border: 1px solid ${errors.summary ? 'red' : 'rgb(153 153 153 / 64%)'}; border-radius: 4px; height: 120px; resize: vertical; font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; box-sizing: border-box;">${escapeHtml(form.summary || '')}</textarea>
                     ${errors.summary ? `<div style="color: red; margin: -5px 0; font-size: 12px;">${errors.summary}</div>` : ''}
                     <div style="display: flex; justify-content: flex-end; margin-top: 6px;">
-                        <button onclick="handleGenerateSummary()" disabled="${generatingSummary || !form.clause}" style="padding: 6px 12px; font-size: 13px; color: ${(generatingSummary || !form.clause) ? 'black' : 'white'}; border: none; border-radius: 6px; cursor: ${generatingSummary ? 'not-allowed' : !form.clause ? 'not-allowed' : 'pointer'}; opacity: ${generatingSummary ? 0.6 : 1}; background: ${(generatingSummary || !form.clause) ? '#ccc' : '#2667ff'}; margin-bottom: -8px;">
+                        <button onclick="handleGenerateSummary()" disabled="${generatingSummary || !form.clause}" style="padding: 6px 12px; font-size: 13px; color: ${(generatingSummary || !form.clause) ? 'black' : 'white'}; border: none; border-radius: 6px; cursor: ${generatingSummary ? 'not-allowed' : !form.clause ? 'not-allowed' : 'pointer'}; opacity: ${generatingSummary ? 0.6 : 1}; background: ${(generatingSummary || !form.clause) ? '#ccc' : '#2667ff'}; margin-bottom: -8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
                             ${generatingSummary ? 'Generating...' : 'Auto Summarize'}
                         </button>
                     </div>
                 </div>
-                <textarea placeholder="Implications of Deviation" value="${form.standPosition}" onchange="handleFormInputChange('standPosition', this.value)" style="width: 100%; padding: 8px; border: 1px solid ${errors.standPosition ? 'red' : 'rgb(153 153 153 / 64%)'}; border-radius: 4px; height: 120px; resize: vertical;">${form.standPosition}</textarea>
+                <textarea placeholder="Implications of Deviation" onchange="handleFormInputChange('standPosition', this.value)" class="approval-form-textarea" style="width: 100%; padding: 8px 12px; border: 1px solid ${errors.standPosition ? 'red' : 'rgb(153 153 153 / 64%)'}; border-radius: 4px; height: 120px; resize: vertical; font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; box-sizing: border-box;">${escapeHtml(form.standPosition || '')}</textarea>
                 ${errors.standPosition ? `<div style="color: red; margin: -5px 0; font-size: 12px;">${errors.standPosition}</div>` : ''}
                 ${form.levels.map((level, index) => `
                     <div style="margin-bottom: 8px; width: 100%; display: flex; gap: 10px;">
                         <div style="width: 90%;">
-                            <input type="text" placeholder="Search team members" value="${level.fullName || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" />
+                            <input type="text" placeholder="Search team members" value="${escapeHtml(level.fullName || '')}" onchange="handleLevelInputChange(${index}, this.value)" class="approval-form-input" style="width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; box-sizing: border-box;" />
                         </div>
                         <div onclick="handleLevelDelete(${index})" style="padding: 8px; cursor: pointer; border-radius: 5px; background-color: rgb(223 20 20); color: white; display: flex; align-items: center;">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
@@ -468,11 +468,11 @@
                     </div>
                 `).join('')}
                 ${errors.level ? `<div style="color: red; margin: 0; font-size: 12px;">${errors.level}</div>` : ''}
-                <button onclick="handleAddLevel()" style="width: 100%; margin-top: 8px; min-height: 40px; font-size: 14px; font-weight: 500; padding: 10px 16px; background: #f0f0f0; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;">
+                <button onclick="handleAddLevel()" style="width: 100%; margin-top: 8px; min-height: 40px; font-size: 14px; font-weight: 500; padding: 10px 16px; background: #f0f0f0; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
                     + Add Level
                 </button>
                 ${loading2 ? '<div class="loading-spinner"></div>' : `
-                    <button onclick="handleSubmitApproval()" style="align-self: center; min-width: 80px; min-height: 30px; font-size: 16px; padding: 8px 12px; font-weight: 600; background: #2667ff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-bottom: 20px;">
+                    <button onclick="handleSubmitApproval()" style="align-self: center; min-width: 80px; min-height: 30px; font-size: 16px; padding: 8px 12px; font-weight: 600; background: #2667ff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-bottom: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
                         Submit
                     </button>
                 `}
@@ -710,6 +710,13 @@
         const nextIndex = form.levels.length;
         form.levels.push({ levelName: `Level-${nextIndex + 1}`, orgUsers: [], fullName: '' });
         updateApprovalContent();
+    };
+
+    // Handle level input change
+    window.handleLevelInputChange = function(index, value) {
+        if (form.levels[index]) {
+            form.levels[index].fullName = value;
+        }
     };
 
     // Handle level delete
