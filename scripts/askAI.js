@@ -20,12 +20,27 @@
     window.initAskAIView = function() {
         // Find ask-ai-view in drawer first, then original view
         const drawerContent = document.getElementById('drawer-content');
-        let askAIView = drawerContent ? drawerContent.querySelector('#ask-ai-view') : null;
+        let askAIView = null;
+        
+        // Check if drawer-content has the cloned view (it will be the first child if cloned)
+        if (drawerContent && drawerContent.children.length > 0) {
+            // The cloned view might be directly in drawer-content or have ask-ai-view class
+            askAIView = drawerContent.querySelector('#ask-ai-view, #ask-ai-view-drawer, .drawer-view');
+            if (!askAIView && drawerContent.children[0]) {
+                // Use the first child if it exists (the cloned view)
+                askAIView = drawerContent.children[0];
+            }
+        }
+        
+        // Fallback to original view
         if (!askAIView) {
             askAIView = document.getElementById('ask-ai-view');
         }
         
-        if (!askAIView) return;
+        if (!askAIView) {
+            console.error('Could not find ask-ai-view element for initialization');
+            return;
+        }
 
         // Check if we have required data
         const pluginData = window.getPluginData();
@@ -56,11 +71,32 @@
     function renderAskAIView() {
         // Find ask-ai-view in drawer first, then original view
         const drawerContent = document.getElementById('drawer-content');
-        let askAIView = drawerContent ? drawerContent.querySelector('#ask-ai-view') : null;
+        let askAIView = null;
+        
+        // Check if drawer-content has the cloned view (it will be the first child if cloned)
+        if (drawerContent && drawerContent.children.length > 0) {
+            // The cloned view might be directly in drawer-content
+            const firstChild = drawerContent.children[0];
+            if (firstChild && (firstChild.id === 'ask-ai-view' || firstChild.id === 'ask-ai-view-drawer' || firstChild.classList.contains('drawer-view'))) {
+                askAIView = firstChild;
+            } else {
+                // Try to find by ID or class
+                askAIView = drawerContent.querySelector('#ask-ai-view, #ask-ai-view-drawer, .drawer-view');
+            }
+        }
+        
+        // Fallback to original view
         if (!askAIView) {
             askAIView = document.getElementById('ask-ai-view');
         }
-        if (!askAIView) return;
+        
+        if (!askAIView) {
+            console.error('Could not find ask-ai-view element');
+            return;
+        }
+        
+        // Ensure the view is visible
+        askAIView.style.display = 'block';
 
         askAIView.innerHTML = `
             <div class="ask-ai-container" style="margin-bottom: 0; box-shadow: none; flex: 1; border-radius: 0; margin-top: 0; width: 100%; height: 100%; display: flex; flex-direction: column;">
@@ -107,11 +143,10 @@
             </div>
         `;
 
-        // Find elements in drawer first, then original view
-        const drawerContent = document.getElementById('drawer-content');
-        bottomRef = drawerContent ? drawerContent.querySelector('#bottom-ref') : document.getElementById('bottom-ref');
-        promptInputRef = drawerContent ? drawerContent.querySelector('#prompt-input-ref') : document.getElementById('prompt-input-ref');
-        messageDivRef = drawerContent ? drawerContent.querySelector('#message-div-ref') : document.getElementById('message-div-ref');
+        // Find elements within the askAIView we just rendered
+        bottomRef = askAIView.querySelector('#bottom-ref');
+        promptInputRef = askAIView.querySelector('#prompt-input-ref');
+        messageDivRef = askAIView.querySelector('#message-div-ref');
 
         // Set textarea value properly (value attribute doesn't work for textarea)
         if (promptInputRef) {

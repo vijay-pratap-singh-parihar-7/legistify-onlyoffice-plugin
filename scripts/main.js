@@ -503,7 +503,13 @@
                     }
                     Array.from(element.children).forEach(child => updateIds(child, suffix));
                 };
-                updateIds(clonedView, '-drawer');
+                // Don't update ID for ask-ai-view so it can be found easily
+                if (contentKey !== 'genai' && contentKey !== 'askai') {
+                    updateIds(clonedView, '-drawer');
+                } else {
+                    // For ask-ai-view, keep the original ID but update children
+                    Array.from(clonedView.children).forEach(child => updateIds(child, '-drawer'));
+                }
             }
             if (drawerTitle) {
                 drawerTitle.textContent = titleMap[contentKey] || contentKey;
@@ -583,7 +589,16 @@
             } else if (contentKey === 'clauseApproval' && window.initApprovalView) {
                 window.initApprovalView();
             } else if ((contentKey === 'genai' || contentKey === 'askai') && window.initAskAIView) {
-                window.initAskAIView();
+                // For AI Copilot, ensure the view is ready before initializing
+                const drawerContent = document.getElementById('drawer-content');
+                if (drawerContent && drawerContent.children.length > 0) {
+                    window.initAskAIView();
+                } else {
+                    // Retry if view not ready
+                    setTimeout(() => {
+                        if (window.initAskAIView) window.initAskAIView();
+                    }, 100);
+                }
             }
         }, 150);
     }
