@@ -362,10 +362,10 @@ body {
 
 .drawer-view {
     width: 100%;
-    height: 100%;
+    min-height: 100%;
+    height: auto;
     display: flex;
     flex-direction: column;
-    min-height: 0;
     overflow: visible;
 }
 
@@ -1070,8 +1070,9 @@ body {
 /* Feature Header - Matches MS Editor */
 .summary-feature-container {
     position: relative;
-    height: 100%;
-    overflow: hidden;
+    min-height: 0;
+    height: auto;
+    overflow: visible;
     margin-top: -10px;
     width: 100%;
     display: flex;
@@ -1145,7 +1146,7 @@ body {
 }
 
 .summary-text-card {
-    flex: 1;
+    flex: 0 1 auto;
     overflow: visible;
     padding: 0;
     margin: 0;
@@ -1156,6 +1157,7 @@ body {
     position: relative;
     box-sizing: border-box;
     height: auto;
+    width: 100%;
 }
 
 /* Ensure progress loader containers are properly sized */
@@ -1174,7 +1176,8 @@ body {
     padding: 0;
     margin: 0;
     overflow: visible;
-    flex: 1;
+    flex: 0 1 auto;
+    width: 100%;
 }
 
 .summary-text-card h2 {
@@ -1243,9 +1246,12 @@ body {
 /* Library Styles */
 .library-container {
     width: 100%;
-    height: 100%;
+    min-height: 0;
+    height: auto;
     display: flex;
     flex-direction: column;
+    flex: 1;
+    overflow: visible;
 }
 
 .library-list {
@@ -1902,11 +1908,13 @@ body {
 /* Library Styles - Matches MS Editor Library.js */
 .library-container {
     position: relative;
-    height: 100vh;
-    overflow: hidden;
+    min-height: 0;
+    height: auto;
+    overflow: visible;
     margin-top: -10px;
     display: flex;
     flex-direction: column;
+    flex: 1;
 }
 
 .search-container {

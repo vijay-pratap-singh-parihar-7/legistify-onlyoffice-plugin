@@ -17,7 +17,12 @@
 
     // Initialize library view
     window.initLibraryView = function(data) {
-        const libraryView = document.getElementById('library-view');
+        // Check for drawer view first (cloned), then original view
+        let libraryView = document.querySelector('#library-view-drawer, #library-view');
+        if (!libraryView) {
+            // Try to find library-container directly
+            libraryView = document.querySelector('#library-container-drawer, #library-container')?.parentElement;
+        }
         if (!libraryView) return;
 
         // Use data from parent if available (passed from main.js)
@@ -36,11 +41,26 @@
 
     // Render library view - matches MS Editor Library.js exactly
     function renderLibraryView() {
-        const libraryView = document.getElementById('library-view');
+        // Check for drawer view first (cloned), then original view
+        let libraryView = document.querySelector('#library-view-drawer, #library-view');
+        if (!libraryView) {
+            // Try to find library-container directly
+            const container = document.querySelector('#library-container-drawer, #library-container');
+            if (container) {
+                libraryView = container.parentElement;
+            }
+        }
         if (!libraryView) return;
 
+        // Check if we're in drawer (has -drawer suffix) or original view
+        const isDrawer = libraryView.id === 'library-view-drawer' || libraryView.querySelector('#library-container-drawer');
+        const containerId = isDrawer ? 'library-container-drawer' : 'library-container';
+        const listContainerId = isDrawer ? 'library-list-container-drawer' : 'library-list-container';
+        const searchInputId = isDrawer ? 'library-search-input-drawer' : 'library-search-input';
+        const searchMenuId = isDrawer ? 'search-menu-dropdown-drawer' : 'search-menu-dropdown';
+        
         libraryView.innerHTML = `
-            <div class="library-container">
+            <div id="${containerId}" class="library-container">
                 <div class="feature-header">
                     <div class="header-box">
                         <svg class="back-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="handleBackFromLibrary()" style="cursor: pointer;">
@@ -56,7 +76,7 @@
                 </div>
                 <div style="flex: 1; overflow-y: auto;">
                     <div class="search-container">
-                        <input type="text" id="library-search-input" class="search-input" value="${searchText}" placeholder="Search any ${searchType !== 'clause' ? 'sub ' : ''}clause by name" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;" />
+                        <input type="text" id="${searchInputId}" class="search-input" value="${searchText}" placeholder="Search any ${searchType !== 'clause' ? 'sub ' : ''}clause by name" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;" />
                         <div class="search-menu" style="position: relative;">
                             <button class="menu-button" onclick="toggleSearchMenu()" style="padding: 0px !important; min-width: 21px; min-height: 26px; border: none !important; background: transparent; cursor: pointer;">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -65,7 +85,7 @@
                                     <circle cx="12" cy="19" r="1"></circle>
                                 </svg>
                             </button>
-                            <div id="search-menu-dropdown" class="menu-dropdown" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1000; min-width: 180px; margin-top: 4px;">
+                            <div id="${searchMenuId}" class="menu-dropdown" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1000; min-width: 180px; margin-top: 4px;">
                                 <div class="menu-item" onclick="handleSearchType('clause')" style="padding: 8px 12px; cursor: pointer; font-size: 14px; ${searchType === 'clause' ? 'background-color: #f0f0f0;' : ''}">Search by Clause</div>
                                 <div class="menu-item" onclick="handleSearchType('subClause')" style="padding: 8px 12px; cursor: pointer; font-size: 14px; ${searchType === 'subClause' ? 'background-color: #f0f0f0;' : ''}">Search by Sub Clause</div>
                             </div>
@@ -77,13 +97,13 @@
                             </svg>
                         </button>
                     </div>
-                    <div id="library-list-container" class="hiddenScrollbar"></div>
+                    <div id="${listContainerId}" class="hiddenScrollbar"></div>
                 </div>
             </div>
         `;
 
-        // Setup search input handler
-        const searchInput = document.getElementById('library-search-input');
+        // Setup search input handler - check both drawer and original
+        const searchInput = document.getElementById(searchInputId) || document.getElementById('library-search-input-drawer') || document.getElementById('library-search-input');
         if (searchInput) {
             // Remove existing listeners by cloning
             const newInput = searchInput.cloneNode(true);
@@ -92,8 +112,9 @@
         }
         
         // Close dropdown when clicking outside
+        const dropdownId = searchMenuId;
         document.addEventListener('click', function(event) {
-            const dropdown = document.getElementById('search-menu-dropdown');
+            const dropdown = document.getElementById(dropdownId) || document.getElementById('search-menu-dropdown-drawer') || document.getElementById('search-menu-dropdown');
             const menuButton = event.target.closest('.menu-button');
             if (dropdown && !dropdown.contains(event.target) && !menuButton) {
                 dropdown.style.display = 'none';
@@ -121,11 +142,11 @@
             return;
         }
         searchText = '';
-        const searchInput = document.getElementById('library-search-input');
+        const searchInput = document.getElementById('library-search-input-drawer') || document.getElementById('library-search-input');
         if (searchInput) searchInput.value = '';
         if (searchType === 'clause') {
             getSubClauseLibrary();
-    } else {
+        } else {
             getClauseLibrary();
         }
         searchType = name;
@@ -134,7 +155,7 @@
 
     // Toggle search menu
     window.toggleSearchMenu = function() {
-        const dropdown = document.getElementById('search-menu-dropdown');
+        const dropdown = document.getElementById('search-menu-dropdown-drawer') || document.getElementById('search-menu-dropdown');
         if (dropdown) {
             dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
         }
@@ -142,7 +163,7 @@
 
     // Close search menu
     function closeSearchMenu() {
-        const dropdown = document.getElementById('search-menu-dropdown');
+        const dropdown = document.getElementById('search-menu-dropdown-drawer') || document.getElementById('search-menu-dropdown');
         if (dropdown) {
             dropdown.style.display = 'none';
         }
@@ -162,10 +183,16 @@
             }
         }, 1000);
     }
+    
+    // Helper function to get current container ID
+    function getListContainerId() {
+        return document.getElementById('library-list-container-drawer') ? 'library-list-container-drawer' : 'library-list-container';
+    }
 
     // Get clause library
     async function getClauseLibrary(param = '', mode = clauseSwitch) {
-        const container = document.getElementById('library-list-container');
+        // Check for drawer container first, then original
+        const container = document.getElementById('library-list-container-drawer') || document.getElementById('library-list-container');
         if (!container) return;
 
         clauseListLoading = true;
@@ -214,7 +241,8 @@
 
     // Get sub clause library
     async function getSubClauseLibrary(param = '') {
-        const container = document.getElementById('library-list-container');
+        // Check for drawer container first, then original
+        const container = document.getElementById('library-list-container-drawer') || document.getElementById('library-list-container');
         if (!container) return;
 
         clauseListLoading = true;
@@ -263,7 +291,7 @@
 
     // Render clause list with accordion
     function renderClauseList() {
-        const container = document.getElementById('library-list-container');
+        const container = document.getElementById(getListContainerId());
         if (!container) return;
 
         if (clauseList.length === 0) {
@@ -313,7 +341,7 @@
 
     // Render sub clause list
     function renderSubClauseList() {
-        const container = document.getElementById('library-list-container');
+        const container = document.getElementById(getListContainerId());
         if (!container) return;
 
         if (subClauseList.length === 0) {
@@ -361,7 +389,15 @@
         subClauseVisible = true;
         subClauseLoading = true;
         
-        const libraryView = document.getElementById('library-view');
+        // Check for drawer view first, then original
+        let libraryView = document.getElementById('library-view-drawer') || document.getElementById('library-view');
+        if (!libraryView) {
+            // Try to find by container
+            const container = document.getElementById('library-container-drawer') || document.getElementById('library-container');
+            if (container) {
+                libraryView = container.parentElement;
+            }
+        }
         if (!libraryView) return;
 
         libraryView.innerHTML = `
@@ -529,7 +565,7 @@
 
     // Update library loading state
     function updateLibraryLoading(loading) {
-        const container = document.getElementById('library-list-container');
+        const container = document.getElementById(getListContainerId());
         if (!container) return;
 
         if (loading) {
@@ -546,7 +582,7 @@
 
     // Show error
     function showError(message) {
-        const container = document.getElementById('library-list-container');
+        const container = document.getElementById(getListContainerId());
         if (container) {
             container.innerHTML = `<div class="error-message">${escapeHtml(message)}</div>`;
         }
