@@ -121,7 +121,7 @@
                     ${statusBadge ? `<div style="display: flex; gap: 8px; align-items: center;">${statusBadge}</div>` : ''}
                 </div>
                 ` : ''}
-                <div id="${contentId}" style="flex: 0 1 auto; overflow: visible; padding: 0; padding-bottom: 50px; min-height: 0; box-sizing: border-box; width: 100%;"></div>
+                <div id="${contentId}" style="flex: 0 1 auto; overflow: visible; padding: 16px; padding-bottom: 50px; min-height: 0; box-sizing: border-box; width: 100%;"></div>
             </div>
         `;
 
@@ -430,7 +430,7 @@
     // Render form - matches MS Editor exactly
     function renderForm() {
         return `
-            <div class="form-container" style="width: 100%; padding: 16px; padding-bottom: 50px; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; overflow: visible; margin-bottom: 30px;">
+            <div class="form-container" style="width: 100%; padding: 12px; padding-bottom: 50px; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; overflow: visible; margin-bottom: 30px;">
                 <div style="display: flex; gap: 10px; justify-content: flex-start; align-items: center; width: 100%;">
                     <div style="flex: 1; width: 50%;">
                         <input type="text" placeholder="Clause No" value="${escapeHtml(form.clauseNo || '')}" onchange="handleFormInputChange('clauseNo', this.value)" class="approval-form-input" style="width: 100%; padding: 8px 12px; border: 1px solid ${errors.clauseNo ? 'red' : 'rgb(153 153 153 / 64%)'}; border-radius: 4px; font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; box-sizing: border-box;" />
@@ -467,7 +467,7 @@
                                 oninput="handleTeamMemberSearch(${index}, this.value)" 
                                 onfocus="handleTeamMemberFocus(${index})"
                                 class="approval-form-input team-member-input" 
-                                style="width: 100%; padding: 8px 12px; border: 1px solid ${errors.level ? 'red' : '#2667FF'}; border-radius: 4px; font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; box-sizing: border-box; position: relative;" 
+                                style="width: 100%; padding: 8px 12px; border: 1px solid ${errors.level ? 'red' : 'rgb(153 153 153 / 64%)'}; border-radius: 4px; font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; box-sizing: border-box; position: relative;" 
                                 autocomplete="off" />
                             <div id="team-member-dropdown-${index}" class="team-member-dropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 4px; max-height: 200px; overflow-y: auto; z-index: 1000; margin-top: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                                 <div class="dropdown-loading" style="padding: 12px; text-align: center; color: #666; font-size: 12px;">Loading...</div>
@@ -750,10 +750,10 @@
         
         // Show dropdown if there's text
         if (value && value.trim().length > 0) {
-            // Clear previous timer and set new one
+            // Clear previous timer and set new one - matches MS Editor debounce timing
             searchTimers[index] = setTimeout(() => {
                 fetchTeamMembers(index, value.trim());
-            }, 300);
+            }, 1000);
         } else {
             dropdown.style.display = 'none';
         }
@@ -795,10 +795,11 @@
                 ?.filter(Boolean)
                 ?.map((user) => (typeof user === 'object' ? user._id : user)) || [];
 
-            // Clean search value (remove non-word characters)
+            // Clean search value (remove non-word characters) - matches MS Editor handleOrgUserInputChange
             const cleanValue = searchValue.replace(/\W/g, '');
 
-            const url = `${backendUrl}/clause-approval/fetch-all-org-users?email=${encodeURIComponent(cleanValue)}`;
+            // Use correct endpoint - matches contract-frontend and MS Editor
+            const url = `${backendUrl}/org-user/all-users?email=${encodeURIComponent(cleanValue)}`;
             const response = await fetch(url, {
                 headers: {
                     'x-auth-token': accessToken,
@@ -808,16 +809,22 @@
 
             if (response.ok) {
                 const data = await response.json();
-                if (data?.status && data?.data?.orgUsers?.length > 0) {
+                // Handle different response structures - matches contract-frontend and MS Editor
+                // Contract-frontend: response?.data?.orgUsers
+                // MS Editor: response?.data?.orgUsers
+                const orgUsers = data?.data?.orgUsers || data?.data?.users || data?.orgUsers || data?.users || [];
+                
+                // Check status or if orgUsers array exists (some APIs might not have status field)
+                if ((data?.status !== false) && orgUsers?.length > 0) {
                     // Filter out already selected users
-                    const filteredUsers = data.data.orgUsers.filter(
+                    const filteredUsers = orgUsers.filter(
                         (item) => !selectedUserIds.includes(item._id)
                     );
 
                     if (filteredUsers.length > 0) {
                         dropdown.innerHTML = filteredUsers.map((user) => {
-                            const safeName = escapeHtml(user.fullName);
-                            const safeId = String(user._id).replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+                            const safeName = escapeHtml(user.fullName || user.name || '');
+                            const safeId = String(user._id || user.id || '').replace(/'/g, "&#39;").replace(/"/g, "&quot;");
                             return `
                                 <div class="dropdown-item" 
                                     onclick="selectTeamMember(${index}, '${safeName}', '${safeId}')"
@@ -835,7 +842,9 @@
                     dropdown.innerHTML = '<div style="padding: 12px; text-align: center; color: #666; font-size: 12px;">No team members found</div>';
                 }
             } else {
-                dropdown.innerHTML = '<div style="padding: 12px; text-align: center; color: #d32f2f; font-size: 12px;">Error loading team members</div>';
+                const errorData = await response.json().catch(() => ({}));
+                const errorMsg = errorData.msg || errorData.message || 'Error loading team members';
+                dropdown.innerHTML = `<div style="padding: 12px; text-align: center; color: #d32f2f; font-size: 12px;">${escapeHtml(errorMsg)}</div>`;
             }
         } catch (err) {
             console.error('Error fetching team members:', err);
@@ -855,8 +864,11 @@
             form.levels[index].orgUsers = [userId];
         }
         
+        // Update input value immediately
         if (input) {
             input.value = fullName;
+            // Trigger input event to ensure any listeners are notified
+            input.dispatchEvent(new Event('input', { bubbles: true }));
         }
         
         if (dropdown) {
@@ -868,6 +880,7 @@
             delete errors.level;
         }
         
+        // Re-render to ensure form state is updated
         updateApprovalContent();
     };
 

@@ -144,9 +144,10 @@
                             <div class="loading-container" style="margin-top: 150px;"><div class="loading-spinner"></div></div>
                             <div id="bottom-ref"></div>
                         </div>
-                    ` : `
-                        <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding-top: 20px; padding-bottom: 40px; padding-left: 10px; padding-right: 10px; ${historySearch?.length === 0 ? 'display: flex; flex-direction: column; justify-content: center; align-items: center;' : ''}">
-                            ${historySearch?.length > 0 ? renderChatHistory() : ''}
+                    ` : ''}
+                    ${!isHistoryLoading && historySearch?.length > 0 ? `
+                        <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding-top: 20px; padding-bottom: 40px; padding-left: 10px; padding-right: 10px;">
+                            ${renderChatHistory()}
                             ${loader ? `
                                 <div style="margin-left: 50px; margin-bottom: 20px;">
                                     <div style="display: flex; justify-content: center; align-items: center;">
@@ -164,8 +165,6 @@
                             ` : ''}
                             <div id="bottom-ref"></div>
                         </div>
-                    `}
-                    ${!isHistoryLoading ? `
                         <div class="prompt-outer-container" style="width: 100%; background-color: #fff; z-index: 10; max-width: 49.7rem; display: flex; align-items: center; position: sticky; bottom: 0; margin: 0 auto; padding-top: 12px;">
                             <div class="g-prompt-container" style="width: 95%; min-height: 38px !important; background-color: #fff !important; border: 1px solid rgba(0, 0, 0, 0.2); border-radius: 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);">
                                 <textarea id="prompt-input-ref" class="prompt-input" oninput="handlePromptInput(event)" placeholder="Ask any questions about this agreement" style="width: 100%; background: white; padding: 7px 13px; border-bottom: none !important; border: none; outline: none; resize: vertical; min-height: 38px; font-size: 14px; font-family: inherit; line-height: unset;">${escapeHtml(prompt || '')}</textarea>
@@ -561,6 +560,13 @@
                         );
                         if (!exists) {
                             historySearch = [responseData, ...historySearch];
+                            // Scroll to bottom after adding initial response
+                            setTimeout(() => {
+                                const bottomRefElement = document.getElementById('bottom-ref');
+                                if (bottomRefElement) {
+                                    bottomRefElement.scrollIntoView({ behavior: 'auto' });
+                                }
+                            }, 200);
                         }
                     }
                 }
