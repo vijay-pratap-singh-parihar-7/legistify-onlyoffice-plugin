@@ -377,6 +377,9 @@
         activeContent = contentKey;
         updateContentView();
     }
+    
+    // Expose setActiveContent globally for playbook.js
+    window.setActiveContent = setActiveContent;
 
     // Update content view based on activeContent
     function updateContentView() {
@@ -481,6 +484,18 @@
                     featureHeaders.forEach(header => header.remove());
                 }
                 
+                // Remove feature-header from Clause Approval view (header is in drawer)
+                if (contentKey === 'clauseApproval') {
+                    const featureHeaders = clonedView.querySelectorAll('.feature-header');
+                    featureHeaders.forEach(header => header.remove());
+                }
+                
+                // Remove feature-header from Library view (header is in drawer)
+                if (contentKey === 'library') {
+                    const featureHeaders = clonedView.querySelectorAll('.feature-header');
+                    featureHeaders.forEach(header => header.remove());
+                }
+                
                 // Update IDs in cloned view to work with drawer
                 const updateIds = (element, suffix) => {
                     if (element.id) {
@@ -488,7 +503,15 @@
                     }
                     Array.from(element.children).forEach(child => updateIds(child, suffix));
                 };
-                updateIds(clonedView, '-drawer');
+                // Don't update ID for ask-ai-view so it can be found easily
+                if (contentKey !== 'genai' && contentKey !== 'askai') {
+                    updateIds(clonedView, '-drawer');
+                } else {
+                    // For ask-ai-view, keep the original ID and ensure it's visible
+                    clonedView.id = 'ask-ai-view'; // Ensure ID is set
+                    clonedView.style.display = 'block'; // Ensure it's visible
+                    // Don't update children IDs for ask-ai-view as they'll be created dynamically
+                }
             }
             if (drawerTitle) {
                 drawerTitle.textContent = titleMap[contentKey] || contentKey;
@@ -523,8 +546,38 @@
                         }
                     };
                 }
+            } else if (drawerHeaderActions && contentKey === 'library') {
+                // Setup Favourites button for Library view
+                drawerHeaderActions.style.display = 'flex';
+                const isActive = window.clauseSwitch || false;
+                drawerHeaderActions.innerHTML = `
+                    <span id="drawer-favorites-btn" onclick="toggleFavoriteSwitch()" class="${isActive ? 'active-tab' : 'tab'}" style="white-space: nowrap; font-weight: 600; cursor: pointer; padding: 6.3px 12px; border-radius: 5px; color: ${isActive ? '#fff' : '#808e99'}; border: 1px solid #5c8dff; font-size: 12px; background-color: ${isActive ? '#2667ff' : 'transparent'};">
+                        Favourites
+                    </span>
+                `;
+            } else if (drawerHeaderActions && (contentKey === 'genai' || contentKey === 'askai')) {
+                // Setup Refresh button for AI Copilot view - matches MS Editor
+                drawerHeaderActions.style.display = 'flex';
+                drawerHeaderActions.innerHTML = `
+                    <div class="summary-button" id="drawer-refresh-btn" title="Refresh" onclick="if(window.syncDocumentWithAi) window.syncDocumentWithAi(true);" style="display: flex; padding: 5px; border-radius: 5px; cursor: pointer; border: 1px solid #0000003d;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <polyline points="1 20 1 14 7 14"></polyline>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                        </svg>
+                    </div>
+                `;
+                // Change close button to back arrow for AI Copilot (matches MS Editor)
+                const drawerCloseBtn = document.querySelector('.drawer-close-button');
+                if (drawerCloseBtn) {
+                    drawerCloseBtn.innerHTML = `
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                    `;
+                }
             } else if (drawerHeaderActions) {
-                // Hide header actions for other views (Library, Approval, Copilot)
+                // Hide header actions for other views (Approval)
                 drawerHeaderActions.style.display = 'none';
             }
         }
@@ -543,11 +596,21 @@
             } else if (contentKey === 'obligation' && window.initObligationsView) {
                 window.initObligationsView();
             } else if (contentKey === 'library' && window.initLibraryView) {
-                window.initLibraryView();
+                window.initLibraryView(activeContentData.libraryData);
             } else if (contentKey === 'clauseApproval' && window.initApprovalView) {
                 window.initApprovalView();
             } else if ((contentKey === 'genai' || contentKey === 'askai') && window.initAskAIView) {
-                window.initAskAIView();
+                // For AI Copilot, ensure the view is ready before initializing
+                const drawerContent = document.getElementById('drawer-content');
+                if (drawerContent) {
+                    // Always try to initialize, the function will create the view if needed
+                    window.initAskAIView();
+                } else {
+                    // Retry if drawer not ready
+                    setTimeout(() => {
+                        if (window.initAskAIView) window.initAskAIView();
+                    }, 100);
+                }
             }
         }, 150);
     }
@@ -625,7 +688,7 @@
         } else if (contentKey === 'library') {
             await getClauseLibrary();
             if (window.initLibraryView) {
-                window.initLibraryView();
+                window.initLibraryView(activeContentData.libraryData);
             }
         } else if (contentKey === 'clauseApproval') {
             await getClauseApprovals();

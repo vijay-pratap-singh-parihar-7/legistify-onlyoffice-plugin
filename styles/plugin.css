@@ -26,6 +26,22 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     background: #ffffff;
     position: relative;
+    margin: 0;
+    padding: 0;
+    gap: 0;
+}
+
+/* Ensure no gap between header and tabs */
+#plugin-container > .plugin-header + .tab-list-container,
+#plugin-container > * + .tab-list-container {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+/* Remove any spacing from header */
+.plugin-header + .tab-list-container {
+    margin-top: 0 !important;
+    top: 0 !important;
 }
 
 /* Plugin Header - Matches MS Editor */
@@ -35,9 +51,16 @@ body {
     justify-content: space-between;
     padding: 8px 12px;
     background: #f5f5f5;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: none;
     height: 40px;
     box-sizing: border-box;
+    margin: 0;
+    margin-bottom: 0;
+    padding-bottom: 0;
+    line-height: 1;
+    vertical-align: top;
+    position: relative;
+    z-index: 1;
 }
 
 .plugin-title {
@@ -80,25 +103,34 @@ body {
 .tab-list-container {
     display: flex;
     background: rgb(211 211 211 / 48%);
-    align-items: end;
+    align-items: stretch;
     justify-content: start;
-    height: 35px;
+    height: 40px;
     border-top: 1px solid #80808036;
     width: 100%;
+    margin: 0;
+    margin-top: 0;
+    padding: 0;
+    padding-top: 0;
+    line-height: 1;
+    vertical-align: top;
+    position: relative;
+    z-index: 0;
 }
 
 .tab-list {
     display: flex;
-    align-items: end;
+    align-items: stretch;
     justify-content: start;
-    height: 35px;
+    height: 100%;
     width: 100%;
     flex: 1;
 }
 
 .tab-button {
-    color: blue;
-    height: 32px;
+    color: #2667ff;
+    height: 100%;
+    min-height: 40px;
     font-weight: 700 !important;
     background: transparent;
     border: none;
@@ -117,18 +149,19 @@ body {
 .tab-button.active {
     background-color: #fff;
     padding: 6px 12px;
+    color: #2667ff;
 }
 
 .tab-button.active:hover {
     background-color: #fff !important;
-    color: blue;
+    color: #000 !important;
     visibility: visible;
     opacity: 1;
 }
 
 .tab-button:hover {
     background-color: rgba(211, 211, 211, 0.3);
-    color: blue;
+    color: #2667ff;
     visibility: visible;
     opacity: 1;
 }
@@ -243,6 +276,9 @@ body {
     flex-direction: column;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
     animation: slideUp 0.3s ease;
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
 }
 
 @keyframes slideUp {
@@ -271,6 +307,10 @@ body {
     border-bottom: 1px solid #e0e0e0;
     flex-shrink: 0;
     gap: 12px;
+    position: sticky;
+    top: 0;
+    background-color: #fff;
+    z-index: 10001;
 }
 
 .drawer-header-actions {
@@ -285,6 +325,11 @@ body {
     font-size: 16px;
     font-weight: 650;
     color: #212529;
+    text-align: center;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .drawer-close-button {
@@ -308,14 +353,40 @@ body {
 .drawer-content {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 0;
+    padding-bottom: 40px; /* Extra padding to allow scrolling to see bottom content */
+    min-height: 0;
+    max-height: 100%;
+    position: relative;
+    -webkit-overflow-scrolling: touch;
+}
+
+.drawer-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.drawer-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.drawer-content::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.drawer-content::-webkit-scrollbar-thumb:hover {
+    background: #555;
 }
 
 .drawer-view {
     width: 100%;
-    height: 100%;
+    min-height: 0;
+    height: auto;
     display: flex;
     flex-direction: column;
+    overflow: visible;
+    flex: 0 1 auto;
 }
 
 /* Playbook Container - Matches MS Editor playbookContainer */
@@ -853,16 +924,6 @@ body {
     animation: spin 1s linear infinite;
 }
 
-.loading-spinner {
-    display: inline-block;
-    width: 24px;
-    height: 24px;
-    border: 3px solid rgba(38, 103, 255, 0.1);
-    border-top: 3px solid #2667ff;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-}
-
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
@@ -1029,8 +1090,9 @@ body {
 /* Feature Header - Matches MS Editor */
 .summary-feature-container {
     position: relative;
-    height: 100%;
-    overflow: hidden;
+    min-height: 0;
+    height: auto;
+    overflow: visible;
     margin-top: -10px;
     width: 100%;
     display: flex;
@@ -1104,18 +1166,18 @@ body {
 }
 
 .summary-text-card {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
+    flex: 0 1 auto;
+    overflow: visible;
     padding: 0;
     margin: 0;
     font-size: 12px;
-    min-height: 200px;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     position: relative;
     box-sizing: border-box;
-    height: 100%;
+    height: auto;
+    width: 100%;
 }
 
 /* Ensure progress loader containers are properly sized */
@@ -1125,16 +1187,19 @@ body {
 #summary-result-drawer,
 #clauses-result-drawer,
 #obligations-result-drawer {
-    min-height: 100%;
-    height: 100%;
+    min-height: 0;
+    height: auto;
     display: flex;
     flex-direction: column;
     position: relative;
     box-sizing: border-box;
     padding: 0;
+    padding-bottom: 40px; /* Extra padding to ensure last content is visible when scrolling */
     margin: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
+    margin-bottom: 30px; /* Extra margin for scroll space */
+    overflow: visible;
+    flex: 0 1 auto;
+    width: 100%;
 }
 
 .summary-text-card h2 {
@@ -1154,10 +1219,13 @@ body {
     line-height: 1.6;
     color: #333;
     padding: 10px 19px;
+    padding-bottom: 40px; /* Extra bottom padding to ensure last content is visible when scrolling */
     margin: 0;
+    margin-bottom: 30px; /* Extra margin for scroll space */
     width: 100%;
     box-sizing: border-box;
-    flex: 1;
+    flex: 0 1 auto;
+    min-height: 0;
 }
 
 .summary-content p,
@@ -1202,9 +1270,12 @@ body {
 /* Library Styles */
 .library-container {
     width: 100%;
-    height: 100%;
+    min-height: 0;
+    height: auto;
     display: flex;
     flex-direction: column;
+    flex: 1;
+    overflow: visible;
 }
 
 .library-list {
@@ -1861,11 +1932,13 @@ body {
 /* Library Styles - Matches MS Editor Library.js */
 .library-container {
     position: relative;
-    height: 100vh;
-    overflow: hidden;
+    min-height: 0;
+    height: auto;
+    overflow: visible;
     margin-top: -10px;
     display: flex;
     flex-direction: column;
+    flex: 1;
 }
 
 .search-container {
@@ -1953,6 +2026,8 @@ body {
     flex: 1;
     overflow-y: auto;
     font-size: 12px;
+    padding-bottom: 40px !important; /* Extra padding to allow scrolling to see bottom content */
+    margin-bottom: 30px !important; /* Extra margin for scroll space */
 }
 
 .hiddenScrollbar h2 {
@@ -1962,11 +2037,15 @@ body {
 /* Approval Styles - Matches MS Editor ClauseApproval.js */
 .clause-approval-container {
     position: relative;
-    height: 100vh;
-    overflow: hidden;
+    min-height: 0;
+    height: auto;
+    overflow: visible;
     margin-top: -10px;
     display: flex;
     flex-direction: column;
+    flex: 1;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .approval-card {
@@ -2053,6 +2132,54 @@ body {
     padding-left: 0;
 }
 
+/* Team Member Dropdown Styles - Matches MS Editor */
+.team-member-input {
+    position: relative;
+}
+
+.team-member-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    margin-top: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.team-member-dropdown .dropdown-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 12px;
+    transition: background-color 0.2s;
+}
+
+.team-member-dropdown .dropdown-item:hover {
+    background-color: #f5f5f5;
+}
+
+.team-member-dropdown .dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.team-member-dropdown .dropdown-loading {
+    padding: 12px;
+    text-align: center;
+    color: #666;
+    font-size: 12px;
+}
+
+/* Form Container - Matches MS Editor spacing */
+.form-container {
+    padding: 12px !important;
+}
+
 .approval-trail li {
     margin: 4px 0;
 }
@@ -2130,12 +2257,37 @@ body {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
+    padding-top: 20px;
+    padding-bottom: 40px;
+    padding-left: 10px;
+    padding-right: 10px;
+    box-sizing: border-box;
+    width: 100%;
 }
 
 .outer-container {
     margin-bottom: 10px;
     padding: 0 6px;
     margin-top: 12px;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+}
+
+.div1 {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.div2 {
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
+    box-sizing: border-box;
+    gap: 7px;
 }
 
 .prompt-container {
@@ -2143,6 +2295,10 @@ body {
     margin-left: auto;
     background-color: #eff4ff;
     padding: 5px 10px;
+    max-width: calc(100% - 50px);
+    box-sizing: border-box;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
     width: fit-content;
     box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
 }
@@ -2152,9 +2308,14 @@ body {
     position: relative;
     background-color: #f9f9f9;
     padding: 12px;
+    max-width: calc(100% - 50px);
     width: fit-content;
     box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
     font-size: 12px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    box-sizing: border-box;
+    line-height: 1.6;
 }
 
 .copy-clause {
@@ -2197,8 +2358,8 @@ body {
 
 .g-prompt-container {
     width: 95%;
-    min-height: 38px;
-    background-color: #fff;
+    min-height: 38px !important;
+    background-color: #fff !important;
     border: 1px solid rgba(0, 0, 0, 0.2);
     border-radius: 10px;
     display: flex;
@@ -2206,18 +2367,23 @@ body {
     align-items: flex-start;
     gap: 0.25rem;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    box-sizing: border-box;
+    padding: 0;
 }
 
 .prompt-input {
     width: 100%;
     background: white;
-    padding: 2px;
+    padding: 10px 14px;
+    box-sizing: border-box;
     border: none;
     outline: none;
     resize: vertical;
     min-height: 38px;
     font-size: 14px;
     font-family: inherit;
+    line-height: unset;
+    border-bottom: none !important;
 }
 
 .prompt-actions {
@@ -2233,13 +2399,23 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #2667FF;
-    color: #fff;
-    transition: background 0.2s;
+    background-color: #2667FF !important;
+    color: #fff !important;
+    transition: background-color 0.2s;
+    border: none;
+    min-width: 36px;
+    min-height: 36px;
+    box-sizing: border-box;
 }
 
-.prompt-action-send:hover {
-    background: #1a4fd9;
+.prompt-action-send:hover:not([style*="gray"]) {
+    background-color: #1a4fd9 !important;
+}
+
+.prompt-action-send:disabled,
+.prompt-action-send[style*="gray"] {
+    background-color: gray !important;
+    cursor: not-allowed;
 }
 
 .formatted-response h1 {
@@ -2311,7 +2487,7 @@ body {
 .create-page-content {
     flex: 1;
     padding: 20px 12px;
-    padding-bottom: 100px; /* Space for fixed footer */
+    padding-bottom: 20px;
     overflow-y: auto;
     overflow-x: hidden;
     display: flex;
@@ -2322,7 +2498,6 @@ body {
     width: 90%;
     justify-content: flex-start;
     min-height: 0;
-    max-height: calc(100vh - 150px);
 }
 
 .create-page-inner {
@@ -2525,19 +2700,19 @@ body {
     text-align: center;
     background-color: #fff;
     flex-shrink: 0;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 100;
-    margin-top: 20px;
     padding: 16px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 .footer-text {
     font-size: 12px;
     color: #6c757d;
     margin: 0 0 2px 0;
+    text-align: center;
 }
 
 .start-from-scratch {
@@ -2546,6 +2721,8 @@ body {
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
+    display: inline-block;
+    text-align: center;
 }
 
 .start-from-scratch:hover {
@@ -2948,6 +3125,27 @@ body {
     color: #6c757d;
 }
 
+/* Approval Form Placeholder Styling - Matches MS Editor */
+.approval-form-input::placeholder,
+.approval-form-textarea::placeholder,
+.approval-form-select::placeholder {
+    font-size: 12px;
+    color: #999;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.approval-form-input,
+.approval-form-textarea,
+.approval-form-select {
+    font-size: 11px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.approval-form-select option {
+    font-size: 11px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
 .character-counter {
     font-size: 11px;
     color: #6c757d;
@@ -3323,9 +3521,19 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
     color: #2667ff;
     font-weight: 500;
+}
+
+/* Custom Loader - Matches CustomLoader component style */
+.custom-loader {
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(38, 103, 255, 0.1);
+    border-top: 4px solid #2667ff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    display: inline-block;
 }
 
 /* Playbook Detail View Styles */
@@ -3350,13 +3558,79 @@ body {
     padding: 8px 10px;
     flex-shrink: 0;
     width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
 .playbook-detail-header-left {
     display: flex;
     align-items: center;
     gap: 12px;
-    width: 100%;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.playbook-detail-header-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    flex-shrink: 0;
+    margin-left: 8px;
+}
+
+.playbook-detail-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.playbook-detail-edit-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #495057;
+    border-radius: 5px;
+    transition: all 0.2s ease;
+    min-width: 24px;
+    min-height: 24px;
+}
+
+.playbook-detail-edit-button:hover {
+    background-color: #f0f0f0;
+}
+
+.playbook-detail-edit-button:active {
+    background-color: #e0e0e0;
+}
+
+.playbook-detail-delete-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #ea5455;
+    border-radius: 5px;
+    transition: all 0.2s ease;
+    min-width: 24px;
+    min-height: 24px;
+}
+
+.playbook-detail-delete-button:hover {
+    background-color: #fee;
+}
+
+.playbook-detail-delete-button:active {
+    background-color: #fdd;
 }
 
 .playbook-detail-content {

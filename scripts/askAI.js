@@ -138,15 +138,15 @@
 
         const htmlContent = `
             <div class="ask-ai-container" style="margin-bottom: 0; box-shadow: none; flex: 1; border-radius: 0; margin-top: 0; width: 100%; height: 100%; display: flex; flex-direction: column;">
-                ${isHistoryLoading ? `
-                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; width: 100%; height: 100%;">
-                        <div class="loading-spinner" style="margin-top: 150px;"></div>
-                    </div>
-                ` : ''}
-                ${!isHistoryLoading ? `
                 <div class="ask-ai-body" style="display: flex; flex-direction: column; padding: 11px; flex: 1; overflow: hidden;">
-                    ${historySearch?.length > 0 ? `
-                        <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding-top: 20px; padding-bottom: 40px; padding-left: 10px; padding-right: 10px; box-sizing: border-box;">
+                    ${isHistoryLoading ? `
+                        <div class="min-height-scrollbar" id="message-div-ref" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding-top: 60px; padding-bottom: 40px; padding-left: 10px; padding-right: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                            <div class="loading-container" style="margin-top: 150px;"><div class="loading-spinner"></div></div>
+                            <div id="bottom-ref"></div>
+                        </div>
+                    ` : ''}
+                    ${!isHistoryLoading && historySearch?.length > 0 ? `
+                        <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding-top: 60px; padding-bottom: 40px; padding-left: 10px; padding-right: 10px; box-sizing: border-box;">
                             ${renderChatHistory()}
                             ${loader ? `
                                 <div class="outer-container" style="margin-bottom: 10px; padding: 0 6px; margin-top: 12px;">
@@ -182,7 +182,6 @@
                         ` : ''}
                     ` : ''}
                 </div>
-                ` : ''}
             </div>
         `;
         
@@ -278,7 +277,7 @@
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle></svg>
                     </button>
                 </div>
-                <div key="${item._id}" class="outer-container" style="margin-bottom: 20px; padding: 0 6px; margin-top: 12px; box-sizing: border-box;">
+                <div key="${item._id}" class="outer-container" style="margin-bottom: 20px; padding: 0 6px; margin-top: 0; box-sizing: border-box;">
                     <div id="syncDocResponse" class="response-container" style="border-radius: 8px; position: relative; background-color: #f9f9f9; padding: 12px; max-width: calc(100% - 50px); width: fit-content; box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px; font-size: 12px; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.6; box-sizing: border-box;">
                         <div style="line-height: 1.6; color: #333; margin-bottom: ${Questions?.length ? '12px' : '0'};">
                             ${formatHtmlContent(removeInlineStyles(noOlHtmlData))}
