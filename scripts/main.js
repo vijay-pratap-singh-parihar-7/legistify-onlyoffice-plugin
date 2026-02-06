@@ -869,8 +869,6 @@
             if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
                 window.Asc.plugin.executeMethod("ShowPluginPanel", [], function() {
                     console.log('Plugin panel opened');
-                    // Set initial/default panel width after opening
-                    setPanelWidth(600); // Set your desired default width (in pixels)
                 }, function(error) {
                     console.warn('ShowPluginPanel not available:', error);
                 });
@@ -878,43 +876,6 @@
         } catch (error) {
             console.warn('Error opening plugin panel:', error);
         }
-    }
-
-    // Function to set panel width programmatically
-    function setPanelWidth(width) {
-        // Enforce min/max constraints
-        const minWidth = 250;
-        const maxWidth = 800;
-        const constrainedWidth = Math.max(minWidth, Math.min(maxWidth, width));
-        
-        if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
-            try {
-                window.Asc.plugin.executeMethod('SetPluginPanelWidth', [constrainedWidth], function() {
-                    console.log('Panel width set to:', constrainedWidth, 'px');
-                    // Also update CSS as fallback
-                    resizeViaCSS(constrainedWidth);
-                }, function(error) {
-                    console.warn('SetPluginPanelWidth API failed, using CSS fallback:', error);
-                    resizeViaCSS(constrainedWidth);
-                });
-            } catch (error) {
-                console.warn('Error setting panel width, using CSS fallback:', error);
-                resizeViaCSS(constrainedWidth);
-            }
-        } else {
-            // OnlyOffice API not available, use CSS only
-            resizeViaCSS(constrainedWidth);
-        }
-    }
-
-    // Helper function to resize via CSS (used as fallback)
-    function resizeViaCSS(newWidth) {
-        const iframe = window.frameElement;
-        if (iframe) {
-            iframe.style.width = newWidth + 'px';
-        }
-        document.body.style.minWidth = newWidth + 'px';
-        document.body.style.width = newWidth + 'px';
     }
 
     // Initialize OnlyOffice API helpers
@@ -1130,10 +1091,7 @@
             if (!isResizing) return;
 
             const diff = startX - e.clientX;
-            // Configurable min/max width constraints
-            const minWidth = 500;  // Minimum panel width in pixels
-            const maxWidth = 800;  // Maximum panel width in pixels
-            const newWidth = Math.max(minWidth, Math.min(maxWidth, startWidth + diff));
+            const newWidth = Math.max(250, Math.min(800, startWidth + diff));
 
             if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
                 try {
@@ -1150,6 +1108,15 @@
             }
         }
 
+        function resizeViaCSS(newWidth) {
+            const iframe = window.frameElement;
+            if (iframe) {
+                iframe.style.width = newWidth + 'px';
+            }
+            document.body.style.minWidth = newWidth + 'px';
+            document.body.style.width = newWidth + 'px';
+        }
+
         function handleMouseUp() {
             if (isResizing) {
                 isResizing = false;
@@ -1163,18 +1130,6 @@
             e.preventDefault();
         });
     }
-
-    // Expose panel width control function globally
-    window.setPluginPanelWidth = setPanelWidth;
-    
-    // Expose function to get current panel width
-    window.getPluginPanelWidth = function() {
-        const iframe = window.frameElement;
-        if (iframe) {
-            return iframe.offsetWidth;
-        }
-        return window.innerWidth;
-    };
 
     // Expose activeContentData for use by feature modules
     window.getActiveContentData = function() {
