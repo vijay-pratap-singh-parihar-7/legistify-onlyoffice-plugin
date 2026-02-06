@@ -219,11 +219,11 @@
             <div class="playbook-detail-root">
                 <div class="playbook-detail-header">
                     <div class="playbook-detail-header-left">
-                        <svg class="back-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="handleBackFromDetail()" style="cursor: pointer;">
+                        <svg class="back-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="handleBackFromDetail()" style="cursor: pointer; flex-shrink: 0;">
                             <polyline points="15 18 9 12 15 6"></polyline>
                         </svg>
-                        <span style="font-size: 14px; font-weight: 650; cursor: pointer;" onclick="handleBackFromDetail()">Back</span>
-                        <span style="font-size: 16px; font-weight: 650; margin-left: 8px; color: #212529;">${escapeHtml(playbook.name)}</span>
+                        <span style="font-size: 14px; font-weight: 650; cursor: pointer; flex-shrink: 0; white-space: nowrap;" onclick="handleBackFromDetail()">Back</span>
+                        <span class="playbook-detail-title" style="font-size: 16px; font-weight: 650; margin-left: 8px; color: #212529; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0;">${escapeHtml(playbook.name)}</span>
                     </div>
                     ${isEditable ? `
                     <div class="playbook-detail-header-actions">
@@ -1129,7 +1129,7 @@
                 </div>
                 <div class="create-page-footer">
                     <p class="footer-text">Want to craft your own guidelines?</p>
-                    <span class="start-from-scratch" onclick="handleStartFromScratch()">Start From Scratch</span>
+                    <span class="start-from-scratch" onclick="handleStartFromScratch()" style="display: inline-block;">Start From Scratch</span>
                 </div>
             </div>
         `;
@@ -1437,8 +1437,20 @@
         window.showCreatePage = false;
         showCreateForm = true;
         window.showCreateForm = true;
+        
+        // Render form immediately, then update name when async init completes
+        renderCreateForm();
+        
+        // Initialize and update name asynchronously
         initializeManualForm().then(() => {
-            renderCreateForm();
+            // Update the input field if form is already rendered
+            const nameInput = document.getElementById('form-playbook-name');
+            if (nameInput && manualFormGuideName) {
+                nameInput.value = manualFormGuideName;
+            }
+        }).catch((error) => {
+            console.error('Error initializing manual form:', error);
+            // Form is already rendered, continue with default name
         });
     };
     
@@ -1460,12 +1472,10 @@
         const playbookView = document.getElementById('playbook-view');
         if (!playbookView) return;
         
-        // Initialize form if needed
+        // Use default name if not yet initialized (fallback)
         if (!manualFormGuideName || manualFormGuideName === 'Manual Playbook') {
-            initializeManualForm().then(() => {
-                renderCreateForm();
-            });
-            return;
+            // If name is still default, use it temporarily (will be updated by async init)
+            manualFormGuideName = manualFormGuideName || 'Manual Playbook';
         }
         
         const rulesHTML = manualFormRules.map((rule, index) => `
