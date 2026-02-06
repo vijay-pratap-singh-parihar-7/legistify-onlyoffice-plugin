@@ -276,10 +276,7 @@
         // Initialize resize handle
         initResizeHandle();
         
-        // Hide OnlyOffice plugin panel close button (cross icon)
-        hideOnlyOfficeCloseButton();
-        
-        // Set up close button event listeners (kept for backward compatibility)
+        // Set up close button event listeners
         setupCloseButtonListeners();
         
         // Open plugin panel on left side
@@ -380,9 +377,6 @@
         activeContent = contentKey;
         updateContentView();
     }
-    
-    // Expose setActiveContent globally for playbook.js
-    window.setActiveContent = setActiveContent;
 
     // Update content view based on activeContent
     function updateContentView() {
@@ -487,18 +481,6 @@
                     featureHeaders.forEach(header => header.remove());
                 }
                 
-                // Remove feature-header from Clause Approval view (header is in drawer)
-                if (contentKey === 'clauseApproval') {
-                    const featureHeaders = clonedView.querySelectorAll('.feature-header');
-                    featureHeaders.forEach(header => header.remove());
-                }
-                
-                // Remove feature-header from Library view (header is in drawer)
-                if (contentKey === 'library') {
-                    const featureHeaders = clonedView.querySelectorAll('.feature-header');
-                    featureHeaders.forEach(header => header.remove());
-                }
-                
                 // Update IDs in cloned view to work with drawer
                 const updateIds = (element, suffix) => {
                     if (element.id) {
@@ -506,15 +488,7 @@
                     }
                     Array.from(element.children).forEach(child => updateIds(child, suffix));
                 };
-                // Don't update ID for ask-ai-view so it can be found easily
-                if (contentKey !== 'genai' && contentKey !== 'askai') {
-                    updateIds(clonedView, '-drawer');
-                } else {
-                    // For ask-ai-view, keep the original ID and ensure it's visible
-                    clonedView.id = 'ask-ai-view'; // Ensure ID is set
-                    clonedView.style.display = 'block'; // Ensure it's visible
-                    // Don't update children IDs for ask-ai-view as they'll be created dynamically
-                }
+                updateIds(clonedView, '-drawer');
             }
             if (drawerTitle) {
                 drawerTitle.textContent = titleMap[contentKey] || contentKey;
@@ -549,38 +523,8 @@
                         }
                     };
                 }
-            } else if (drawerHeaderActions && contentKey === 'library') {
-                // Setup Favourites button for Library view
-                drawerHeaderActions.style.display = 'flex';
-                const isActive = window.clauseSwitch || false;
-                drawerHeaderActions.innerHTML = `
-                    <span id="drawer-favorites-btn" onclick="toggleFavoriteSwitch()" class="${isActive ? 'active-tab' : 'tab'}" style="white-space: nowrap; font-weight: 600; cursor: pointer; padding: 6.3px 12px; border-radius: 5px; color: ${isActive ? '#fff' : '#808e99'}; border: 1px solid #5c8dff; font-size: 12px; background-color: ${isActive ? '#2667ff' : 'transparent'};">
-                        Favourites
-                    </span>
-                `;
-            } else if (drawerHeaderActions && (contentKey === 'genai' || contentKey === 'askai')) {
-                // Setup Refresh button for AI Copilot view - matches MS Editor
-                drawerHeaderActions.style.display = 'flex';
-                drawerHeaderActions.innerHTML = `
-                    <div class="summary-button" id="drawer-refresh-btn" title="Refresh" onclick="if(window.syncDocumentWithAi) window.syncDocumentWithAi(true);" style="display: flex; padding: 5px; border-radius: 5px; cursor: pointer; border: 1px solid #0000003d;">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="23 4 23 10 17 10"></polyline>
-                            <polyline points="1 20 1 14 7 14"></polyline>
-                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-                        </svg>
-                    </div>
-                `;
-                // Change close button to back arrow for AI Copilot (matches MS Editor)
-                const drawerCloseBtn = document.querySelector('.drawer-close-button');
-                if (drawerCloseBtn) {
-                    drawerCloseBtn.innerHTML = `
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="15 18 9 12 15 6"></polyline>
-                        </svg>
-                    `;
-                }
             } else if (drawerHeaderActions) {
-                // Hide header actions for other views (Approval)
+                // Hide header actions for other views (Library, Approval, Copilot)
                 drawerHeaderActions.style.display = 'none';
             }
         }
@@ -599,21 +543,11 @@
             } else if (contentKey === 'obligation' && window.initObligationsView) {
                 window.initObligationsView();
             } else if (contentKey === 'library' && window.initLibraryView) {
-                window.initLibraryView(activeContentData.libraryData);
+                window.initLibraryView();
             } else if (contentKey === 'clauseApproval' && window.initApprovalView) {
                 window.initApprovalView();
             } else if ((contentKey === 'genai' || contentKey === 'askai') && window.initAskAIView) {
-                // For AI Copilot, ensure the view is ready before initializing
-                const drawerContent = document.getElementById('drawer-content');
-                if (drawerContent) {
-                    // Always try to initialize, the function will create the view if needed
-                    window.initAskAIView();
-                } else {
-                    // Retry if drawer not ready
-                    setTimeout(() => {
-                        if (window.initAskAIView) window.initAskAIView();
-                    }, 100);
-                }
+                window.initAskAIView();
             }
         }, 150);
     }
@@ -691,7 +625,7 @@
         } else if (contentKey === 'library') {
             await getClauseLibrary();
             if (window.initLibraryView) {
-                window.initLibraryView(activeContentData.libraryData);
+                window.initLibraryView();
             }
         } else if (contentKey === 'clauseApproval') {
             await getClauseApprovals();
@@ -854,13 +788,13 @@
         });
     }
 
-    // Hide OnlyOffice plugin panel close button
-    function hideOnlyOfficeCloseButton() {
-        // Try multiple times to find and hide the OnlyOffice close button (it may load later)
+    // Set up close button event listeners
+    function setupCloseButtonListeners() {
+        // Try multiple times to find the OnlyOffice close button (it may load later)
         let attempts = 0;
         const maxAttempts = 10;
         
-        const findAndHideCloseButton = function() {
+        const findAndSetupCloseButton = function() {
             attempts++;
             
             // Try multiple selectors for OnlyOffice's close button
@@ -873,9 +807,7 @@
                 '.asc-window-header button[aria-label*="close" i]',
                 'button[title*="close" i]',
                 '.asc-window-header button:last-child',
-                '.asc-window-header .asc-window-button-close',
-                '.asc-window-headerRight button:last-child',
-                '.asc-window-headerRight .asc-window-close'
+                '.asc-window-header .asc-window-button-close'
             ];
             
             let onlyOfficeCloseBtn = null;
@@ -883,14 +815,7 @@
                 onlyOfficeCloseBtn = document.querySelector(selector);
                 if (onlyOfficeCloseBtn) {
                     console.log('Found OnlyOffice close button with selector:', selector);
-                    // Hide the button
-                    onlyOfficeCloseBtn.style.display = 'none';
-                    onlyOfficeCloseBtn.style.visibility = 'hidden';
-                    onlyOfficeCloseBtn.style.opacity = '0';
-                    onlyOfficeCloseBtn.style.width = '0';
-                    onlyOfficeCloseBtn.style.height = '0';
-                    onlyOfficeCloseBtn.style.pointerEvents = 'none';
-                    console.log('OnlyOffice close button hidden');
+                    break;
                 }
             }
             
@@ -903,14 +828,6 @@
                             onlyOfficeCloseBtn = parentDoc.querySelector(selector);
                             if (onlyOfficeCloseBtn) {
                                 console.log('Found OnlyOffice close button in parent with selector:', selector);
-                                // Hide the button
-                                onlyOfficeCloseBtn.style.display = 'none';
-                                onlyOfficeCloseBtn.style.visibility = 'hidden';
-                                onlyOfficeCloseBtn.style.opacity = '0';
-                                onlyOfficeCloseBtn.style.width = '0';
-                                onlyOfficeCloseBtn.style.height = '0';
-                                onlyOfficeCloseBtn.style.pointerEvents = 'none';
-                                console.log('OnlyOffice close button hidden in parent');
                                 break;
                             }
                         }
@@ -921,97 +838,83 @@
             }
             
             if (onlyOfficeCloseBtn) {
+                // Remove any existing listeners to avoid duplicates
+                const newBtn = onlyOfficeCloseBtn.cloneNode(true);
+                onlyOfficeCloseBtn.parentNode.replaceChild(newBtn, onlyOfficeCloseBtn);
+                
+                newBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('OnlyOffice close button clicked');
+                    closePluginPanel();
+                });
+                
+                console.log('OnlyOffice close button listener attached');
                 return true;
             } else if (attempts < maxAttempts) {
                 // Retry after a delay
-                setTimeout(findAndHideCloseButton, 500);
+                setTimeout(findAndSetupCloseButton, 500);
             } else {
                 console.warn('Could not find OnlyOffice close button after', maxAttempts, 'attempts');
             }
         };
         
         // Start looking for the close button
-        setTimeout(findAndHideCloseButton, 100);
-        
-        // Also use MutationObserver to catch dynamically added close buttons
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                mutation.addedNodes.forEach((node) => {
-                    if (node.nodeType === 1) {
-                        const selectors = [
-                            '.asc-window-close',
-                            '.plugin-close',
-                            '[aria-label*="close" i]',
-                            '[title*="close" i]',
-                            'button[title*="close" i]'
-                        ];
-                        
-                        selectors.forEach(selector => {
-                            const closeBtn = node.matches && node.matches(selector) ? node : node.querySelector?.(selector);
-                            if (closeBtn) {
-                                closeBtn.style.display = 'none';
-                                closeBtn.style.visibility = 'hidden';
-                                closeBtn.style.opacity = '0';
-                                closeBtn.style.pointerEvents = 'none';
-                            }
-                        });
-                    }
-                });
-            });
-        });
-        
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
-    }
-
-    // Set up close button event listeners (kept for backward compatibility, but button is now hidden)
-    function setupCloseButtonListeners() {
-        // Close button is now hidden, so we don't need to set up listeners
-        // This function is kept for backward compatibility
-        console.log('Close button listeners setup skipped (button is hidden)');
+        setTimeout(findAndSetupCloseButton, 100);
     }
     
     // Open plugin panel on the left side
     function openPluginPanel() {
         try {
             if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
-                // Set initial panel width to minimum (380px) before opening
-                const initialWidth = 380;
-                window.Asc.plugin.executeMethod('SetPluginPanelWidth', [initialWidth], function() {
-                    console.log('Plugin panel width set to minimum:', initialWidth);
-                    // Then open the panel
-                    window.Asc.plugin.executeMethod("ShowPluginPanel", [], function() {
-                        console.log('Plugin panel opened with width:', initialWidth);
-                        // Ensure minimum width is enforced after opening
-                        setTimeout(() => {
-                            resizeViaCSS(initialWidth);
-                        }, 100);
-                    }, function(error) {
-                        console.warn('ShowPluginPanel not available:', error);
-                        // Fallback: set width via CSS
-                        resizeViaCSS(initialWidth);
-                    });
+                window.Asc.plugin.executeMethod("ShowPluginPanel", [], function() {
+                    console.log('Plugin panel opened');
+                    // Set initial/default panel width after opening
+                    setPanelWidth(600); // Set your desired default width (in pixels)
                 }, function(error) {
-                    console.warn('SetPluginPanelWidth not available:', error);
-                    // Fallback: try to open panel anyway
-                    window.Asc.plugin.executeMethod("ShowPluginPanel", [], function() {
-                        console.log('Plugin panel opened (fallback)');
-                        resizeViaCSS(initialWidth);
-                    }, function(error2) {
-                        console.warn('ShowPluginPanel not available:', error2);
-                    });
+                    console.warn('ShowPluginPanel not available:', error);
                 });
-            } else {
-                // Fallback: set width via CSS if API not available
-                resizeViaCSS(380);
             }
         } catch (error) {
             console.warn('Error opening plugin panel:', error);
-            // Fallback: set width via CSS
-            resizeViaCSS(380);
         }
+    }
+
+    // Function to set panel width programmatically
+    function setPanelWidth(width) {
+        // Enforce min/max constraints
+        const minWidth = 250;
+        const maxWidth = 800;
+        const constrainedWidth = Math.max(minWidth, Math.min(maxWidth, width));
+        
+        if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
+            try {
+                window.Asc.plugin.executeMethod('SetPluginPanelWidth', [constrainedWidth], function() {
+                    console.log('Panel width set to:', constrainedWidth, 'px');
+                    // Also update CSS as fallback
+                    resizeViaCSS(constrainedWidth);
+                }, function(error) {
+                    console.warn('SetPluginPanelWidth API failed, using CSS fallback:', error);
+                    resizeViaCSS(constrainedWidth);
+                });
+            } catch (error) {
+                console.warn('Error setting panel width, using CSS fallback:', error);
+                resizeViaCSS(constrainedWidth);
+            }
+        } else {
+            // OnlyOffice API not available, use CSS only
+            resizeViaCSS(constrainedWidth);
+        }
+    }
+
+    // Helper function to resize via CSS (used as fallback)
+    function resizeViaCSS(newWidth) {
+        const iframe = window.frameElement;
+        if (iframe) {
+            iframe.style.width = newWidth + 'px';
+        }
+        document.body.style.minWidth = newWidth + 'px';
+        document.body.style.width = newWidth + 'px';
     }
 
     // Initialize OnlyOffice API helpers
@@ -1195,20 +1098,6 @@
         return window.pluginData?.contractId || '';
     };
 
-    // Resize function - accessible globally
-    function resizeViaCSS(newWidth) {
-        // Ensure width is within bounds (minimum 380px, maximum 800px)
-        const constrainedWidth = Math.max(380, Math.min(800, newWidth));
-        
-        const iframe = window.frameElement;
-        if (iframe) {
-            iframe.style.width = constrainedWidth + 'px';
-            iframe.style.minWidth = '380px'; // Always enforce minimum
-        }
-        document.body.style.minWidth = '380px'; // Always enforce minimum
-        document.body.style.width = constrainedWidth + 'px';
-    }
-
     // Initialize resize handle for panel resizing
     function initResizeHandle() {
         const resizeHandle = document.getElementById('resize-handle');
@@ -1241,8 +1130,10 @@
             if (!isResizing) return;
 
             const diff = startX - e.clientX;
-            // Minimum width: 380px (based on screenshot), Maximum width: 800px
-            const newWidth = Math.max(380, Math.min(800, startWidth + diff));
+            // Configurable min/max width constraints
+            const minWidth = 500;  // Minimum panel width in pixels
+            const maxWidth = 800;  // Maximum panel width in pixels
+            const newWidth = Math.max(minWidth, Math.min(maxWidth, startWidth + diff));
 
             if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
                 try {
@@ -1259,7 +1150,6 @@
             }
         }
 
-
         function handleMouseUp() {
             if (isResizing) {
                 isResizing = false;
@@ -1273,6 +1163,18 @@
             e.preventDefault();
         });
     }
+
+    // Expose panel width control function globally
+    window.setPluginPanelWidth = setPanelWidth;
+    
+    // Expose function to get current panel width
+    window.getPluginPanelWidth = function() {
+        const iframe = window.frameElement;
+        if (iframe) {
+            return iframe.offsetWidth;
+        }
+        return window.innerWidth;
+    };
 
     // Expose activeContentData for use by feature modules
     window.getActiveContentData = function() {

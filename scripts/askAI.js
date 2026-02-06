@@ -138,14 +138,14 @@
 
         const htmlContent = `
             <div class="ask-ai-container" style="margin-bottom: 0; box-shadow: none; flex: 1; border-radius: 0; margin-top: 0; width: 100%; height: 100%; display: flex; flex-direction: column;">
+                ${isHistoryLoading ? `
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; width: 100%; height: 100%;">
+                        <div class="loading-spinner" style="margin-top: 150px;"></div>
+                    </div>
+                ` : ''}
+                ${!isHistoryLoading ? `
                 <div class="ask-ai-body" style="display: flex; flex-direction: column; padding: 11px; flex: 1; overflow: hidden;">
-                    ${isHistoryLoading ? `
-                        <div class="min-height-scrollbar" id="message-div-ref" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding-top: 20px; padding-bottom: 40px; padding-left: 10px; padding-right: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                            <div class="loading-container" style="margin-top: 150px;"><div class="loading-spinner"></div></div>
-                            <div id="bottom-ref"></div>
-                        </div>
-                    ` : ''}
-                    ${!isHistoryLoading && historySearch?.length > 0 ? `
+                    ${historySearch?.length > 0 ? `
                         <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding-top: 20px; padding-bottom: 40px; padding-left: 10px; padding-right: 10px; box-sizing: border-box;">
                             ${renderChatHistory()}
                             ${loader ? `
@@ -182,6 +182,7 @@
                         ` : ''}
                     ` : ''}
                 </div>
+                ` : ''}
             </div>
         `;
         
