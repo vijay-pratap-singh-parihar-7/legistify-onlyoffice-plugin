@@ -7,6 +7,9 @@ body {
     position: relative;
     height: 100vh;
     max-height: 100vh;
+    /* Enforce minimum width for plugin panel - matches screenshot */
+    min-width: 380px;
+    width: 380px; /* Default width */
 }
 
 .plugin-root {
@@ -97,6 +100,33 @@ body {
 .plugin-close-button svg {
     width: 16px;
     height: 16px;
+}
+
+/* Hide OnlyOffice plugin panel close button (cross icon) from header */
+.plugin-close-button,
+.asc-window-close,
+.plugin-close,
+[aria-label*="close" i],
+[title*="close" i],
+.asc-window-header .asc-window-close,
+.asc-window-header button[aria-label*="close" i],
+button[title*="close" i],
+.asc-window-header .asc-window-button-close,
+.asc-window-header button:last-child,
+/* OnlyOffice plugin panel header close button */
+.asc-window-headerRight button:last-child,
+.asc-window-headerRight .asc-window-close,
+/* Generic close buttons in plugin header area */
+.asc-window-header button[class*="close"],
+.asc-window-header [class*="close-button"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    pointer-events: none !important;
 }
 
 /* Tab List - Matches MS Editor App.jsx tabList - Dynamic Resizing */
@@ -1782,6 +1812,16 @@ body {
 .run-button:disabled {
     background-color: #adb5bd;
     cursor: not-allowed;
+}
+
+.loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(38, 103, 255, 0.2);
+    border-top: 2px solid #2667ff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto;
 }
 
 .loading-spinner-small {

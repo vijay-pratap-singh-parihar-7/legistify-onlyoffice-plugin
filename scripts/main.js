@@ -276,7 +276,10 @@
         // Initialize resize handle
         initResizeHandle();
         
-        // Set up close button event listeners
+        // Hide OnlyOffice plugin panel close button (cross icon)
+        hideOnlyOfficeCloseButton();
+        
+        // Set up close button event listeners (kept for backward compatibility)
         setupCloseButtonListeners();
         
         // Open plugin panel on left side
@@ -851,13 +854,13 @@
         });
     }
 
-    // Set up close button event listeners
-    function setupCloseButtonListeners() {
-        // Try multiple times to find the OnlyOffice close button (it may load later)
+    // Hide OnlyOffice plugin panel close button
+    function hideOnlyOfficeCloseButton() {
+        // Try multiple times to find and hide the OnlyOffice close button (it may load later)
         let attempts = 0;
         const maxAttempts = 10;
         
-        const findAndSetupCloseButton = function() {
+        const findAndHideCloseButton = function() {
             attempts++;
             
             // Try multiple selectors for OnlyOffice's close button
@@ -870,7 +873,9 @@
                 '.asc-window-header button[aria-label*="close" i]',
                 'button[title*="close" i]',
                 '.asc-window-header button:last-child',
-                '.asc-window-header .asc-window-button-close'
+                '.asc-window-header .asc-window-button-close',
+                '.asc-window-headerRight button:last-child',
+                '.asc-window-headerRight .asc-window-close'
             ];
             
             let onlyOfficeCloseBtn = null;
@@ -878,7 +883,14 @@
                 onlyOfficeCloseBtn = document.querySelector(selector);
                 if (onlyOfficeCloseBtn) {
                     console.log('Found OnlyOffice close button with selector:', selector);
-                    break;
+                    // Hide the button
+                    onlyOfficeCloseBtn.style.display = 'none';
+                    onlyOfficeCloseBtn.style.visibility = 'hidden';
+                    onlyOfficeCloseBtn.style.opacity = '0';
+                    onlyOfficeCloseBtn.style.width = '0';
+                    onlyOfficeCloseBtn.style.height = '0';
+                    onlyOfficeCloseBtn.style.pointerEvents = 'none';
+                    console.log('OnlyOffice close button hidden');
                 }
             }
             
@@ -891,6 +903,14 @@
                             onlyOfficeCloseBtn = parentDoc.querySelector(selector);
                             if (onlyOfficeCloseBtn) {
                                 console.log('Found OnlyOffice close button in parent with selector:', selector);
+                                // Hide the button
+                                onlyOfficeCloseBtn.style.display = 'none';
+                                onlyOfficeCloseBtn.style.visibility = 'hidden';
+                                onlyOfficeCloseBtn.style.opacity = '0';
+                                onlyOfficeCloseBtn.style.width = '0';
+                                onlyOfficeCloseBtn.style.height = '0';
+                                onlyOfficeCloseBtn.style.pointerEvents = 'none';
+                                console.log('OnlyOffice close button hidden in parent');
                                 break;
                             }
                         }
@@ -901,43 +921,96 @@
             }
             
             if (onlyOfficeCloseBtn) {
-                // Remove any existing listeners to avoid duplicates
-                const newBtn = onlyOfficeCloseBtn.cloneNode(true);
-                onlyOfficeCloseBtn.parentNode.replaceChild(newBtn, onlyOfficeCloseBtn);
-                
-                newBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('OnlyOffice close button clicked');
-                    closePluginPanel();
-                });
-                
-                console.log('OnlyOffice close button listener attached');
                 return true;
             } else if (attempts < maxAttempts) {
                 // Retry after a delay
-                setTimeout(findAndSetupCloseButton, 500);
+                setTimeout(findAndHideCloseButton, 500);
             } else {
                 console.warn('Could not find OnlyOffice close button after', maxAttempts, 'attempts');
             }
         };
         
         // Start looking for the close button
-        setTimeout(findAndSetupCloseButton, 100);
+        setTimeout(findAndHideCloseButton, 100);
+        
+        // Also use MutationObserver to catch dynamically added close buttons
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                mutation.addedNodes.forEach((node) => {
+                    if (node.nodeType === 1) {
+                        const selectors = [
+                            '.asc-window-close',
+                            '.plugin-close',
+                            '[aria-label*="close" i]',
+                            '[title*="close" i]',
+                            'button[title*="close" i]'
+                        ];
+                        
+                        selectors.forEach(selector => {
+                            const closeBtn = node.matches && node.matches(selector) ? node : node.querySelector?.(selector);
+                            if (closeBtn) {
+                                closeBtn.style.display = 'none';
+                                closeBtn.style.visibility = 'hidden';
+                                closeBtn.style.opacity = '0';
+                                closeBtn.style.pointerEvents = 'none';
+                            }
+                        });
+                    }
+                });
+            });
+        });
+        
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+    }
+
+    // Set up close button event listeners (kept for backward compatibility, but button is now hidden)
+    function setupCloseButtonListeners() {
+        // Close button is now hidden, so we don't need to set up listeners
+        // This function is kept for backward compatibility
+        console.log('Close button listeners setup skipped (button is hidden)');
     }
     
     // Open plugin panel on the left side
     function openPluginPanel() {
         try {
             if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
-                window.Asc.plugin.executeMethod("ShowPluginPanel", [], function() {
-                    console.log('Plugin panel opened');
+                // Set initial panel width to minimum (380px) before opening
+                const initialWidth = 380;
+                window.Asc.plugin.executeMethod('SetPluginPanelWidth', [initialWidth], function() {
+                    console.log('Plugin panel width set to minimum:', initialWidth);
+                    // Then open the panel
+                    window.Asc.plugin.executeMethod("ShowPluginPanel", [], function() {
+                        console.log('Plugin panel opened with width:', initialWidth);
+                        // Ensure minimum width is enforced after opening
+                        setTimeout(() => {
+                            resizeViaCSS(initialWidth);
+                        }, 100);
+                    }, function(error) {
+                        console.warn('ShowPluginPanel not available:', error);
+                        // Fallback: set width via CSS
+                        resizeViaCSS(initialWidth);
+                    });
                 }, function(error) {
-                    console.warn('ShowPluginPanel not available:', error);
+                    console.warn('SetPluginPanelWidth not available:', error);
+                    // Fallback: try to open panel anyway
+                    window.Asc.plugin.executeMethod("ShowPluginPanel", [], function() {
+                        console.log('Plugin panel opened (fallback)');
+                        resizeViaCSS(initialWidth);
+                    }, function(error2) {
+                        console.warn('ShowPluginPanel not available:', error2);
+                    });
                 });
+            } else {
+                // Fallback: set width via CSS if API not available
+                resizeViaCSS(380);
             }
         } catch (error) {
             console.warn('Error opening plugin panel:', error);
+            // Fallback: set width via CSS
+            resizeViaCSS(380);
         }
     }
 
@@ -1122,6 +1195,20 @@
         return window.pluginData?.contractId || '';
     };
 
+    // Resize function - accessible globally
+    function resizeViaCSS(newWidth) {
+        // Ensure width is within bounds (minimum 380px, maximum 800px)
+        const constrainedWidth = Math.max(380, Math.min(800, newWidth));
+        
+        const iframe = window.frameElement;
+        if (iframe) {
+            iframe.style.width = constrainedWidth + 'px';
+            iframe.style.minWidth = '380px'; // Always enforce minimum
+        }
+        document.body.style.minWidth = '380px'; // Always enforce minimum
+        document.body.style.width = constrainedWidth + 'px';
+    }
+
     // Initialize resize handle for panel resizing
     function initResizeHandle() {
         const resizeHandle = document.getElementById('resize-handle');
@@ -1154,7 +1241,8 @@
             if (!isResizing) return;
 
             const diff = startX - e.clientX;
-            const newWidth = Math.max(250, Math.min(800, startWidth + diff));
+            // Minimum width: 380px (based on screenshot), Maximum width: 800px
+            const newWidth = Math.max(380, Math.min(800, startWidth + diff));
 
             if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
                 try {
@@ -1171,14 +1259,6 @@
             }
         }
 
-        function resizeViaCSS(newWidth) {
-            const iframe = window.frameElement;
-            if (iframe) {
-                iframe.style.width = newWidth + 'px';
-            }
-            document.body.style.minWidth = newWidth + 'px';
-            document.body.style.width = newWidth + 'px';
-        }
 
         function handleMouseUp() {
             if (isResizing) {
