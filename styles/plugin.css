@@ -2487,7 +2487,7 @@ body {
 .create-page-content {
     flex: 1;
     padding: 20px 12px;
-    padding-bottom: 100px; /* Space for fixed footer */
+    padding-bottom: 20px;
     overflow-y: auto;
     overflow-x: hidden;
     display: flex;
@@ -2498,7 +2498,6 @@ body {
     width: 90%;
     justify-content: flex-start;
     min-height: 0;
-    max-height: calc(100vh - 150px);
 }
 
 .create-page-inner {
@@ -2701,13 +2700,8 @@ body {
     text-align: center;
     background-color: #fff;
     flex-shrink: 0;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 100;
-    margin-top: 20px;
     padding: 16px;
+    width: 100%;
 }
 
 .footer-text {
@@ -3520,9 +3514,19 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
     color: #2667ff;
     font-weight: 500;
+}
+
+/* Custom Loader - Matches CustomLoader component style */
+.custom-loader {
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(38, 103, 255, 0.1);
+    border-top: 4px solid #2667ff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    display: inline-block;
 }
 
 /* Playbook Detail View Styles */
@@ -3553,7 +3557,62 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
-    width: 100%;
+    flex: 0 0 auto;
+    min-width: 0;
+}
+
+.playbook-detail-header-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.playbook-detail-edit-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #495057;
+    border-radius: 5px;
+    transition: all 0.2s ease;
+    min-width: 24px;
+    min-height: 24px;
+}
+
+.playbook-detail-edit-button:hover {
+    background-color: #f0f0f0;
+}
+
+.playbook-detail-edit-button:active {
+    background-color: #e0e0e0;
+}
+
+.playbook-detail-delete-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #ea5455;
+    border-radius: 5px;
+    transition: all 0.2s ease;
+    min-width: 24px;
+    min-height: 24px;
+}
+
+.playbook-detail-delete-button:hover {
+    background-color: #fee;
+}
+
+.playbook-detail-delete-button:active {
+    background-color: #fdd;
 }
 
 .playbook-detail-content {

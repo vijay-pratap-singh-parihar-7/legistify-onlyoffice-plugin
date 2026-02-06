@@ -212,6 +212,9 @@
         const rules = playbook.rules || [];
         const isStandard = playbook.organizationId === null;
         
+        // Always show edit button, delete button only for custom playbooks (matches MS Editor pattern)
+        const isEditable = true; // Always allow editing (matches MS Editor)
+        
         playbookView.innerHTML = `
             <div class="playbook-detail-root">
                 <div class="playbook-detail-header">
@@ -222,22 +225,24 @@
                         <span style="font-size: 14px; font-weight: 650; cursor: pointer;" onclick="handleBackFromDetail()">Back</span>
                         <span style="font-size: 16px; font-weight: 650; margin-left: 8px; color: #212529;">${escapeHtml(playbook.name)}</span>
                     </div>
-                    <div style="display: flex; gap: 4px; align-items: center;">
-                        <button onclick="handleEditPlaybook('${playbook._id}')" style="background: none; border: none; cursor: pointer; padding: 5px; display: flex; align-items: center; justify-content: center; color: #495057; border-radius: 5px; transition: all 0.2s;" onmouseover="this.style.backgroundColor='#f0f0f0'" onmouseout="this.style.backgroundColor='transparent'" title="Edit">
+                    ${isEditable ? `
+                    <div class="playbook-detail-header-actions">
+                        <button class="playbook-detail-edit-button" onclick="handleEditPlaybook('${playbook._id}')" title="Edit guide name and rules">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                             </svg>
                         </button>
                         ${!isStandard ? `
-                            <button onclick="handleDeletePlaybook('${playbook._id}')" style="background: none; border: none; cursor: pointer; padding: 5px; display: flex; align-items: center; justify-content: center; color: #ea5455; border-radius: 5px; transition: all 0.2s;" onmouseover="this.style.backgroundColor='#fee'" onmouseout="this.style.backgroundColor='transparent'" title="Delete">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="3 6 5 6 21 6"></polyline>
-                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                </svg>
-                            </button>
+                        <button class="playbook-detail-delete-button" onclick="handleDeletePlaybook('${playbook._id}')" title="Delete this playbook">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                        </button>
                         ` : ''}
                     </div>
+                    ` : ''}
                 </div>
                 <div class="playbook-detail-content">
                     <div class="playbook-detail-info">
@@ -1122,8 +1127,14 @@
                 <div class="create-page-content" id="create-page-content">
                     ${renderCreatePageContent()}
                 </div>
+                <div class="create-page-footer">
+                    <p class="footer-text">Want to craft your own guidelines?</p>
+                    <span class="start-from-scratch" onclick="handleStartFromScratch()">Start From Scratch</span>
+                </div>
             </div>
         `;
+        // Update footer visibility based on current state
+        updateCreatePageFooter();
     }
     
     // Render create page content based on state
@@ -1135,6 +1146,16 @@
         } else {
             return renderInitialCreateView();
         }
+    }
+    
+    // Update footer visibility based on current state
+    function updateCreatePageFooter() {
+        const footer = document.querySelector('.create-page-footer');
+        if (!footer) return;
+        
+        // Show footer only in initial view (not generating, not generated)
+        const shouldShow = !isGeneratingPlaybook && !generatedPlaybook;
+        footer.style.display = shouldShow ? 'block' : 'none';
     }
     
     // Render initial create view - Matches MS Editor CreateGuidePage exactly
@@ -1191,11 +1212,6 @@
                     ${isGeneratingPlaybook ? '<div class="loading-spinner-small"></div> Generating...' : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> Generate With AI'}
                 </button>
             </div>
-            
-            <div class="create-page-footer">
-                <p class="footer-text">Want to craft your own guidelines?</p>
-                <span class="start-from-scratch" onclick="handleStartFromScratch()">Start From Scratch</span>
-            </div>
         `;
     }
     
@@ -1223,16 +1239,7 @@
                     AI is analyzing your contract and creating personalized guidelines...
                 </p>
                 <div class="loading-spinner-wrapper">
-                    <div class="loading-spinner"></div>
-                    <span>Please wait...</span>
-                </div>
-                <!-- Progress dots at bottom matching MS Editor -->
-                <div class="progress-dots">
-                    <div class="progress-dot dot-blue"></div>
-                    <div class="progress-dot dot-light-blue"></div>
-                    <div class="progress-dot dot-purple"></div>
-                    <div class="progress-dot dot-blue"></div>
-                    <div class="progress-dot dot-light-blue"></div>
+                    <div class="custom-loader"></div>
                 </div>
             </div>
         `;
@@ -1316,6 +1323,7 @@
         const contentDiv = document.getElementById('create-page-content');
         if (contentDiv) {
             contentDiv.innerHTML = renderGeneratingView();
+            updateCreatePageFooter();
         }
         
         try {
@@ -1367,6 +1375,7 @@
             const contentDiv = document.getElementById('create-page-content');
             if (contentDiv) {
                 contentDiv.innerHTML = renderCreatePageContent();
+                updateCreatePageFooter();
             }
         }
     };
@@ -1421,8 +1430,11 @@
         return baseName;
     }
     
-    // Handle start from scratch
+    // Handle start from scratch - matches MS Editor behavior
     window.handleStartFromScratch = function() {
+        // Hide create page first, then show form (matches MS Editor pattern)
+        showCreatePage = false;
+        window.showCreatePage = false;
         showCreateForm = true;
         window.showCreateForm = true;
         initializeManualForm().then(() => {
@@ -1723,6 +1735,7 @@
         const contentDiv = document.getElementById('create-page-content');
         if (contentDiv) {
             contentDiv.innerHTML = renderCreatePageContent();
+            updateCreatePageFooter();
             // Focus on textarea
             setTimeout(() => {
                 const textarea = document.getElementById(`rule-textarea-${index}`);
@@ -1744,6 +1757,7 @@
             const contentDiv = document.getElementById('create-page-content');
             if (contentDiv) {
                 contentDiv.innerHTML = renderCreatePageContent();
+                updateCreatePageFooter();
             }
         }
     };
@@ -1755,6 +1769,7 @@
         const contentDiv = document.getElementById('create-page-content');
         if (contentDiv) {
             contentDiv.innerHTML = renderCreatePageContent();
+            updateCreatePageFooter();
         }
     };
     
@@ -1765,6 +1780,7 @@
             const contentDiv = document.getElementById('create-page-content');
             if (contentDiv) {
                 contentDiv.innerHTML = renderCreatePageContent();
+                updateCreatePageFooter();
             }
         }
     };
