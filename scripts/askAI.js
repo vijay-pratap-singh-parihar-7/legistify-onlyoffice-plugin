@@ -137,16 +137,30 @@
         console.log('🔵 Rendering Ask AI view into:', askAIView.id, 'isHistoryLoading:', isHistoryLoading, 'historySearch length:', historySearch?.length);
 
         const htmlContent = `
-            <div class="ask-ai-container" style="margin-bottom: 0; box-shadow: none; flex: 1; border-radius: 0; margin-top: 0; width: 100%; height: 100%; display: flex; flex-direction: column;">
-                <div class="ask-ai-body" style="display: flex; flex-direction: column; padding: 11px; flex: 1; overflow: hidden;">
-                    ${isHistoryLoading ? `
-                        <div class="min-height-scrollbar" id="message-div-ref" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding-top: 60px; padding-bottom: 40px; padding-left: 10px; padding-right: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                            <div class="loading-container" style="margin-top: 150px;"><div class="loading-spinner"></div></div>
-                            <div id="bottom-ref"></div>
+            <div class="ask-ai-container" style="margin-bottom: 0; box-shadow: none; flex: 1; border-radius: 0; margin-top: 0; width: 100%; height: 100%; display: flex; flex-direction: column; ${isHistoryLoading ? 'align-items: center; justify-content: flex-start;' : ''}">
+                ${isHistoryLoading ? `
+                    <div class="loading-spinner" style="margin-top: 150px;"></div>
+                ` : `
+                <div class="ask-ai-header" style="position: sticky; top: 0; z-index: 10; background-color: #fff; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #6a666633; padding: 10px; flex-shrink: 0;">
+                    <div class="header-box" style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-left: 2px;">
+                        <svg class="back-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="handleBackFromAskAI()" style="cursor: pointer;">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                        <p class="summary-text" style="font-weight: 650; font-size: 16px; margin: 0 !important;">AI Copilot</p>
+                    </div>
+                    <div class="header-actions" style="display: flex; gap: 8px; align-items: center; justify-content: flex-end; padding: 4px 0;">
+                        <div class="summary-button" onclick="syncDocumentWithAi(true)" style="display: flex; align-content: center; padding: 5px; border-radius: 5px; cursor: pointer; border: 1px solid #0000003d;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 4 23 10 17 10"></polyline>
+                                <polyline points="1 20 1 14 7 14"></polyline>
+                                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                            </svg>
                         </div>
-                    ` : ''}
-                    ${!isHistoryLoading && historySearch?.length > 0 ? `
-                        <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding-top: 60px; padding-bottom: 40px; padding-left: 10px; padding-right: 10px; box-sizing: border-box;">
+                    </div>
+                </div>
+                <div class="ask-ai-body" style="display: flex; flex-direction: column; padding: 11px; flex: 1; overflow: hidden;">
+                    ${historySearch?.length > 0 ? `
+                        <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding-top: 20px; padding-bottom: 40px; padding-left: 10px; padding-right: 10px; box-sizing: border-box;">
                             ${renderChatHistory()}
                             ${loader ? `
                                 <div class="outer-container" style="margin-bottom: 10px; padding: 0 6px; margin-top: 12px;">
@@ -167,7 +181,7 @@
                         </div>
                         <div class="prompt-outer-container" style="width: 100%; background-color: #fff; z-index: 10; max-width: 49.7rem; display: flex; align-items: center; position: sticky; bottom: 0; margin: 0 auto;">
                             <div class="g-prompt-container" style="width: 95%; min-height: 38px !important; background-color: #fff !important; border: 1px solid rgba(0, 0, 0, 0.2); border-radius: 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); box-sizing: border-box; padding: 0;">
-                                <textarea id="prompt-input-ref" class="prompt-input" oninput="handlePromptInput(event)" placeholder="Ask any questions about this agreement" style="width: 100%; background: white; padding: 10px 14px; border-bottom: none !important; border: none; outline: none; resize: vertical; min-height: 38px; font-size: 14px; font-family: inherit; line-height: 1.5; box-sizing: border-box;">${escapeHtml(prompt || '')}</textarea>
+                                <textarea id="prompt-input-ref" class="prompt-input" oninput="handlePromptInput(event)" placeholder="Ask any questions about this agreement" style="width: 100%; background: white; padding: 10px 14px; border-bottom: none !important; border: none; outline: none; resize: vertical; min-height: 38px; font-size: 14px; font-family: inherit; line-height: 1.5; box-sizing: border-box; direction: ltr; text-align: left;">${escapeHtml(prompt || '')}</textarea>
                             </div>
                             <div class="prompt-actions" style="padding-left: 10px; padding-right: 5px;">
                                 <label id="prompt-send-btn" class="prompt-action-send" onclick="handleGenerate()" style="border-radius: 10px; padding: 8px; cursor: ${error || !prompt?.trim() || loader ? 'not-allowed' : 'pointer'}; margin: 0; display: flex; align-items: center; justify-content: center; background-color: ${error || !prompt?.trim() || loader ? 'gray' : '#2667FF'}; color: #fff; transition: background-color 0.2s; border: none; min-width: 36px; min-height: 36px; box-sizing: border-box;">
@@ -182,6 +196,7 @@
                         ` : ''}
                     ` : ''}
                 </div>
+                `}
             </div>
         `;
         
@@ -277,15 +292,15 @@
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle></svg>
                     </button>
                 </div>
-                <div key="${item._id}" class="outer-container" style="margin-bottom: 20px; padding: 0 6px; margin-top: 0; box-sizing: border-box;">
+                <div key="${item._id}" class="outer-container" style="margin-bottom: 20px; padding: 0 6px; margin-top: 12px; box-sizing: border-box;">
                     <div id="syncDocResponse" class="response-container" style="border-radius: 8px; position: relative; background-color: #f9f9f9; padding: 12px; max-width: calc(100% - 50px); width: fit-content; box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px; font-size: 12px; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.6; box-sizing: border-box;">
                         <div style="line-height: 1.6; color: #333; margin-bottom: ${Questions?.length ? '12px' : '0'};">
                             ${formatHtmlContent(removeInlineStyles(noOlHtmlData))}
                         </div>
                         ${Questions?.length ? Questions.map((qs, i) => `
-                            <div key="${i}" id="question-${i}" onclick="setPromptFromQuestion('${escapeHtml(qs)}')" class="doc-questions" style="display: flex; align-items: flex-start; cursor: pointer; margin-bottom: 12px; padding: 8px; border-radius: 4px; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f0f0f0'" onmouseout="this.style.backgroundColor='transparent'">
-                                <p style="margin: 0; margin-right: 8px; font-size: 12px; font-weight: 600; color: #2667ff; min-width: 20px;">${i + 1}.</p>
-                                <p style="margin: 0; font-size: 12px; color: #333; line-height: 1.6; flex: 1;">${escapeHtml(qs)}</p>
+                            <div key="${i}" id="question-${i}" onclick="setPromptFromQuestion('${escapeHtml(qs)}')" class="doc-questions" style="display: flex; align-items: flex-start; cursor: pointer; margin-bottom: 12px; padding: 8px; border-radius: 4px; transition: background-color 0.2s; text-decoration: none;" onmouseover="this.style.backgroundColor='#f0f0f0'; this.style.textDecoration='none';" onmouseout="this.style.backgroundColor='transparent'; this.style.textDecoration='none';">
+                                <p style="margin: 0; margin-right: 8px; font-size: 12px; font-weight: 600; color: #2667ff; min-width: 20px; text-decoration: none;">${i + 1}.</p>
+                                <p style="margin: 0; font-size: 12px; color: #333; line-height: 1.6; flex: 1; text-decoration: none;">${escapeHtml(qs)}</p>
                             </div>
                         `).join('') : ''}
                         <div onclick="copyToClipboard('${escapeHtml(item.response)}')" class="copy-clause" style="padding: 2px 5px; border-radius: 0 0 8px 0; position: absolute; bottom: 0; right: 0; cursor: pointer; background-color: rgba(255, 255, 255, 0.8);">
@@ -444,7 +459,30 @@
     window.handlePromptInput = function(event) {
         prompt = event.target.value;
         error = prompt.length >= 2000;
-        renderAskAIView();
+        
+        // Update send button state without re-rendering entire view
+        const sendButton = document.getElementById('prompt-send-btn');
+        if (sendButton) {
+            sendButton.style.backgroundColor = (error || !prompt?.trim() || loader) ? 'gray' : '#2667FF';
+            sendButton.style.cursor = (error || !prompt?.trim() || loader) ? 'not-allowed' : 'pointer';
+        }
+        
+        // Update error message if needed
+        const errorMsg = document.querySelector('.prompt-error-message');
+        if (prompt.length >= 2000) {
+            if (!errorMsg) {
+                const promptContainer = document.querySelector('.prompt-outer-container');
+                if (promptContainer) {
+                    const errorP = document.createElement('p');
+                    errorP.className = 'prompt-error-message';
+                    errorP.style.cssText = 'font-size: 12px; color: red; margin: 0; color: #6c757d; text-align: end; padding-right: 1.5rem;';
+                    errorP.textContent = 'Maximum Limit Reached (2000 words only)';
+                    promptContainer.appendChild(errorP);
+                }
+            }
+        } else if (errorMsg) {
+            errorMsg.remove();
+        }
     };
 
     // Handle chat scroll
@@ -597,14 +635,38 @@
     // Set prompt from question
     window.setPromptFromQuestion = function(question) {
         prompt = question;
+        error = prompt.length >= 2000;
         const promptInput = document.getElementById('prompt-input-ref');
         if (promptInput) {
+            // Preserve cursor position by setting selection at the end
             promptInput.value = question;
+            const length = question.length;
+            promptInput.setSelectionRange(length, length);
             promptInput.focus();
-        }
-        renderAskAIView();
-        if (promptInputRef) {
-            promptInputRef.focus();
+            
+            // Update send button state
+            const sendButton = document.getElementById('prompt-send-btn');
+            if (sendButton) {
+                sendButton.style.backgroundColor = (error || !prompt?.trim() || loader) ? 'gray' : '#2667FF';
+                sendButton.style.cursor = (error || !prompt?.trim() || loader) ? 'not-allowed' : 'pointer';
+            }
+            
+            // Update error message if needed
+            const errorMsg = document.querySelector('.prompt-error-message');
+            if (prompt.length >= 2000) {
+                if (!errorMsg) {
+                    const promptContainer = document.querySelector('.prompt-outer-container');
+                    if (promptContainer) {
+                        const errorP = document.createElement('p');
+                        errorP.className = 'prompt-error-message';
+                        errorP.style.cssText = 'font-size: 12px; color: red; margin: 0; color: #6c757d; text-align: end; padding-right: 1.5rem;';
+                        errorP.textContent = 'Maximum Limit Reached (2000 words only)';
+                        promptContainer.appendChild(errorP);
+                    }
+                }
+            } else if (errorMsg) {
+                errorMsg.remove();
+            }
         }
     };
 
