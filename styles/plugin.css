@@ -1175,7 +1175,8 @@ body {
     margin: 0;
     width: 100%;
     box-sizing: border-box;
-    flex: 1;
+    /* flex: 1; */
+    height: calc(100vh - 50px);
 }
 
 .summary-content p,
@@ -2151,7 +2152,7 @@ body {
 }
 
 .min-height-scrollbar {
-    flex: 1 1 0%;
+    /* flex: 1 1 0%; */
     overflow-y: auto !important;
     overflow-x: hidden !important;
     min-height: 0;
@@ -2164,6 +2165,7 @@ body {
     padding-top: 20px;
     padding-bottom: 20px;
     box-sizing: border-box;
+    height: calc(100vh - 133px);
 }
 
 .min-height-scrollbar::-webkit-scrollbar {
@@ -2293,12 +2295,9 @@ body {
 .prompt-outer-container {
     width: 100%;
     background-color: #fff;
-    z-index: 100;
     max-width: 49.7rem;
     display: flex;
     align-items: center;
-    position: sticky;
-    bottom: 0;
     margin: 0 auto;
     flex-shrink: 0;
     padding: 11px;
