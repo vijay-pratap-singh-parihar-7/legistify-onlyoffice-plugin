@@ -193,24 +193,67 @@
         
         // Force scrollbar to work by ensuring proper height constraints
         const ensureScrollable = () => {
-            if (messageDivRef) {
-                // Remove any fixed height that might prevent scrolling
-                messageDivRef.style.height = '';
-                messageDivRef.style.maxHeight = '';
+            if (messageDivRef && askAIView) {
+                const askAiBody = askAIView.querySelector('.ask-ai-body');
+                const promptContainer = askAIView.querySelector('.prompt-outer-container');
                 
-                // Ensure overflow is set
-                messageDivRef.style.overflowY = 'auto';
-                messageDivRef.style.overflowX = 'hidden';
-                
-                // Force a reflow to ensure scrollbar appears
-                void messageDivRef.offsetHeight;
+                if (askAiBody && promptContainer) {
+                    // Get computed styles
+                    const bodyStyle = window.getComputedStyle(askAiBody);
+                    const promptStyle = window.getComputedStyle(promptContainer);
+                    
+                    // Calculate available height more accurately
+                    const bodyHeight = askAiBody.offsetHeight || askAiBody.clientHeight;
+                    const promptHeight = promptContainer.offsetHeight || promptContainer.clientHeight;
+                    const availableHeight = bodyHeight - promptHeight;
+                    
+                    console.log('Scroll Debug:', {
+                        bodyHeight,
+                        promptHeight,
+                        availableHeight,
+                        scrollHeight: messageDivRef.scrollHeight,
+                        clientHeight: messageDivRef.clientHeight
+                    });
+                    
+                    // Set explicit height to force scrolling
+                    if (availableHeight > 0 && availableHeight < messageDivRef.scrollHeight) {
+                        messageDivRef.style.height = availableHeight + 'px';
+                        messageDivRef.style.maxHeight = availableHeight + 'px';
+                        messageDivRef.style.overflowY = 'scroll';
+                    } else {
+                        // Use flex if content fits
+                        messageDivRef.style.height = '';
+                        messageDivRef.style.maxHeight = '';
+                        messageDivRef.style.overflowY = 'auto';
+                    }
+                    
+                    // Ensure overflow-x is hidden
+                    messageDivRef.style.overflowX = 'hidden';
+                    
+                    // Force a reflow to trigger scrollbar
+                    void messageDivRef.offsetHeight;
+                }
             }
         };
         
-        // Ensure scrollable after render
-        setTimeout(ensureScrollable, 50);
-        setTimeout(ensureScrollable, 200);
-        setTimeout(ensureScrollable, 500);
+        // Ensure scrollable after render with multiple attempts
+        setTimeout(ensureScrollable, 100);
+        setTimeout(ensureScrollable, 300);
+        setTimeout(ensureScrollable, 600);
+        
+        // Also recalculate on window resize
+        const resizeHandler = () => {
+            setTimeout(ensureScrollable, 100);
+        };
+        window.addEventListener('resize', resizeHandler);
+        
+        // Store cleanup
+        if (!window.askAICleanup) {
+            window.askAICleanup = [];
+        }
+        window.askAICleanup.push(() => {
+            window.removeEventListener('resize', resizeHandler);
+        });
 
         // Set textarea value properly (value attribute doesn't work for textarea)
         if (promptInputRef) {

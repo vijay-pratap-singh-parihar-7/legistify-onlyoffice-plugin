@@ -80,7 +80,7 @@ body {
 .tab-list-container {
     display: flex;
     background: rgb(211 211 211 / 48%);
-    align-items: end;
+    align-items: stretch;
     justify-content: start;
     height: 35px;
     border-top: 1px solid #80808036;
@@ -89,7 +89,7 @@ body {
 
 .tab-list {
     display: flex;
-    align-items: end;
+    align-items: stretch;
     justify-content: start;
     height: 35px;
     width: 100%;
@@ -98,11 +98,12 @@ body {
 
 .tab-button {
     color: blue;
-    height: 32px;
+    height: 100%;
     font-weight: 700 !important;
     background: transparent;
     border: none;
-    padding: 6px 12px;
+    padding: 0 12px;
+    margin: 0;
     cursor: pointer;
     font-size: 14px;
     transition: all 0.2s;
@@ -112,11 +113,14 @@ body {
     white-space: nowrap;
     overflow: visible;
     text-overflow: clip;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .tab-button.active {
     background-color: #fff;
-    padding: 6px 12px;
+    padding: 0 12px;
 }
 
 .tab-button.active:hover {
@@ -2138,16 +2142,16 @@ body {
 .ask-ai-body {
     display: flex;
     flex-direction: column;
-    padding: 11px;
+    padding: 0;
     flex: 1;
     overflow: hidden;
     min-height: 0;
-    height: 100%;
     position: relative;
+    height: 100%;
 }
 
 .min-height-scrollbar {
-    flex: 1;
+    flex: 1 1 0%;
     overflow-y: auto !important;
     overflow-x: hidden !important;
     min-height: 0;
@@ -2163,8 +2167,10 @@ body {
 }
 
 .min-height-scrollbar::-webkit-scrollbar {
-    width: 8px;
+    width: 8px !important;
     display: block !important;
+    -webkit-appearance: none;
+    appearance: none;
 }
 
 .min-height-scrollbar::-webkit-scrollbar-track {

@@ -37,44 +37,51 @@
                 <div class="card-container">
                     <div class="card-body">
                         <button class="card-button" onclick="handleButtonClick('summary')" id="summary-btn">
-                            <svg class="button-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg class="button-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <circle cx="12" cy="12" r="10"></circle>
-                                <path d="M12 6v6l4 2"></path>
+                                <line x1="14.31" y1="8" x2="20.05" y2="17.94"></line>
+                                <line x1="9.69" y1="8" x2="21.17" y2="8"></line>
+                                <line x1="7.38" y1="12" x2="13.12" y2="2.06"></line>
+                                <line x1="9.69" y1="16" x2="3.95" y2="6.06"></line>
+                                <line x1="14.31" y1="16" x2="2.83" y2="16"></line>
+                                <line x1="16.62" y1="12" x2="10.88" y2="21.94"></line>
                             </svg>
                             Summarize Using AI
                             <span class="btn-spinner" id="summary-spinner" style="display: none;"></span>
                         </button>
 
                         <button class="card-button" onclick="handleButtonClick('clause')" id="clause-btn">
-                            <svg class="button-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                <polyline points="14 2 14 8 20 8"></polyline>
+                            <svg class="button-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                                <polyline points="2 17 12 22 22 17"></polyline>
+                                <polyline points="2 12 12 17 22 12"></polyline>
                             </svg>
                             Identify Key Clauses
                             <span class="btn-spinner" id="clause-spinner" style="display: none;"></span>
                         </button>
 
                         <button class="card-button" onclick="handleButtonClick('obligation')" id="obligation-btn">
-                            <svg class="button-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <svg class="button-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
                             </svg>
                             AI Obligations Extractor
                             <span class="btn-spinner" id="obligation-spinner" style="display: none;"></span>
                         </button>
 
                         <button class="card-button" onclick="handleButtonClick('library')" id="library-btn">
-                            <svg class="button-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                            <svg class="button-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
                             </svg>
                             Refer Your Clause Library
                             <span class="btn-spinner" id="library-spinner" style="display: none;"></span>
                         </button>
 
                         <button class="card-button" onclick="handleButtonClick('clauseApproval')" id="clauseApproval-btn">
-                            <svg class="button-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M9 11l3 3L22 4"></path>
-                                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                            <svg class="button-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
                             </svg>
                             Clause Approval
                             <span class="btn-spinner" id="clauseApproval-spinner" style="display: none;"></span>
