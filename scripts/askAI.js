@@ -368,8 +368,19 @@
             } else if (trimmedLine.startsWith('#### ')) {
                 pushList();
                 html += `<h4 style="font-size: 12px;">${escapeHtml(trimmedLine.replace(/^####\s*/, ''))}</h4>`;
-            } else if (/^\d+\.\s+/.test(trimmedLine) || /^-\s+/.test(trimmedLine)) {
-                listItems.push(trimmedLine.replace(/^\d+\.\s*/, '').replace(/^-\s*/, '').replace(/\*/g, '').trim());
+            } else if (/^\d+\.\s+/.test(trimmedLine) || /^-\s+/.test(trimmedLine) || /^\d+\s*-\s+/.test(trimmedLine)) {
+                // Handle patterns: "3. ", "- ", "3 - ", "3- "
+                let cleanedLine = trimmedLine
+                    .replace(/^\d+\.\s*/, '')  // Remove "3. "
+                    .replace(/^-\s*/, '')      // Remove "- "
+                    .replace(/\*/g, '')        // Remove asterisks
+                    .trim();
+                // For "3 - " pattern, keep the number and dash as part of the content
+                if (/^\d+\s*-\s+/.test(trimmedLine)) {
+                    // Keep the "3 - " format in the list item
+                    cleanedLine = trimmedLine.replace(/\*/g, '').trim();
+                }
+                listItems.push(cleanedLine);
             } else {
                 pushList();
                 html += `<p style="font-size: 12px; margin-bottom: 0; margin-top: -8px !important;">${escapeHtml(trimmedLine)}</p>`;
