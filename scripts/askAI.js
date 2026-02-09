@@ -142,7 +142,7 @@
                     <div class="loading-spinner" style="margin-top: 150px;"></div>
                 ` : `
                 <div class="ask-ai-body" style="display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden;">
-                    <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1 1 0%; overflow-y: auto !important; overflow-x: hidden !important; min-height: 0; max-height: 100%; position: relative;">
+                    <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto !important; overflow-x: hidden !important; min-height: 0; position: relative;">
                         ${historySearch?.length > 0 ? renderChatHistory() : ''}
                         ${loader ? `
                             <div class="div3">
@@ -194,10 +194,9 @@
         // Ensure scrollbar works - let flexbox handle height naturally
         const ensureScrollable = () => {
             if (messageDivRef) {
-                // Ensure flex and overflow are set correctly
-                messageDivRef.style.flex = '1 1 0%';
+                // Ensure flex and overflow are set correctly - NO max-height!
+                messageDivRef.style.flex = '1';
                 messageDivRef.style.minHeight = '0';
-                messageDivRef.style.maxHeight = '100%';
                 messageDivRef.style.overflowY = 'auto';
                 messageDivRef.style.overflowX = 'hidden';
                 
