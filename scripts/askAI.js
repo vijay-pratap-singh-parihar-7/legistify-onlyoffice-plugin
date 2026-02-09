@@ -141,23 +141,6 @@
                 ${isHistoryLoading ? `
                     <div class="loading-spinner" style="margin-top: 150px;"></div>
                 ` : `
-                <div class="ask-ai-header" style="position: sticky; top: 0; z-index: 10; background-color: #fff; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #6a666633; padding: 10px; flex-shrink: 0;">
-                    <div class="header-box" style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-left: 2px;">
-                        <svg class="back-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="handleBackFromAskAI()" style="cursor: pointer;">
-                            <polyline points="15 18 9 12 15 6"></polyline>
-                        </svg>
-                        <p class="summary-text" style="font-weight: 650; font-size: 16px; margin: 0 !important;">AI Copilot</p>
-                    </div>
-                    <div class="header-actions" style="display: flex; gap: 8px; align-items: center; justify-content: flex-end; padding: 4px 0;">
-                        <div class="summary-button" onclick="syncDocumentWithAi(true)" style="display: flex; align-content: center; padding: 5px; border-radius: 5px; cursor: pointer; border: 1px solid #0000003d;">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="23 4 23 10 17 10"></polyline>
-                                <polyline points="1 20 1 14 7 14"></polyline>
-                                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
                 <div class="ask-ai-body" style="display: flex; flex-direction: column; padding: 0; flex: 1; overflow: hidden; position: relative;">
                     ${historySearch?.length > 0 ? `
                         <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding: 11px; padding-top: 20px; padding-bottom: 20px; box-sizing: border-box;">
@@ -179,21 +162,25 @@
                             ` : ''}
                             <div id="bottom-ref"></div>
                         </div>
-                        <div class="prompt-outer-container" style="width: 100%; background-color: #fff; z-index: 10; max-width: 100%; display: flex; align-items: center; position: sticky; bottom: 0; margin: 0; padding: 11px; padding-top: 0; box-sizing: border-box; flex-shrink: 0; border-top: 1px solid #e9ecef;">
-                            <div class="g-prompt-container" style="width: 95%; min-height: 38px !important; background-color: #fff !important; border: 1px solid rgba(0, 0, 0, 0.2); border-radius: 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); box-sizing: border-box; padding: 0;">
-                                <textarea id="prompt-input-ref" class="prompt-input" oninput="handlePromptInput(event)" placeholder="Ask any questions about this agreement" style="width: 100%; background: white; padding: 10px 14px; border-bottom: none !important; border: none; outline: none; resize: vertical; min-height: 38px; font-size: 14px; font-family: inherit; line-height: 1.5; box-sizing: border-box; direction: ltr; text-align: left;">${escapeHtml(prompt || '')}</textarea>
-                            </div>
-                            <div class="prompt-actions" style="padding-left: 10px; padding-right: 5px;">
-                                <label id="prompt-send-btn" class="prompt-action-send" onclick="handleGenerate()" style="border-radius: 10px; padding: 8px; cursor: ${error || !prompt?.trim() || loader ? 'not-allowed' : 'pointer'}; margin: 0; display: flex; align-items: center; justify-content: center; background-color: ${error || !prompt?.trim() || loader ? 'gray' : '#2667FF'}; color: #fff; transition: background-color 0.2s; border: none; min-width: 36px; min-height: 36px; box-sizing: border-box;">
-                                    ${loader ? '<div class="loading-spinner-small"></div>' : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>'}
-                                </label>
-                            </div>
+                    ` : `
+                        <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding: 11px; padding-top: 20px; padding-bottom: 20px; box-sizing: border-box;">
+                            <div id="bottom-ref"></div>
                         </div>
-                        ${prompt?.length >= 2000 ? `
-                            <p style="font-size: 12px; color: ${error ? 'red' : 'black'}; margin: 0; color: #6c757d; text-align: end; padding-right: 1.5rem; padding-left: 11px; padding-bottom: 8px;">
-                                Maximum Limit Reached (2000 words only)
-                            </p>
-                        ` : ''}
+                    `}
+                    <div class="prompt-outer-container" style="width: 100%; background-color: #fff; z-index: 10; max-width: 100%; display: flex; align-items: center; position: sticky; bottom: 0; margin: 0; padding: 11px; padding-top: 0; box-sizing: border-box; flex-shrink: 0; border-top: 1px solid #e9ecef;">
+                        <div class="g-prompt-container" style="width: 95%; min-height: 38px !important; background-color: #fff !important; border: 1px solid rgba(0, 0, 0, 0.2); border-radius: 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); box-sizing: border-box; padding: 0;">
+                            <textarea id="prompt-input-ref" class="prompt-input" oninput="handlePromptInput(event)" placeholder="Ask any questions about this agreement" style="width: 100%; background: white; padding: 10px 14px; border-bottom: none !important; border: none; outline: none; resize: vertical; min-height: 38px; font-size: 14px; font-family: inherit; line-height: 1.5; box-sizing: border-box; direction: ltr; text-align: left;">${escapeHtml(prompt || '')}</textarea>
+                        </div>
+                        <div class="prompt-actions" style="padding-left: 10px; padding-right: 5px;">
+                            <label id="prompt-send-btn" class="prompt-action-send" onclick="handleGenerate()" style="border-radius: 10px; padding: 8px; cursor: ${error || !prompt?.trim() || loader ? 'not-allowed' : 'pointer'}; margin: 0; display: flex; align-items: center; justify-content: center; background-color: ${error || !prompt?.trim() || loader ? 'gray' : '#2667FF'}; color: #fff; transition: background-color 0.2s; border: none; min-width: 36px; min-height: 36px; box-sizing: border-box;">
+                                ${loader ? '<div class="loading-spinner-small"></div>' : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>'}
+                            </label>
+                        </div>
+                    </div>
+                    ${prompt?.length >= 2000 ? `
+                        <p style="font-size: 12px; color: ${error ? 'red' : 'black'}; margin: 0; color: #6c757d; text-align: end; padding-right: 1.5rem; padding-left: 11px; padding-bottom: 8px;">
+                            Maximum Limit Reached (2000 words only)
+                        </p>
                     ` : ''}
                 </div>
                 `}
@@ -499,9 +486,11 @@
 
     // Handle chat scroll
     window.handleChatScroll = function(e) {
+        // Load older messages when scrolled to top
         if (e.target.scrollTop === 0) {
             if (Math.ceil(totalCount / 5) > currentPage) {
-                fetchHistory(`page=${currentPage + 1}`, false, e.target.scrollHeight);
+                const scrollHeight = e.target.scrollHeight;
+                fetchHistory(`page=${currentPage + 1}`, false, scrollHeight);
                 currentPage += 1;
             }
         }
@@ -555,13 +544,17 @@
                                 bottomRefElement.scrollIntoView({ behavior: 'auto' });
                             }
                         } else if (scrollPos && messageDivRefElement) {
-                            // Preserve scroll position when loading older messages
-                            // scrollPos is the old scrollHeight, we want to maintain the same relative position
+                            // Preserve scroll position when loading older messages at top
+                            // scrollPos is the old scrollHeight before new content was added
+                            // When loading older messages, we were at scrollTop = 0 (top)
+                            // After adding content, we want to stay at the top but account for new content
                             const newScrollHeight = messageDivRefElement.scrollHeight;
-                            const scrollDifference = newScrollHeight - scrollPos;
-                            messageDivRefElement.scrollTop = scrollDifference;
+                            const heightDifference = newScrollHeight - scrollPos;
+                            // Keep scroll at top (0) plus the height difference to maintain visual position
+                            // This ensures the user sees the same content they were viewing
+                            messageDivRefElement.scrollTop = Math.max(0, heightDifference);
                         }
-                    }, 100);
+                    }, 150);
                 } else {
                     // Match MS Editor: else await syncDocumentWithAi(false)
                     // No history or error, sync document to show initial questions
