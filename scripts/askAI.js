@@ -158,9 +158,9 @@
                         </div>
                     </div>
                 </div>
-                <div class="ask-ai-body" style="display: flex; flex-direction: column; padding: 11px; flex: 1; overflow: hidden;">
+                <div class="ask-ai-body" style="display: flex; flex-direction: column; padding: 0; flex: 1; overflow: hidden; position: relative;">
                     ${historySearch?.length > 0 ? `
-                        <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding-top: 20px; padding-bottom: 40px; padding-left: 10px; padding-right: 10px; box-sizing: border-box;">
+                        <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding: 11px; padding-top: 20px; padding-bottom: 20px; box-sizing: border-box;">
                             ${renderChatHistory()}
                             ${loader ? `
                                 <div class="outer-container" style="margin-bottom: 10px; padding: 0 6px; margin-top: 12px;">
@@ -179,7 +179,7 @@
                             ` : ''}
                             <div id="bottom-ref"></div>
                         </div>
-                        <div class="prompt-outer-container" style="width: 100%; background-color: #fff; z-index: 10; max-width: 49.7rem; display: flex; align-items: center; position: sticky; bottom: 0; margin: 0 auto;">
+                        <div class="prompt-outer-container" style="width: 100%; background-color: #fff; z-index: 10; max-width: 100%; display: flex; align-items: center; position: sticky; bottom: 0; margin: 0; padding: 11px; padding-top: 0; box-sizing: border-box; flex-shrink: 0; border-top: 1px solid #e9ecef;">
                             <div class="g-prompt-container" style="width: 95%; min-height: 38px !important; background-color: #fff !important; border: 1px solid rgba(0, 0, 0, 0.2); border-radius: 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); box-sizing: border-box; padding: 0;">
                                 <textarea id="prompt-input-ref" class="prompt-input" oninput="handlePromptInput(event)" placeholder="Ask any questions about this agreement" style="width: 100%; background: white; padding: 10px 14px; border-bottom: none !important; border: none; outline: none; resize: vertical; min-height: 38px; font-size: 14px; font-family: inherit; line-height: 1.5; box-sizing: border-box; direction: ltr; text-align: left;">${escapeHtml(prompt || '')}</textarea>
                             </div>
@@ -190,7 +190,7 @@
                             </div>
                         </div>
                         ${prompt?.length >= 2000 ? `
-                            <p style="font-size: 12px; color: ${error ? 'red' : 'black'}; margin: 0; color: #6c757d; text-align: end; padding-right: 1.5rem;">
+                            <p style="font-size: 12px; color: ${error ? 'red' : 'black'}; margin: 0; color: #6c757d; text-align: end; padding-right: 1.5rem; padding-left: 11px; padding-bottom: 8px;">
                                 Maximum Limit Reached (2000 words only)
                             </p>
                         ` : ''}
@@ -208,6 +208,9 @@
         bottomRef = askAIView.querySelector('#bottom-ref');
         promptInputRef = askAIView.querySelector('#prompt-input-ref');
         messageDivRef = askAIView.querySelector('#message-div-ref');
+        
+        // Store reference globally for scroll handling
+        window.messageDivRef = messageDivRef;
 
         // Set textarea value properly (value attribute doesn't work for textarea)
         if (promptInputRef) {
@@ -378,6 +381,14 @@
         }
         
         renderAskAIView();
+        
+        // Scroll to bottom when showing loader
+        setTimeout(() => {
+            const bottomRefElement = document.getElementById('bottom-ref');
+            if (bottomRefElement) {
+                bottomRefElement.scrollIntoView({ behavior: 'smooth' });
+            }
+        }, 100);
 
         try {
             const pluginData = window.getPluginData();
@@ -430,8 +441,9 @@
                 
                 // Scroll to bottom after render
                 setTimeout(() => {
-                    if (bottomRef) {
-                        bottomRef.scrollIntoView({ behavior: 'smooth' });
+                    const bottomRefElement = document.getElementById('bottom-ref');
+                    if (bottomRefElement) {
+                        bottomRefElement.scrollIntoView({ behavior: 'smooth' });
                     }
                 }, 100);
             } else {
@@ -530,16 +542,26 @@
                     const newItems = result.filter(item => !existingIds.has(item._id || item.message_id));
                     historySearch = [...historySearch, ...newItems];
                     
-                    if (first) {
-                        setTimeout(() => {
+                    // Re-render before scrolling to ensure DOM is updated
+                    isHistoryLoading = false;
+                    renderAskAIView();
+                    
+                    // Wait for DOM to update, then handle scroll
+                    setTimeout(() => {
+                        const messageDivRefElement = document.getElementById('message-div-ref') || window.messageDivRef;
+                        if (first) {
                             const bottomRefElement = document.getElementById('bottom-ref');
                             if (bottomRefElement) {
                                 bottomRefElement.scrollIntoView({ behavior: 'auto' });
                             }
-                        }, 200);
-                    } else if (scrollPos && messageDivRef) {
-                        messageDivRef.scrollTop = messageDivRef.scrollHeight - scrollPos;
-                    }
+                        } else if (scrollPos && messageDivRefElement) {
+                            // Preserve scroll position when loading older messages
+                            // scrollPos is the old scrollHeight, we want to maintain the same relative position
+                            const newScrollHeight = messageDivRefElement.scrollHeight;
+                            const scrollDifference = newScrollHeight - scrollPos;
+                            messageDivRefElement.scrollTop = scrollDifference;
+                        }
+                    }, 100);
                 } else {
                     // Match MS Editor: else await syncDocumentWithAi(false)
                     // No history or error, sync document to show initial questions
@@ -561,8 +583,11 @@
             }
         } finally {
             // Match MS Editor: setisHistoryLoading(false) - always set after check
-            isHistoryLoading = false;
-            renderAskAIView();
+            // Only set loading to false and render if we haven't already done so
+            if (isHistoryLoading) {
+                isHistoryLoading = false;
+                renderAskAIView();
+            }
         }
     }
 
