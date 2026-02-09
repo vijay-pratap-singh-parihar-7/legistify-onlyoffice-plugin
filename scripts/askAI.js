@@ -191,69 +191,26 @@
         // Store reference globally for scroll handling
         window.messageDivRef = messageDivRef;
         
-        // Force scrollbar to work by ensuring proper height constraints
+        // Ensure scrollbar works by removing any explicit height constraints
+        // Let flexbox handle the height naturally
         const ensureScrollable = () => {
-            if (messageDivRef && askAIView) {
-                const askAiBody = askAIView.querySelector('.ask-ai-body');
-                const promptContainer = askAIView.querySelector('.prompt-outer-container');
+            if (messageDivRef) {
+                // Remove any explicit height that might be set incorrectly
+                messageDivRef.style.height = '';
+                messageDivRef.style.maxHeight = '';
                 
-                if (askAiBody && promptContainer) {
-                    // Get computed styles
-                    const bodyStyle = window.getComputedStyle(askAiBody);
-                    const promptStyle = window.getComputedStyle(promptContainer);
-                    
-                    // Calculate available height more accurately
-                    const bodyHeight = askAiBody.offsetHeight || askAiBody.clientHeight;
-                    const promptHeight = promptContainer.offsetHeight || promptContainer.clientHeight;
-                    const availableHeight = bodyHeight - promptHeight;
-                    
-                    console.log('Scroll Debug:', {
-                        bodyHeight,
-                        promptHeight,
-                        availableHeight,
-                        scrollHeight: messageDivRef.scrollHeight,
-                        clientHeight: messageDivRef.clientHeight
-                    });
-                    
-                    // Set explicit height to force scrolling
-                    if (availableHeight > 0 && availableHeight < messageDivRef.scrollHeight) {
-                        messageDivRef.style.height = availableHeight + 'px';
-                        messageDivRef.style.maxHeight = availableHeight + 'px';
-                        messageDivRef.style.overflowY = 'scroll';
-                    } else {
-                        // Use flex if content fits
-                        messageDivRef.style.height = '';
-                        messageDivRef.style.maxHeight = '';
-                        messageDivRef.style.overflowY = 'auto';
-                    }
-                    
-                    // Ensure overflow-x is hidden
-                    messageDivRef.style.overflowX = 'hidden';
-                    
-                    // Force a reflow to trigger scrollbar
-                    void messageDivRef.offsetHeight;
-                }
+                // Ensure overflow is set correctly
+                messageDivRef.style.overflowY = 'auto';
+                messageDivRef.style.overflowX = 'hidden';
+                
+                // Force a reflow
+                void messageDivRef.offsetHeight;
             }
         };
         
-        // Ensure scrollable after render with multiple attempts
-        setTimeout(ensureScrollable, 100);
-        setTimeout(ensureScrollable, 300);
-        setTimeout(ensureScrollable, 600);
-        
-        // Also recalculate on window resize
-        const resizeHandler = () => {
-            setTimeout(ensureScrollable, 100);
-        };
-        window.addEventListener('resize', resizeHandler);
-        
-        // Store cleanup
-        if (!window.askAICleanup) {
-            window.askAICleanup = [];
-        }
-        window.askAICleanup.push(() => {
-            window.removeEventListener('resize', resizeHandler);
-        });
+        // Ensure scrollable after render
+        setTimeout(ensureScrollable, 50);
+        setTimeout(ensureScrollable, 200);
 
         // Set textarea value properly (value attribute doesn't work for textarea)
         if (promptInputRef) {
@@ -349,16 +306,16 @@
                             ${formatHtmlContent(removeInlineStyles(noOlHtmlData))}
                         </div>
                         ${Questions?.length ? Questions.map((qs, i) => `
-                            <div key="${i}" id="question-${i}" onclick="setPromptFromQuestion('${escapeHtml(qs)}')" class="doc-questions" style="display: flex; align-items: top; cursor: pointer;" onmouseover="this.style.color='#446995'; this.style.textDecoration='dotted';" onmouseout="this.style.color=''; this.style.textDecoration='none';">
-                                <p class="p8" style="margin-bottom: 25px; font-size: 12px;">${i + 1}</p>
-                                <p style="margin: 0; font-size: 12px;">- ${escapeHtml(qs)}</p>
+                            <div key="${i}" id="question-${i}" onclick="setPromptFromQuestion('${escapeHtml(qs)}')" class="doc-questions" style="display: flex; align-items: flex-start; cursor: pointer; margin-bottom: 8px;" onmouseover="this.style.color='#446995'; this.style.textDecoration='dotted';" onmouseout="this.style.color=''; this.style.textDecoration='none';">
+                                <p class="p8" style="margin: 0; margin-right: 8px; font-size: 12px; flex-shrink: 0;">${i + 1}</p>
+                                <p style="margin: 0; font-size: 12px; flex: 1;">- ${escapeHtml(qs)}</p>
                             </div>
                         `).join('') : ''}
                         <div onclick="copyToClipboard('${escapeHtml(item.response)}')" class="copy-clause" style="padding: 2px 5px; border-radius: 0 0 8px 0; position: absolute; bottom: 0; right: 0; cursor: pointer; background-color: rgba(255, 255, 255, 0.8);">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                         </div>
                     </div>
-                    <p class="p9" style="font-size: 11px; color: #6c757d; text-align: end;">
+                    <p class="p9" style="font-size: 11px; color: #6c757d; text-align: end; margin-top: 8px; margin-bottom: 0; padding-top: 4px;">
                         ${formatTime(item.createdAt)}
                     </p>
                 </div>

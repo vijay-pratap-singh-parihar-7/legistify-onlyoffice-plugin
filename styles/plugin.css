@@ -2152,7 +2152,7 @@ body {
 }
 
 .min-height-scrollbar {
-    /* flex: 1 1 0%; */
+    flex: 1 1 0%;
     overflow-y: auto !important;
     overflow-x: hidden !important;
     min-height: 0;
@@ -2165,7 +2165,6 @@ body {
     padding-top: 20px;
     padding-bottom: 20px;
     box-sizing: border-box;
-    height: calc(100vh - 133px);
 }
 
 .min-height-scrollbar::-webkit-scrollbar {
@@ -2256,6 +2255,7 @@ body {
     position: relative;
     background-color: #f9f9f9;
     padding: 12px;
+    padding-bottom: 16px;
     width: fit-content;
     max-width: calc(100% - 50px);
     box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
@@ -2264,6 +2264,7 @@ body {
     overflow-wrap: break-word;
     line-height: 1.6;
     box-sizing: border-box;
+    margin-bottom: 4px;
 }
 
 .copy-clause {
@@ -2282,9 +2283,10 @@ body {
 
 .doc-questions {
     display: flex;
-    align-items: top;
+    align-items: flex-start;
     cursor: pointer;
     transition: color 0.2s;
+    margin-bottom: 8px;
 }
 
 .doc-questions:hover {
@@ -2352,14 +2354,20 @@ body {
 }
 
 .p8 {
-    margin-bottom: 25px;
+    margin: 0;
+    margin-right: 8px;
     font-size: 12px;
+    flex-shrink: 0;
 }
 
 .p9 {
     font-size: 11px;
     color: #6c757d;
     text-align: end;
+    margin-top: 8px;
+    margin-bottom: 0;
+    padding-top: 4px;
+    clear: both;
 }
 
 .container {
