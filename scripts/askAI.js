@@ -141,8 +141,8 @@
                 ${isHistoryLoading ? `
                     <div class="loading-spinner" style="margin-top: 150px;"></div>
                 ` : `
-                <div class="ask-ai-body" style="display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden;">
-                    <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto; overflow-x: hidden; min-height: 0;">
+                <div class="ask-ai-body" style="display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; height: 100%;">
+                    <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto !important; overflow-x: hidden !important; min-height: 0; position: relative;">
                         ${historySearch?.length > 0 ? renderChatHistory() : ''}
                         ${loader ? `
                             <div class="div3">
@@ -190,6 +190,27 @@
         
         // Store reference globally for scroll handling
         window.messageDivRef = messageDivRef;
+        
+        // Force scrollbar to work by ensuring proper height constraints
+        const ensureScrollable = () => {
+            if (messageDivRef) {
+                // Remove any fixed height that might prevent scrolling
+                messageDivRef.style.height = '';
+                messageDivRef.style.maxHeight = '';
+                
+                // Ensure overflow is set
+                messageDivRef.style.overflowY = 'auto';
+                messageDivRef.style.overflowX = 'hidden';
+                
+                // Force a reflow to ensure scrollbar appears
+                void messageDivRef.offsetHeight;
+            }
+        };
+        
+        // Ensure scrollable after render
+        setTimeout(ensureScrollable, 50);
+        setTimeout(ensureScrollable, 200);
+        setTimeout(ensureScrollable, 500);
 
         // Set textarea value properly (value attribute doesn't work for textarea)
         if (promptInputRef) {

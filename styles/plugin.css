@@ -243,6 +243,9 @@ body {
     flex-direction: column;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
     animation: slideUp 0.3s ease;
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
 }
 
 @keyframes slideUp {
@@ -325,6 +328,8 @@ body {
     flex-direction: column;
     min-height: 0;
     overflow: hidden;
+    flex: 1;
+    position: relative;
 }
 
 /* Playbook Container - Matches MS Editor playbookContainer */
@@ -2127,6 +2132,7 @@ body {
     flex-direction: column;
     min-height: 0;
     overflow: hidden;
+    position: relative;
 }
 
 .ask-ai-body {
@@ -2136,31 +2142,46 @@ body {
     flex: 1;
     overflow: hidden;
     min-height: 0;
+    height: 100%;
+    position: relative;
 }
 
 .min-height-scrollbar {
     flex: 1;
     overflow-y: auto !important;
-    overflow-x: hidden;
+    overflow-x: hidden !important;
     min-height: 0;
+    position: relative;
     -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: #888 #f1f1f1;
+    will-change: scroll-position;
 }
 
 .min-height-scrollbar::-webkit-scrollbar {
     width: 8px;
+    display: block !important;
 }
 
 .min-height-scrollbar::-webkit-scrollbar-track {
     background: #f1f1f1;
+    border-radius: 4px;
 }
 
 .min-height-scrollbar::-webkit-scrollbar-thumb {
     background: #888;
     border-radius: 4px;
+    min-height: 20px;
 }
 
 .min-height-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #555;
+}
+
+/* Firefox scrollbar */
+.min-height-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #888 #f1f1f1;
 }
 
 .ask-ai-header {
