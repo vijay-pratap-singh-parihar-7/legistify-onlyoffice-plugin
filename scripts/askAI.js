@@ -137,12 +137,12 @@
         console.log('🔵 Rendering Ask AI view into:', askAIView.id, 'isHistoryLoading:', isHistoryLoading, 'historySearch length:', historySearch?.length);
 
         const htmlContent = `
-            <div class="ask-ai-container">
+            <div class="ask-ai-container" style="display: flex; flex-direction: column; height: 100%; width: 100%; overflow: hidden;">
                 ${isHistoryLoading ? `
                     <div class="loading-spinner" style="margin-top: 150px;"></div>
                 ` : `
-                <div class="ask-ai-body">
-                    <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)">
+                <div class="ask-ai-body" style="display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden;">
+                    <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto; overflow-x: hidden; min-height: 0;">
                         ${historySearch?.length > 0 ? renderChatHistory() : ''}
                         ${loader ? `
                             <div class="div3">
@@ -159,18 +159,18 @@
                         ` : ''}
                         <div id="bottom-ref"></div>
                     </div>
-                    <div class="prompt-outer-container">
-                        <div class="g-prompt-container">
-                            <textarea id="prompt-input-ref" class="prompt-input" oninput="handlePromptInput(event)" placeholder="Ask any questions about this agreement" style="width: 100%; background: white; padding: 2px; border-bottom: none !important; border: none; outline: none; resize: vertical; min-height: 38px; font-size: 14px; font-family: inherit; line-height: 1.5; box-sizing: border-box; direction: ltr; text-align: left;">${escapeHtml(prompt || '')}</textarea>
+                    <div class="prompt-outer-container" style="flex-shrink: 0; position: sticky; bottom: 0; z-index: 100; background-color: #fff; width: 100%; max-width: 49.7rem; margin: 0 auto; padding: 11px; padding-top: 8px; box-sizing: border-box; display: flex; align-items: center;">
+                        <div class="g-prompt-container" style="width: 95%; flex: 1;">
+                            <textarea id="prompt-input-ref" class="prompt-input" oninput="handlePromptInput(event)" placeholder="Ask any questions about this agreement" style="width: 100%; background: white; padding: 10px 14px; border: none; outline: none; resize: vertical; min-height: 38px; font-size: 14px; font-family: inherit; line-height: 1.5; box-sizing: border-box; direction: ltr; text-align: left; display: block !important; visibility: visible !important;">${escapeHtml(prompt || '')}</textarea>
                         </div>
-                        <div class="prompt-actions">
-                            <label id="prompt-send-btn" class="prompt-action-send" onclick="handleGenerate()" style="border-radius: 10px; padding: 8px; cursor: ${error || !prompt?.trim() || loader ? 'not-allowed' : 'pointer'}; margin: 0; display: flex; align-items: center; justify-content: center; background-color: ${error || !prompt?.trim() || loader ? 'gray' : '#2667FF'}; color: #fff; transition: background-color 0.2s; border: none; min-width: 36px; min-height: 36px; box-sizing: border-box;">
+                        <div class="prompt-actions" style="padding-left: 10px; padding-right: 5px; flex-shrink: 0;">
+                            <label id="prompt-send-btn" class="prompt-action-send" onclick="handleGenerate()" style="border-radius: 10px; padding: 8px; cursor: ${error || !prompt?.trim() || loader ? 'not-allowed' : 'pointer'}; margin: 0; display: flex !important; align-items: center; justify-content: center; background-color: ${error || !prompt?.trim() || loader ? 'gray' : '#2667FF'}; color: #fff; transition: background-color 0.2s; border: none; min-width: 36px; min-height: 36px; box-sizing: border-box; visibility: visible !important;">
                                 ${loader ? '<div class="loading-spinner-small"></div>' : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>'}
                             </label>
                         </div>
                     </div>
                     ${prompt?.length >= 2000 ? `
-                        <p style="font-size: 12px; color: ${error ? 'red' : 'black'}; margin: 0; color: #6c757d; text-align: end; padding-right: 1.5rem;">
+                        <p style="font-size: 12px; color: ${error ? 'red' : 'black'}; margin: 0; color: #6c757d; text-align: end; padding-right: 1.5rem; padding-left: 11px;">
                             Maximum Limit Reached (2000 words only)
                         </p>
                     ` : ''}

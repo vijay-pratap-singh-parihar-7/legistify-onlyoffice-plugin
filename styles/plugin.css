@@ -2140,9 +2140,27 @@ body {
 
 .min-height-scrollbar {
     flex: 1;
-    overflow-y: auto;
+    overflow-y: auto !important;
     overflow-x: hidden;
     min-height: 0;
+    -webkit-overflow-scrolling: touch;
+}
+
+.min-height-scrollbar::-webkit-scrollbar {
+    width: 8px;
+}
+
+.min-height-scrollbar::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.min-height-scrollbar::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.min-height-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #555;
 }
 
 .ask-ai-header {
@@ -2212,7 +2230,7 @@ body {
 .prompt-outer-container {
     width: 100%;
     background-color: #fff;
-    z-index: 10;
+    z-index: 100;
     max-width: 49.7rem;
     display: flex;
     align-items: center;
@@ -2220,7 +2238,11 @@ body {
     bottom: 0;
     margin: 0 auto;
     flex-shrink: 0;
+    padding: 11px;
     padding-top: 8px;
+    box-sizing: border-box;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 .div1 {
@@ -2293,8 +2315,8 @@ body {
 
 .g-prompt-container {
     width: 95%;
-    min-height: 38px;
-    background-color: #fff;
+    min-height: 38px !important;
+    background-color: #fff !important;
     border: 1px solid rgba(0, 0, 0, 0.2);
     border-radius: 10px;
     display: flex;
@@ -2302,21 +2324,29 @@ body {
     align-items: flex-start;
     gap: 0.25rem;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    box-sizing: border-box;
+    padding: 0;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 .prompt-input {
     width: 100%;
-    background: white;
-    padding: 2px;
+    background: white !important;
+    padding: 10px 14px !important;
     border-bottom: none !important;
-    border: none;
-    outline: none;
+    border: none !important;
+    outline: none !important;
     resize: vertical;
-    min-height: 38px;
+    min-height: 38px !important;
     font-size: 14px;
     font-family: inherit;
     direction: ltr;
     text-align: left;
+    box-sizing: border-box;
+    visibility: visible !important;
+    opacity: 1 !important;
+    display: block !important;
 }
 
 .prompt-actions {
@@ -2329,12 +2359,17 @@ body {
     padding: 8px;
     cursor: pointer;
     margin: 0;
-    display: flex;
+    display: flex !important;
     align-items: center;
     justify-content: center;
     background: #2667FF;
     color: #fff;
     transition: background 0.2s;
+    visibility: visible !important;
+    opacity: 1 !important;
+    min-width: 36px;
+    min-height: 36px;
+    box-sizing: border-box;
 }
 
 .prompt-action-send:hover {
