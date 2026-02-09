@@ -141,40 +141,42 @@
                 ${isHistoryLoading ? `
                     <div class="loading-spinner" style="margin-top: 150px;"></div>
                 ` : `
-                <div class="ask-ai-body" style="display: flex; flex-direction: column; padding: 0; flex: 1; overflow: hidden; min-height: 0;">
-                    <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding: 11px; padding-top: 20px; padding-bottom: 20px; box-sizing: border-box; min-height: 0;">
-                        ${historySearch?.length > 0 ? renderChatHistory() : ''}
-                        ${loader ? `
-                            <div class="outer-container" style="margin-bottom: 10px; padding: 0 6px; margin-top: 12px;">
-                                <div class="div1" style="display: flex; justify-content: flex-end; align-items: center;">
-                                    <div style="margin-right: 7px; border-radius: 8px 8px 0 8px; background-color: #eff4ff; padding: 5px 10px; width: fit-content; max-width: calc(100% - 50px); box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px; box-sizing: border-box;">
-                                        <p style="font-size: 12px; margin: 0; word-wrap: break-word;">${escapeHtml(prompt)}</p>
+                <div class="ask-ai-body">
+                    ${historySearch?.length > 0 ? `
+                        <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)">
+                            ${renderChatHistory()}
+                            ${loader ? `
+                                <div class="div3" style="margin-left: 50px;">
+                                    <div class="container" style="display: flex; justify-content: center; align-items: center; margin-left: 10px !important;">
+                                        <div class="prompt-container" style="border-radius: 8px 8px 0 8px; margin-left: auto; background-color: #eff4ff; padding: 5px 10px; width: fit-content; box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;">
+                                            <p class="p5" style="margin-bottom: 5px; margin-top: 5px; font-size: 12px;">${escapeHtml(prompt)}</p>
+                                        </div>
+                                        <div style="width: 32px; height: 32px; border-radius: 50%; background: #2667ff; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0; margin-left: 8px;">
+                                            ${getUserInitials()}
+                                        </div>
                                     </div>
-                                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #2667ff; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0;">
-                                        ${getUserInitials()}
-                                    </div>
+                                    <p style="margin-right: 34px; margin-top: 3px; font-size: 11px; color: #6c757d; text-align: end; margin-bottom: 50px;">
+                                        ${formatTime(new Date())}
+                                    </p>
                                 </div>
-                                <p style="margin-right: 34px; margin-top: 3px; font-size: 11px; color: #6c757d; text-align: end;">
-                                    ${formatTime(new Date())}
-                                </p>
+                            ` : ''}
+                            <div id="bottom-ref"></div>
+                        </div>
+                        <div class="prompt-outer-container" style="width: 100%; background-color: #fff; z-index: 10; max-width: 49.7rem; display: flex; align-items: center; position: sticky; bottom: 0; margin: 0 auto;">
+                            <div class="g-prompt-container" style="width: 95%; min-height: 38px !important; background-color: #fff !important; border: 1px solid rgba(0, 0, 0, 0.2); border-radius: 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); box-sizing: border-box; padding: 0;">
+                                <textarea id="prompt-input-ref" class="prompt-input" oninput="handlePromptInput(event)" placeholder="Ask any questions about this agreement" style="width: 100%; background: white; padding: 2px; border-bottom: none !important; border: none; outline: none; resize: vertical; min-height: 38px; font-size: 14px; font-family: inherit; line-height: 1.5; box-sizing: border-box; direction: ltr; text-align: left;">${escapeHtml(prompt || '')}</textarea>
                             </div>
+                            <div class="prompt-actions" style="padding-left: 10px; padding-right: 5px;">
+                                <label id="prompt-send-btn" class="prompt-action-send" onclick="handleGenerate()" style="border-radius: 10px; padding: 8px; cursor: ${error || !prompt?.trim() || loader ? 'not-allowed' : 'pointer'}; margin: 0; display: flex; align-items: center; justify-content: center; background-color: ${error || !prompt?.trim() || loader ? 'gray' : '#2667FF'}; color: #fff; transition: background-color 0.2s; border: none; min-width: 36px; min-height: 36px; box-sizing: border-box;">
+                                    ${loader ? '<div class="loading-spinner-small"></div>' : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>'}
+                                </label>
+                            </div>
+                        </div>
+                        ${prompt?.length >= 2000 ? `
+                            <p style="font-size: 12px; color: ${error ? 'red' : 'black'}; margin: 0; color: #6c757d; text-align: end; padding-right: 1.5rem;">
+                                Maximum Limit Reached (2000 words only)
+                            </p>
                         ` : ''}
-                        <div id="bottom-ref"></div>
-                    </div>
-                    <div class="prompt-outer-container" style="width: 100%; background-color: #fff; z-index: 10; max-width: 100%; display: flex; align-items: center; position: sticky; bottom: 0; margin: 0; padding: 11px; padding-top: 0; box-sizing: border-box; flex-shrink: 0; border-top: 1px solid #e9ecef;">
-                        <div class="g-prompt-container" style="width: 95%; min-height: 38px !important; background-color: #fff !important; border: 1px solid rgba(0, 0, 0, 0.2); border-radius: 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); box-sizing: border-box; padding: 0;">
-                            <textarea id="prompt-input-ref" class="prompt-input" oninput="handlePromptInput(event)" placeholder="Ask any questions about this agreement" style="width: 100%; background: white; padding: 10px 14px; border-bottom: none !important; border: none; outline: none; resize: vertical; min-height: 38px; font-size: 14px; font-family: inherit; line-height: 1.5; box-sizing: border-box; direction: ltr; text-align: left;">${escapeHtml(prompt || '')}</textarea>
-                        </div>
-                        <div class="prompt-actions" style="padding-left: 10px; padding-right: 5px;">
-                            <label id="prompt-send-btn" class="prompt-action-send" onclick="handleGenerate()" style="border-radius: 10px; padding: 8px; cursor: ${error || !prompt?.trim() || loader ? 'not-allowed' : 'pointer'}; margin: 0; display: flex; align-items: center; justify-content: center; background-color: ${error || !prompt?.trim() || loader ? 'gray' : '#2667FF'}; color: #fff; transition: background-color 0.2s; border: none; min-width: 36px; min-height: 36px; box-sizing: border-box;">
-                                ${loader ? '<div class="loading-spinner-small"></div>' : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>'}
-                            </label>
-                        </div>
-                    </div>
-                    ${prompt?.length >= 2000 ? `
-                        <p style="font-size: 12px; color: ${error ? 'red' : 'black'}; margin: 0; color: #6c757d; text-align: end; padding-right: 1.5rem; padding-left: 11px; padding-bottom: 8px;">
-                            Maximum Limit Reached (2000 words only)
-                        </p>
                     ` : ''}
                 </div>
                 `}
@@ -218,34 +220,30 @@
                     return syncDocumentWithAiResponse(item);
                 } else {
                     return `
-                        <div key="${item?._id || i}" class="outer-container" style="margin-bottom: 10px; padding: 0 6px; margin-top: 12px; box-sizing: border-box;">
-                            <div class="div1" style="display: flex; justify-content: flex-end; align-items: center;">
-                                <div style="margin-right: 7px; border-radius: 8px 8px 0 8px; background-color: #eff4ff; padding: 5px 10px; max-width: calc(100% - 50px); width: fit-content; box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px; box-sizing: border-box;">
-                                    <p style="font-size: 12px; margin: 0; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(item?.instruction || '')}</p>
+                        <div key="${item?._id || i}" class="outer-container" style="margin-bottom: 10px; padding: 0 6px; margin-top: 12px;">
+                            <div class="div1" style="display: flex; justify-content: center; align-items: center;">
+                                <div style="margin-right: 7px;" class="prompt-container">
+                                    <p class="p1">${escapeHtml(item?.instruction || '')}</p>
                                 </div>
                                 <div style="width: 32px; height: 32px; border-radius: 50%; background: #2667ff; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0;">
                                     ${getUserInitials()}
                                 </div>
                             </div>
-                            <p style="margin-top: 3px; font-size: 11px; color: #6c757d; text-align: end; margin-right: 34px;">
-                                ${formatTime(item?.createdAt)}
-                            </p>
-                            <div class="div2" style="display: flex; align-items: flex-start;">
-                                <div style="flex-shrink: 0;">
-                                    <button style="border: 0; background-color: rgba(40, 199, 111, .1); color: #28c76f; padding: 8px 9px; border-radius: 50%; margin-top: 10px; cursor: pointer; flex-shrink: 0;">
+                            <p style="margin-top: 3px;" class="p2">${formatTime(item?.createdAt)}</p>
+                            <div class="div2">
+                                <div>
+                                    <button class="btn-outline-success" style="padding: 8px 9px; border-radius: 50%; margin-top: 10px; cursor: pointer;">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle></svg>
                                     </button>
                                 </div>
-                                <div style="margin-left: 7px; flex: 1; min-width: 0; border-radius: 8px; position: relative; background-color: #f9f9f9; padding: 12px; max-width: calc(100% - 50px); width: fit-content; box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px; font-size: 12px; word-wrap: break-word; overflow-wrap: break-word; box-sizing: border-box;" class="response-container">
-                                    <div class="formatted-response" style="line-height: 1.6; color: #333; word-wrap: break-word; overflow-wrap: break-word;">${formatResponse(item.response || '')}</div>
-                                    <div onclick="copyToClipboard('${escapeHtml(item.response || '')}')" class="copy-clause" style="padding: 2px 5px; border-radius: 0 0 8px 0; position: absolute; bottom: 0; right: 0; cursor: pointer; background-color: rgba(255, 255, 255, 0.8);">
+                                <div style="margin-left: 7px;" class="response-container">
+                                    <p class="p3">${formatResponse(item.response || '')}</p>
+                                    <div onclick="copyToClipboard('${escapeHtml(item.response || '')}')" class="copy-clause">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                                     </div>
                                 </div>
                             </div>
-                            <p style="margin-left: 31px; margin-top: 3px; font-size: 11px; color: #6c757d; text-align: start;">
-                                ${formatTime(item?.createdAt)}
-                            </p>
+                            <p style="margin-left: 31px; margin-top: 3px;" class="p4">${formatTime(item?.createdAt)}</p>
                         </div>
                     `;
                 }
@@ -279,16 +277,16 @@
                             ${formatHtmlContent(removeInlineStyles(noOlHtmlData))}
                         </div>
                         ${Questions?.length ? Questions.map((qs, i) => `
-                            <div key="${i}" id="question-${i}" onclick="setPromptFromQuestion('${escapeHtml(qs)}')" class="doc-questions" style="display: flex; align-items: flex-start; cursor: pointer; margin-bottom: 12px; padding: 8px; border-radius: 4px; transition: background-color 0.2s; text-decoration: none;" onmouseover="this.style.backgroundColor='#f0f0f0'; this.style.textDecoration='none';" onmouseout="this.style.backgroundColor='transparent'; this.style.textDecoration='none';">
-                                <p style="margin: 0; margin-right: 8px; font-size: 12px; font-weight: 600; color: #2667ff; min-width: 20px; text-decoration: none;">${i + 1}.</p>
-                                <p style="margin: 0; font-size: 12px; color: #333; line-height: 1.6; flex: 1; text-decoration: none;">${escapeHtml(qs)}</p>
+                            <div key="${i}" id="question-${i}" onclick="setPromptFromQuestion('${escapeHtml(qs)}')" class="doc-questions" style="display: flex; align-items: top; cursor: pointer;" onmouseover="this.style.color='#446995'; this.style.textDecoration='dotted';" onmouseout="this.style.color=''; this.style.textDecoration='none';">
+                                <p class="p8" style="margin-bottom: 25px; font-size: 12px;">${i + 1}</p>
+                                <p style="margin: 0; font-size: 12px;">- ${escapeHtml(qs)}</p>
                             </div>
                         `).join('') : ''}
                         <div onclick="copyToClipboard('${escapeHtml(item.response)}')" class="copy-clause" style="padding: 2px 5px; border-radius: 0 0 8px 0; position: absolute; bottom: 0; right: 0; cursor: pointer; background-color: rgba(255, 255, 255, 0.8);">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                         </div>
                     </div>
-                    <p style="font-size: 11px; color: #6c757d; text-align: end; margin: 0; margin-top: 3px;">
+                    <p class="p9" style="font-size: 11px; color: #6c757d; text-align: end;">
                         ${formatTime(item.createdAt)}
                     </p>
                 </div>
@@ -303,43 +301,53 @@
         return html;
     }
 
-    // Format response
+    // Format response - matches MS Editor formatResponse exactly
     function formatResponse(text) {
         if (!text) return '';
         const lines = text.split('\n');
         let html = '';
-        let inList = false;
+        let listItems = [];
+        let listKey = 0;
+
+        const pushList = () => {
+            if (listItems.length) {
+                html += '<ul style="margin-left: -17px !important;">';
+                listItems.forEach((item, idx) => {
+                    html += `<li style="font-size: 12px; margin: 4px 0; line-height: 1.6;">${escapeHtml(item.replace(/\*/g, '').trim())}</li>`;
+                });
+                html += '</ul>';
+                listItems = [];
+            }
+        };
 
         lines.forEach((line, index) => {
             const trimmedLine = line.trim();
             if (!trimmedLine) {
-                if (inList) { html += '</ul>'; inList = false; }
+                pushList();
                 return;
             }
 
             if (trimmedLine.startsWith('# ')) {
-                if (inList) { html += '</ul>'; inList = false; }
-                html += `<h1 style="font-size: 18px; font-weight: 700; margin: 12px 0 8px 0; line-height: 1.4;">${escapeHtml(trimmedLine.replace(/^#\s*/, ''))}</h1>`;
+                pushList();
+                html += `<h1 style="font-size: 14px;">${escapeHtml(trimmedLine.replace(/^#\s*/, ''))}</h1>`;
             } else if (trimmedLine.startsWith('## ')) {
-                if (inList) { html += '</ul>'; inList = false; }
-                html += `<h2 style="font-size: 16px; font-weight: 700; margin: 10px 0 6px 0; line-height: 1.4;">${escapeHtml(trimmedLine.replace(/^##\s*/, ''))}</h2>`;
+                pushList();
+                html += `<h2 style="font-size: 12px;">${escapeHtml(trimmedLine.replace(/^##\s*/, ''))}</h2>`;
             } else if (trimmedLine.startsWith('### ')) {
-                if (inList) { html += '</ul>'; inList = false; }
-                html += `<h3 style="font-size: 14px; font-weight: 600; margin: 8px 0 4px 0; line-height: 1.4;">${escapeHtml(trimmedLine.replace(/^###\s*/, ''))}</h3>`;
+                pushList();
+                html += `<h3 style="font-size: 12px;">${escapeHtml(trimmedLine.replace(/^###\s*/, ''))}</h3>`;
             } else if (trimmedLine.startsWith('#### ')) {
-                if (inList) { html += '</ul>'; inList = false; }
-                html += `<h4 style="font-size: 12px; font-weight: 600; margin: 6px 0 4px 0; line-height: 1.4;">${escapeHtml(trimmedLine.replace(/^####\s*/, ''))}</h4>`;
+                pushList();
+                html += `<h4 style="font-size: 12px;">${escapeHtml(trimmedLine.replace(/^####\s*/, ''))}</h4>`;
             } else if (/^\d+\.\s+/.test(trimmedLine) || /^-\s+/.test(trimmedLine)) {
-                if (!inList) { html += '<ul style="margin: 8px 0 8px 20px; padding-left: 0; list-style-type: disc;">'; inList = true; }
-                const itemText = trimmedLine.replace(/^\d+\.\s*/, '').replace(/^-\s*/, '').replace(/\*/g, '').trim();
-                html += `<li style="font-size: 12px; margin: 4px 0; line-height: 1.6; color: #333;">${escapeHtml(itemText)}</li>`;
+                listItems.push(trimmedLine.replace(/^\d+\.\s*/, '').replace(/^-\s*/, '').replace(/\*/g, '').trim());
             } else {
-                if (inList) { html += '</ul>'; inList = false; }
-                html += `<p style="font-size: 12px; margin: 6px 0; line-height: 1.6; color: #333;">${escapeHtml(trimmedLine)}</p>`;
+                pushList();
+                html += `<p style="font-size: 12px; margin-bottom: 0; margin-top: -8px !important;">${escapeHtml(trimmedLine)}</p>`;
             }
         });
 
-        if (inList) html += '</ul>';
+        pushList();
         return html;
     }
 

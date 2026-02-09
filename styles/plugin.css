@@ -2129,24 +2129,15 @@ body {
 .ask-ai-body {
     display: flex;
     flex-direction: column;
-    padding: 0;
+    padding: 11px;
     flex: 1;
     overflow: hidden;
-    min-height: 0;
-    position: relative;
 }
 
 .min-height-scrollbar {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    position: relative;
-    z-index: 1;
-    padding: 11px;
-    padding-top: 20px;
-    padding-bottom: 20px;
-    box-sizing: border-box;
-    min-height: 0;
 }
 
 .ask-ai-header {
@@ -2198,7 +2189,7 @@ body {
 }
 
 .copy-clause:hover {
-    color: #2667ff;
+    color: #446995;
 }
 
 .doc-questions {
@@ -2209,26 +2200,88 @@ body {
 }
 
 .doc-questions:hover {
-    color: #2667ff;
-    text-decoration: none;
+    color: #446995;
+    text-decoration: dotted;
 }
 
 .prompt-outer-container {
     width: 100%;
     background-color: #fff;
     z-index: 10;
-    max-width: 100%;
+    max-width: 49.7rem;
     display: flex;
     align-items: center;
     position: sticky;
     bottom: 0;
+    margin: 0 auto;
+}
+
+.div1 {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.div2 {
+    display: flex;
+    align-items: top;
+}
+
+.div3 {
+    margin-left: 50px;
+}
+
+.p1 {
+    font-size: 12px;
     margin: 0;
-    padding: 11px;
-    padding-top: 0;
-    box-sizing: border-box;
-    flex-shrink: 0;
-    border-top: 1px solid #e9ecef;
-    margin-top: auto;
+}
+
+.p2 {
+    font-size: 11px;
+    color: #6c757d;
+    text-align: end;
+}
+
+.p3 {
+    font-size: 12px;
+    margin-bottom: 0;
+    margin-top: -12px !important;
+}
+
+.p4 {
+    font-size: 11px;
+    color: #6c757d;
+    text-align: start;
+}
+
+.p5 {
+    margin-bottom: 5px;
+    margin-top: 5px;
+    font-size: 12px;
+}
+
+.p8 {
+    margin-bottom: 25px;
+    font-size: 12px;
+}
+
+.p9 {
+    font-size: 11px;
+    color: #6c757d;
+    text-align: end;
+}
+
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-left: 10px !important;
+}
+
+.btn-outline-success {
+    border: 0 !important;
+    background-color: rgba(40, 199, 111, .1);
+    color: #28c76f;
 }
 
 .g-prompt-container {
@@ -2248,6 +2301,7 @@ body {
     width: 100%;
     background: white;
     padding: 2px;
+    border-bottom: none !important;
     border: none;
     outline: none;
     resize: vertical;
