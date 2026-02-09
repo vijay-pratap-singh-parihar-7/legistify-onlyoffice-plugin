@@ -141,32 +141,26 @@
                 ${isHistoryLoading ? `
                     <div class="loading-spinner" style="margin-top: 150px;"></div>
                 ` : `
-                <div class="ask-ai-body" style="display: flex; flex-direction: column; padding: 0; flex: 1; overflow: hidden; position: relative;">
-                    ${historySearch?.length > 0 ? `
-                        <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding: 11px; padding-top: 20px; padding-bottom: 20px; box-sizing: border-box;">
-                            ${renderChatHistory()}
-                            ${loader ? `
-                                <div class="outer-container" style="margin-bottom: 10px; padding: 0 6px; margin-top: 12px;">
-                                    <div class="div1" style="display: flex; justify-content: flex-end; align-items: center;">
-                                        <div style="margin-right: 7px; border-radius: 8px 8px 0 8px; background-color: #eff4ff; padding: 5px 10px; width: fit-content; max-width: calc(100% - 50px); box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px; box-sizing: border-box;">
-                                            <p style="font-size: 12px; margin: 0; word-wrap: break-word;">${escapeHtml(prompt)}</p>
-                                        </div>
-                                        <div style="width: 32px; height: 32px; border-radius: 50%; background: #2667ff; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0;">
-                                            ${getUserInitials()}
-                                        </div>
+                <div class="ask-ai-body" style="display: flex; flex-direction: column; padding: 0; flex: 1; overflow: hidden; min-height: 0;">
+                    <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding: 11px; padding-top: 20px; padding-bottom: 20px; box-sizing: border-box; min-height: 0;">
+                        ${historySearch?.length > 0 ? renderChatHistory() : ''}
+                        ${loader ? `
+                            <div class="outer-container" style="margin-bottom: 10px; padding: 0 6px; margin-top: 12px;">
+                                <div class="div1" style="display: flex; justify-content: flex-end; align-items: center;">
+                                    <div style="margin-right: 7px; border-radius: 8px 8px 0 8px; background-color: #eff4ff; padding: 5px 10px; width: fit-content; max-width: calc(100% - 50px); box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px; box-sizing: border-box;">
+                                        <p style="font-size: 12px; margin: 0; word-wrap: break-word;">${escapeHtml(prompt)}</p>
                                     </div>
-                                    <p style="margin-right: 34px; margin-top: 3px; font-size: 11px; color: #6c757d; text-align: end;">
-                                        ${formatTime(new Date())}
-                                    </p>
+                                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #2667ff; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0;">
+                                        ${getUserInitials()}
+                                    </div>
                                 </div>
-                            ` : ''}
-                            <div id="bottom-ref"></div>
-                        </div>
-                    ` : `
-                        <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding: 11px; padding-top: 20px; padding-bottom: 20px; box-sizing: border-box;">
-                            <div id="bottom-ref"></div>
-                        </div>
-                    `}
+                                <p style="margin-right: 34px; margin-top: 3px; font-size: 11px; color: #6c757d; text-align: end;">
+                                    ${formatTime(new Date())}
+                                </p>
+                            </div>
+                        ` : ''}
+                        <div id="bottom-ref"></div>
+                    </div>
                     <div class="prompt-outer-container" style="width: 100%; background-color: #fff; z-index: 10; max-width: 100%; display: flex; align-items: center; position: sticky; bottom: 0; margin: 0; padding: 11px; padding-top: 0; box-sizing: border-box; flex-shrink: 0; border-top: 1px solid #e9ecef;">
                         <div class="g-prompt-container" style="width: 95%; min-height: 38px !important; background-color: #fff !important; border: 1px solid rgba(0, 0, 0, 0.2); border-radius: 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); box-sizing: border-box; padding: 0;">
                             <textarea id="prompt-input-ref" class="prompt-input" oninput="handlePromptInput(event)" placeholder="Ask any questions about this agreement" style="width: 100%; background: white; padding: 10px 14px; border-bottom: none !important; border: none; outline: none; resize: vertical; min-height: 38px; font-size: 14px; font-family: inherit; line-height: 1.5; box-sizing: border-box; direction: ltr; text-align: left;">${escapeHtml(prompt || '')}</textarea>
@@ -206,12 +200,9 @@
             promptInputRef.focus();
         }
 
-        // Scroll to bottom
-        if (bottomRef) {
-            setTimeout(() => {
-                bottomRef.scrollIntoView({ behavior: 'auto' });
-            }, 200);
-        }
+        // Only scroll to bottom on initial load or when there are new messages
+        // Don't auto-scroll on every render to prevent unwanted scrolling
+        // Scroll will be handled by specific functions (handleGenerate, fetchHistory, etc.)
     }
 
     // Render chat history
@@ -545,14 +536,10 @@
                             }
                         } else if (scrollPos && messageDivRefElement) {
                             // Preserve scroll position when loading older messages at top
+                            // Match MS Editor: scrollTop = scrollHeight - scrollPos
                             // scrollPos is the old scrollHeight before new content was added
-                            // When loading older messages, we were at scrollTop = 0 (top)
-                            // After adding content, we want to stay at the top but account for new content
                             const newScrollHeight = messageDivRefElement.scrollHeight;
-                            const heightDifference = newScrollHeight - scrollPos;
-                            // Keep scroll at top (0) plus the height difference to maintain visual position
-                            // This ensures the user sees the same content they were viewing
-                            messageDivRefElement.scrollTop = Math.max(0, heightDifference);
+                            messageDivRefElement.scrollTop = newScrollHeight - scrollPos;
                         }
                     }, 150);
                 } else {
