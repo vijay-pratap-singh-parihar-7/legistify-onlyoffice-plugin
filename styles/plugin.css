@@ -125,7 +125,7 @@ body {
 
 .tab-button.active:hover {
     background-color: #fff !important;
-    color: blue;
+    color: rgb(0, 0, 0);
     visibility: visible;
     opacity: 1;
 }
