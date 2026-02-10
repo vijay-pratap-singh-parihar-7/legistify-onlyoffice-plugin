@@ -141,8 +141,8 @@
                 ${isHistoryLoading ? `
                     <div class="loading-spinner" style="margin-top: 150px;"></div>
                 ` : `
-                <div class="ask-ai-body" style="display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden;">
-                    <div class="min-height-scrollbar" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto !important; overflow-x: hidden !important; min-height: 0; position: relative;">
+                <div class="ask-ai-body" style="display: flex; flex-direction: column; overflow: scroll; height: calc(100vh - 85px);">
+                    <div class="" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto !important; overflow-x: hidden !important; min-height: 0; position: relative;">
                         ${historySearch?.length > 0 ? renderChatHistory() : ''}
                         ${loader ? `
                             <div class="div3">
