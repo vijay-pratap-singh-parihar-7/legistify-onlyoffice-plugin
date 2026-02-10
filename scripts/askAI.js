@@ -159,7 +159,7 @@
                         ` : ''}
                         <div class="prompt-outer-container" style="flex-shrink: 0; background-color: #fff; width: 100%; max-width: 49.7rem; margin: 0 auto; padding: 11px; padding-top: 8px; box-sizing: border-box; display: flex; align-items: center;">
                             <div class="g-prompt-container" style="width: 95%; flex: 1;">
-                                <textarea id="prompt-input-ref" class="prompt-input" oninput="handlePromptInput(event)" placeholder="Ask any questions about this agreement" style="width: 100%; background: white; padding: 10px 14px; border: none; outline: none; resize: vertical; min-height: 38px; font-size: 14px; font-family: inherit; line-height: 1.5; box-sizing: border-box; direction: ltr; text-align: left; display: block !important; visibility: visible !important;">${escapeHtml(prompt || '')}</textarea>
+                                <textarea id="prompt-input-ref" class="prompt-input" oninput="handlePromptInput(event)" placeholder="Ask any questions about this agreement" style="width: 100%; background: white; padding: 10px 14px; border: none; outline: none; resize: vertical; min-height: 38px; font-size: 14px; font-family: inherit; line-height: 1.5; box-sizing: border-box; direction: ltr; text-align: left; display: block !important; visibility: visible !important; border-radius: 10px;">${escapeHtml(prompt || '')}</textarea>
                             </div>
                             <div class="prompt-actions" style="padding-left: 10px; padding-right: 5px; flex-shrink: 0;">
                                 <label id="prompt-send-btn" class="prompt-action-send" onclick="handleGenerate()" style="border-radius: 10px; padding: 8px; cursor: ${error || !prompt?.trim() || loader ? 'not-allowed' : 'pointer'}; margin: 0; display: flex !important; align-items: center; justify-content: center; background-color: ${error || !prompt?.trim() || loader ? 'gray' : '#2667FF'}; color: #fff; transition: background-color 0.2s; border: none; min-width: 36px; min-height: 36px; box-sizing: border-box; visibility: visible !important;">
@@ -327,17 +327,19 @@
         return html;
     }
 
-    // Format response - matches MS Editor formatResponse exactly
+    // Format response - matches MS Editor formatResponse exactly with proper spacing
     function formatResponse(text) {
         if (!text) return '';
         const lines = text.split('\n');
         let html = '';
         let listItems = [];
         let listKey = 0;
+        let previousWasEmpty = false;
+        let previousWasParagraph = false;
 
         const pushList = () => {
             if (listItems.length) {
-                html += '<ul style="margin-left: -17px !important;">';
+                html += '<ul style="margin-left: -17px !important; margin-top: 8px; margin-bottom: 8px;">';
                 listItems.forEach((item, idx) => {
                     html += `<li style="font-size: 12px; margin: 4px 0; line-height: 1.6;">${escapeHtml(item.replace(/\*/g, '').trim())}</li>`;
                 });
@@ -348,23 +350,37 @@
 
         lines.forEach((line, index) => {
             const trimmedLine = line.trim();
-            if (!trimmedLine) {
+            const isEmpty = !trimmedLine;
+            
+            if (isEmpty) {
                 pushList();
+                // Add spacing after previous element if it was a paragraph or heading
+                if (previousWasParagraph) {
+                    html += '<div style="height: 8px;"></div>';
+                }
+                previousWasEmpty = true;
+                previousWasParagraph = false;
                 return;
             }
 
+            previousWasEmpty = false;
+
             if (trimmedLine.startsWith('# ')) {
                 pushList();
-                html += `<h1 style="font-size: 14px;">${escapeHtml(trimmedLine.replace(/^#\s*/, ''))}</h1>`;
+                html += `<h1 style="font-size: 14px; margin-top: 12px; margin-bottom: 8px; font-weight: 600;">${escapeHtml(trimmedLine.replace(/^#\s*/, ''))}</h1>`;
+                previousWasParagraph = false;
             } else if (trimmedLine.startsWith('## ')) {
                 pushList();
-                html += `<h2 style="font-size: 12px;">${escapeHtml(trimmedLine.replace(/^##\s*/, ''))}</h2>`;
+                html += `<h2 style="font-size: 13px; margin-top: 12px; margin-bottom: 8px; font-weight: 600;">${escapeHtml(trimmedLine.replace(/^##\s*/, ''))}</h2>`;
+                previousWasParagraph = false;
             } else if (trimmedLine.startsWith('### ')) {
                 pushList();
-                html += `<h3 style="font-size: 12px;">${escapeHtml(trimmedLine.replace(/^###\s*/, ''))}</h3>`;
+                html += `<h3 style="font-size: 12px; margin-top: 12px; margin-bottom: 8px; font-weight: 600;">${escapeHtml(trimmedLine.replace(/^###\s*/, ''))}</h3>`;
+                previousWasParagraph = false;
             } else if (trimmedLine.startsWith('#### ')) {
                 pushList();
-                html += `<h4 style="font-size: 12px;">${escapeHtml(trimmedLine.replace(/^####\s*/, ''))}</h4>`;
+                html += `<h4 style="font-size: 12px; margin-top: 12px; margin-bottom: 8px; font-weight: 600;">${escapeHtml(trimmedLine.replace(/^####\s*/, ''))}</h4>`;
+                previousWasParagraph = false;
             } else if (/^\d+\.\s+/.test(trimmedLine) || /^-\s+/.test(trimmedLine) || /^\d+\s*-\s+/.test(trimmedLine)) {
                 // Handle patterns: "3. ", "- ", "3 - ", "3- "
                 let cleanedLine = trimmedLine
@@ -378,9 +394,13 @@
                     cleanedLine = trimmedLine.replace(/\*/g, '').trim();
                 }
                 listItems.push(cleanedLine);
+                previousWasParagraph = false;
             } else {
                 pushList();
-                html += `<p style="font-size: 12px; margin-bottom: 0; margin-top: -8px !important;">${escapeHtml(trimmedLine)}</p>`;
+                // Add spacing before paragraph if previous was not empty and not a paragraph
+                const marginTop = (previousWasParagraph || index === 0) ? '0' : '8px';
+                html += `<p style="font-size: 12px; margin-top: ${marginTop}; margin-bottom: 0; line-height: 1.6;">${escapeHtml(trimmedLine)}</p>`;
+                previousWasParagraph = true;
             }
         });
 

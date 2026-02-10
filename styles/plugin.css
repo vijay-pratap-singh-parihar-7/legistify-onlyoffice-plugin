@@ -2199,8 +2199,8 @@ body {
     margin-left: -17px !important;
     padding-left: 20px;
     list-style-type: none;
-    margin-top: 0;
-    margin-bottom: 0;
+    margin-top: 8px;
+    margin-bottom: 8px;
 }
 
 .response-container li,
@@ -2216,8 +2216,37 @@ body {
 .min-height-scrollbar p {
     font-size: 12px;
     margin-bottom: 0;
-    margin-top: -8px !important;
+    margin-top: 8px;
     line-height: 1.6;
+}
+
+.response-container p:first-child,
+.min-height-scrollbar p:first-child {
+    margin-top: 0;
+}
+
+.response-container h1,
+.response-container h2,
+.response-container h3,
+.response-container h4,
+.min-height-scrollbar h1,
+.min-height-scrollbar h2,
+.min-height-scrollbar h3,
+.min-height-scrollbar h4 {
+    margin-top: 12px;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.response-container h1:first-child,
+.response-container h2:first-child,
+.response-container h3:first-child,
+.response-container h4:first-child,
+.min-height-scrollbar h1:first-child,
+.min-height-scrollbar h2:first-child,
+.min-height-scrollbar h3:first-child,
+.min-height-scrollbar h4:first-child {
+    margin-top: 0;
 }
 
 .ask-ai-header {
@@ -2336,7 +2365,7 @@ body {
 .p3 {
     font-size: 12px;
     margin-bottom: 0;
-    margin-top: -12px !important;
+    margin-top: 0;
 }
 
 .p4 {
