@@ -2144,7 +2144,6 @@ body {
     display: flex;
     flex-direction: column;
     padding: 0;
-    flex: 1;
     overflow: hidden;
     min-height: 0;
     position: relative;
