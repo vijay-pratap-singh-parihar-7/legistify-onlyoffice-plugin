@@ -823,7 +823,12 @@
                 '.asc-window-header button[aria-label*="close" i]',
                 'button[title*="close" i]',
                 '.asc-window-header button:last-child',
-                '.asc-window-header .asc-window-button-close'
+                '.asc-window-header .asc-window-button-close',
+                '.current-plugin-header button',
+                '.current-plugin-header .asc-window-close',
+                '.current-plugin-header [aria-label*="close" i]',
+                '.current-plugin-header [title*="close" i]',
+                '.current-plugin-header button:last-child'
             ];
             
             let onlyOfficeCloseBtn = null;
@@ -832,6 +837,29 @@
                 if (onlyOfficeCloseBtn) {
                     console.log('Found OnlyOffice close button with selector:', selector);
                     break;
+                }
+            }
+            
+            // Also check for close button within current-plugin-header specifically
+            if (!onlyOfficeCloseBtn) {
+                const currentPluginHeader = document.querySelector('.current-plugin-header');
+                if (currentPluginHeader) {
+                    // Look for any button or clickable element in the header
+                    const buttons = currentPluginHeader.querySelectorAll('button, [role="button"], a, [onclick]');
+                    for (let btn of buttons) {
+                        // Check if it looks like a close button (X icon, last child, or has close-related attributes)
+                        const isCloseButton = btn.getAttribute('aria-label')?.toLowerCase().includes('close') ||
+                                           btn.getAttribute('title')?.toLowerCase().includes('close') ||
+                                           btn.classList.contains('close') ||
+                                           btn.classList.contains('asc-window-close') ||
+                                           (btn === buttons[buttons.length - 1] && buttons.length > 0);
+                        
+                        if (isCloseButton || buttons.length === 1) {
+                            onlyOfficeCloseBtn = btn;
+                            console.log('Found close button in current-plugin-header');
+                            break;
+                        }
+                    }
                 }
             }
             
@@ -847,6 +875,27 @@
                                 break;
                             }
                         }
+                        
+                        // Also check parent for current-plugin-header
+                        if (!onlyOfficeCloseBtn) {
+                            const parentCurrentPluginHeader = parentDoc.querySelector('.current-plugin-header');
+                            if (parentCurrentPluginHeader) {
+                                const buttons = parentCurrentPluginHeader.querySelectorAll('button, [role="button"], a, [onclick]');
+                                for (let btn of buttons) {
+                                    const isCloseButton = btn.getAttribute('aria-label')?.toLowerCase().includes('close') ||
+                                                       btn.getAttribute('title')?.toLowerCase().includes('close') ||
+                                                       btn.classList.contains('close') ||
+                                                       btn.classList.contains('asc-window-close') ||
+                                                       (btn === buttons[buttons.length - 1] && buttons.length > 0);
+                                    
+                                    if (isCloseButton || buttons.length === 1) {
+                                        onlyOfficeCloseBtn = btn;
+                                        console.log('Found close button in parent current-plugin-header');
+                                        break;
+                                    }
+                                }
+                            }
+                        }
                     }
                 } catch (e) {
                     // Cross-origin or other error, ignore
@@ -854,15 +903,21 @@
             }
             
             if (onlyOfficeCloseBtn) {
-                // Remove any existing listeners to avoid duplicates
-                const newBtn = onlyOfficeCloseBtn.cloneNode(true);
-                onlyOfficeCloseBtn.parentNode.replaceChild(newBtn, onlyOfficeCloseBtn);
+                // Check if listener is already attached
+                if (onlyOfficeCloseBtn.hasAttribute('data-close-listener-attached')) {
+                    console.log('Close button listener already attached');
+                    return true;
+                }
                 
-                newBtn.addEventListener('click', function(e) {
+                // Mark as having listener attached
+                onlyOfficeCloseBtn.setAttribute('data-close-listener-attached', 'true');
+                
+                onlyOfficeCloseBtn.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
                     console.log('OnlyOffice close button clicked');
                     closePluginPanel();
+                    return false;
                 });
                 
                 console.log('OnlyOffice close button listener attached');
@@ -877,6 +932,104 @@
         
         // Start looking for the close button
         setTimeout(findAndSetupCloseButton, 100);
+        
+        // Set up mutation observer to watch for dynamically added close buttons
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                mutation.addedNodes.forEach(function(node) {
+                    if (node.nodeType === 1) { // Element node
+                        // Check if the added node is a close button or contains one
+                        const isCloseButton = node.matches && (
+                            node.matches('.asc-window-close, .plugin-close, [aria-label*="close" i], [title*="close" i]') ||
+                            node.matches('.current-plugin-header') ||
+                            node.querySelector && node.querySelector('.current-plugin-header, .asc-window-close, .plugin-close, [aria-label*="close" i], [title*="close" i]')
+                        );
+                        
+                        if (isCloseButton) {
+                            console.log('Close button or header detected, re-running setup');
+                            setTimeout(findAndSetupCloseButton, 100);
+                        }
+                    }
+                });
+            });
+        });
+        
+        // Observe the document body for added nodes
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+        
+        // Also observe parent document if accessible
+        try {
+            const parentDoc = window.parent?.document || window.top?.document;
+            if (parentDoc && parentDoc.body) {
+                const parentObserver = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        mutation.addedNodes.forEach(function(node) {
+                            if (node.nodeType === 1) {
+                                const isCloseButton = node.matches && (
+                                    node.matches('.asc-window-close, .plugin-close, [aria-label*="close" i], [title*="close" i]') ||
+                                    node.matches('.current-plugin-header') ||
+                                    node.querySelector && node.querySelector('.current-plugin-header, .asc-window-close, .plugin-close, [aria-label*="close" i], [title*="close" i]')
+                                );
+                                
+                                if (isCloseButton) {
+                                    console.log('Close button or header detected in parent, re-running setup');
+                                    setTimeout(findAndSetupCloseButton, 100);
+                                }
+                            }
+                        });
+                    });
+                });
+                
+                parentObserver.observe(parentDoc.body, {
+                    childList: true,
+                    subtree: true
+                });
+            }
+        } catch (e) {
+            // Cross-origin or other error, ignore
+        }
+        
+        // Set up event delegation as a fallback to catch clicks on close buttons
+        // This works even if buttons are added dynamically
+        const handleCloseClick = function(e) {
+            const target = e.target;
+            const clickedElement = target.closest ? target.closest('button, [role="button"], a, [onclick]') : target;
+            
+            if (!clickedElement) return;
+            
+            // Check if clicked element is in current-plugin-header or is a close button
+            const isInCurrentPluginHeader = clickedElement.closest && clickedElement.closest('.current-plugin-header');
+            const isCloseButton = clickedElement.classList.contains('asc-window-close') ||
+                                 clickedElement.classList.contains('plugin-close') ||
+                                 clickedElement.classList.contains('close') ||
+                                 clickedElement.getAttribute('aria-label')?.toLowerCase().includes('close') ||
+                                 clickedElement.getAttribute('title')?.toLowerCase().includes('close') ||
+                                 (isInCurrentPluginHeader && clickedElement.closest('.current-plugin-header').querySelectorAll('button, [role="button"], a, [onclick]').length === 1);
+            
+            if (isCloseButton || (isInCurrentPluginHeader && clickedElement === clickedElement.closest('.current-plugin-header').querySelector('button:last-child, [role="button"]:last-child'))) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Close button clicked via event delegation');
+                closePluginPanel();
+                return false;
+            }
+        };
+        
+        // Add event listener to document for event delegation
+        document.addEventListener('click', handleCloseClick, true); // Use capture phase
+        
+        // Also add to parent document if accessible
+        try {
+            const parentDoc = window.parent?.document || window.top?.document;
+            if (parentDoc) {
+                parentDoc.addEventListener('click', handleCloseClick, true);
+            }
+        } catch (e) {
+            // Cross-origin or other error, ignore
+        }
     }
     
     // Open plugin panel on the left side
