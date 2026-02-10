@@ -222,8 +222,7 @@
                         <svg class="back-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="handleBackFromDetail()" style="cursor: pointer; flex-shrink: 0;">
                             <polyline points="15 18 9 12 15 6"></polyline>
                         </svg>
-                        <span style="font-size: 14px; font-weight: 650; cursor: pointer; flex-shrink: 0; white-space: nowrap;" onclick="handleBackFromDetail()">Back</span>
-                        <span class="playbook-detail-title" style="font-size: 16px; font-weight: 650; margin-left: 8px; color: #212529; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0;">${escapeHtml(playbook.name)}</span>
+                        <span style="font-size: 14px; font-weight: 650; cursor: pointer; flex-shrink: 0; white-space: nowrap; margin: 0;" onclick="handleBackFromDetail()">Back</span>
                     </div>
                     ${isEditable ? `
                     <div class="playbook-detail-header-actions">
@@ -246,6 +245,7 @@
                 </div>
                 <div class="playbook-detail-content">
                     <div class="playbook-detail-info">
+                        <h1 style="font-size: 14px; font-weight: bold; color: #212529; margin: 0 0 6px 0;">${escapeHtml(playbook.name)}</h1>
                         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
                             <span class="standard-text">${isStandard ? 'Standard' : 'Custom'}</span>
                             <span>•</span>
