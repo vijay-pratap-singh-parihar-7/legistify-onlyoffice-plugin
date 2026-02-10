@@ -183,7 +183,7 @@ body {
     transition: all 0.2s;
     position: relative;
     overflow: visible;
-    color: #503bff;
+    color: #000000;
 }
 
 .card-button:hover {
@@ -1176,7 +1176,7 @@ body {
     width: 100%;
     box-sizing: border-box;
     /* flex: 1; */
-    height: calc(100vh - 50px);
+    height: calc(100vh - 58px);
 }
 
 .summary-content p,

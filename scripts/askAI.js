@@ -141,7 +141,7 @@
                 ${isHistoryLoading ? `
                     <div class="loading-spinner" style="margin-top: 150px;"></div>
                 ` : `
-                <div class="ask-ai-body" style="display: flex; flex-direction: column; overflow: scroll; height: calc(100vh - 85px);">
+                <div class="ask-ai-body" style="display: flex; flex-direction: column; overflow: scroll; height: calc(100vh - 52px);">
                     <div class="" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto !important; overflow-x: hidden !important; min-height: 0; position: relative;">
                         ${historySearch?.length > 0 ? renderChatHistory() : ''}
                         ${loader ? `
@@ -154,7 +154,7 @@
                                         ${getUserInitials()}
                                     </div>
                                 </div>
-                                <p style="margin-right: 34px; margin-top: 3px;" class="p6">${formatTime(new Date())}</p>
+                                <p style="margin-right: 34px; margin-top: 3px; text-align: right;" class="p6">${formatTime(new Date())}</p>
                             </div>
                         ` : ''}
                         <div class="prompt-outer-container" style="flex-shrink: 0; background-color: #fff; width: 100%; max-width: 49.7rem; margin: 0 auto; padding: 11px; padding-top: 8px; box-sizing: border-box; display: flex; align-items: center;">
@@ -752,11 +752,12 @@
     function getUserInitials() {
         const pluginData = window.getPluginData();
         const userName = pluginData.userName || pluginData.userDetails?.fullName || 'U';
-        const parts = userName.split(' ');
+        const parts = userName.trim().split(' ').filter(part => part.length > 0);
         if (parts.length >= 2) {
-            return (parts[0][0] + parts[1][0]).toUpperCase();
+            // First letter of first name + first letter of last name
+            return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
         }
-        return userName[0].toUpperCase();
+        return userName.trim()[0].toUpperCase();
     }
 
     // Format time - matches MS Editor moment().calendar() format
