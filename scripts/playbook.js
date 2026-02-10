@@ -17,6 +17,14 @@
     let showCreateForm = false;
     let showCreatePage = false;
     
+    // Edit mode state
+    let isEditing = false;
+    let editedName = '';
+    let editedRules = [];
+    let isSaving = false;
+    let showDeleteConfirm = false;
+    let isDeleting = false;
+    
     // Expose to window for main.js
     window.showCreatePage = false;
     window.showCreateForm = false;
@@ -215,6 +223,11 @@
         // Always show edit button, delete button only for custom playbooks (matches MS Editor pattern)
         const isEditable = true; // Always allow editing (matches MS Editor)
         
+        // Get current rules for editing
+        const currentRules = isEditing ? editedRules : rules;
+        const currentName = isEditing ? editedName : playbook.name;
+        const validRulesCount = isEditing ? editedRules.filter(r => r && r.trim() !== '').length : rules.length;
+        
         playbookView.innerHTML = `
             <div class="playbook-detail-root">
                 <div class="playbook-detail-header">
@@ -224,7 +237,7 @@
                         </svg>
                         <span style="font-size: 14px; font-weight: 650; cursor: pointer; flex-shrink: 0; white-space: nowrap; margin: 0;" onclick="handleBackFromDetail()">Back</span>
                     </div>
-                    ${isEditable ? `
+                    ${isEditable && !isEditing ? `
                     <div class="playbook-detail-header-actions">
                         <button class="playbook-detail-edit-button" onclick="handleEditPlaybook('${playbook._id}')" title="Edit guide name and rules">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -233,11 +246,13 @@
                             </svg>
                         </button>
                         ${!isStandard ? `
-                        <button class="playbook-detail-delete-button" onclick="handleDeletePlaybook('${playbook._id}')" title="Delete this playbook">
+                        <button class="playbook-detail-delete-button" onclick="handleDeletePlaybook('${playbook._id}')" title="Delete this playbook" ${isDeleting ? 'disabled' : ''}>
+                            ${isDeleting ? '<div class="loading-spinner-small"></div>' : `
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polyline points="3 6 5 6 21 6"></polyline>
                                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                             </svg>
+                            `}
                         </button>
                         ` : ''}
                     </div>
@@ -245,17 +260,47 @@
                 </div>
                 <div class="playbook-detail-content">
                     <div class="playbook-detail-info">
-                        <h1 style="font-size: 14px; font-weight: bold; color: #212529; margin: 0 0 6px 0;">${escapeHtml(playbook.name)}</h1>
+                        ${isEditing ? `
+                        <div style="margin-bottom: 6px; width: 100%; box-sizing: border-box;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                                <label style="display: block; font-size: 14px; font-weight: 500; color: #495057; margin-bottom: 4px;">Guide Name</label>
+                                <span style="font-size: 14px; color: #6c757d; font-weight: 500;">${validRulesCount}/${editedRules.length} Guidelines</span>
+                            </div>
+                            <input type="text" id="edited-playbook-name" value="${escapeHtml(currentName)}" placeholder="Enter guide name" style="font-size: 14px; font-weight: 500; width: 100%; box-sizing: border-box; max-width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                        </div>
+                        ` : `
+                        <h1 style="font-size: 14px; font-weight: bold; color: #212529; margin: 0 0 6px 0;">${escapeHtml(currentName)}</h1>
                         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
                             <span class="standard-text">${isStandard ? 'Standard' : 'Custom'}</span>
                             <span>•</span>
                             <span style="font-size: 14px; color: #6c757d;">${rules.length} Guidelines</span>
                         </div>
+                        `}
                     </div>
                     <div class="playbook-detail-guidelines">
                         <h3 style="font-size: 14px; font-weight: 600; color: #2667ff; margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 0.3px;">Guidelines</h3>
-                        <div class="guidelines-list">
-                            ${rules.map((rule, index) => {
+                        <div class="guidelines-list" id="guidelines-list-container">
+                            ${isEditing ? editedRules.map((rule, index) => {
+                                const ruleText = typeof rule === 'string' ? rule : rule.rule || rule.text || '';
+                                const isEmpty = ruleText.trim() === '';
+                                return `
+                                    <div class="guideline-edit-item" style="position: relative; padding: 6px; background-color: transparent; border-bottom: ${index < editedRules.length - 1 ? '1px solid #e9ecef' : 'none'}; margin: 0; width: 100%; box-sizing: border-box;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                            <label style="font-size: 14px; font-weight: 500; color: #495057;">Rule ${index + 1}</label>
+                                            <button onclick="handleRemoveRule(${index})" style="background: none; border: none; padding: 0; cursor: pointer; display: flex; align-items: center; color: #dc3545;" title="Remove this guideline">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        <textarea id="rule-${index}" style="width: 100%; font-size: 14px; line-height: 1.5; min-height: 80px; resize: vertical; border: ${isEmpty ? '1px solid #dc3545' : '1px solid #ced4da'}; border-radius: 6px; padding: 12px; box-sizing: border-box; max-width: 100%; font-family: inherit;">${escapeHtml(ruleText)}</textarea>
+                                        ${isEmpty ? `
+                                        <div style="font-size: 11px; color: #dc3545; margin-top: 8px; font-style: italic;">Guideline cannot be empty</div>
+                                        ` : ''}
+                                    </div>
+                                `;
+                            }).join('') : rules.map((rule, index) => {
                                 const ruleText = typeof rule === 'string' ? rule : rule.rule || rule.text || '';
                                 return `
                                     <div class="guideline-detail-item">
@@ -267,27 +312,199 @@
                         </div>
                     </div>
                 </div>
+                ${!isEditing ? `
                 <div class="playbook-detail-actions">
                     <button class="run-playbook-detail-button" onclick="handleRunPlaybookFromDetail('${playbook._id}')" ${runningPlaybook !== null ? 'disabled' : ''}>
                         ${runningPlaybook === playbook._id ? '<div class="loading-spinner-small"></div>' : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>'}
                         Run Guide
                     </button>
                 </div>
+                ` : `
+                <div class="playbook-detail-actions" style="display: flex; gap: 8px;">
+                    <button class="playbook-add-rule-button" onclick="handleAddNewRule()" style="flex: 1; background-color: #9da4aaff; color: #fff; border: none; border-radius: 4px; padding: 6px 12px; cursor: pointer; font-size: 12px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Add Rule
+                    </button>
+                    <button class="playbook-save-button" onclick="handleSaveEdit('${playbook._id}')" ${isSaving ? 'disabled' : ''} style="flex: 1; background-color: ${isSaving ? '#adb5bd' : '#007bff'}; color: #fff; border: none; border-radius: 4px; padding: 6px 12px; cursor: ${isSaving ? 'not-allowed' : 'pointer'}; font-size: 12px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                        ${isSaving ? '<div class="loading-spinner-small"></div>' : `
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                            <polyline points="7 3 7 8 15 8"></polyline>
+                        </svg>
+                        `}
+                        ${isSaving ? 'Saving...' : 'Save'}
+                    </button>
+                </div>
+                `}
             </div>
+            ${showDeleteConfirm ? `
+            <div id="delete-confirm-modal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 2000;">
+                <div style="background-color: #fff; border-radius: 8px; padding: 24px; max-width: 400px; width: 90%; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);">
+                    <div style="display: flex; align-items: center; margin-bottom: 16px;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#dc3545" stroke-width="2" style="margin-right: 12px;">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #212529;">Delete Playbook</h3>
+                    </div>
+                    <p style="margin: 0 0 24px 0; font-size: 14px; color: #6c757d; line-height: 1.5;">
+                        Are you sure you want to delete "<strong>${escapeHtml(playbook.name)}</strong>"? This action cannot be undone.
+                    </p>
+                    <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                        <button onclick="handleDeleteCancel()" style="background-color: #6c757d; color: #fff; border: none; border-radius: 6px; padding: 8px 16px; font-size: 14px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px;">Cancel</button>
+                        <button onclick="handleDeleteConfirm('${playbook._id}')" ${isDeleting ? 'disabled' : ''} style="background-color: #ea54551a; color: #ea5455; border: none; border-radius: 6px; padding: 8px 16px; font-size: 14px; font-weight: 500; cursor: ${isDeleting ? 'not-allowed' : 'pointer'}; display: flex; align-items: center; gap: 6px; opacity: ${isDeleting ? 0.7 : 1};">
+                            ${isDeleting ? '<div class="loading-spinner-small"></div>' : `
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                            `}
+                            ${isDeleting ? 'Deleting...' : 'Delete'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+            ` : ''}
         `;
+        
+        // Attach event listeners for edit mode
+        if (isEditing) {
+            const nameInput = document.getElementById('edited-playbook-name');
+            if (nameInput) {
+                nameInput.addEventListener('input', function(e) {
+                    editedName = e.target.value;
+                });
+            }
+            
+            editedRules.forEach((rule, index) => {
+                const textarea = document.getElementById(`rule-${index}`);
+                if (textarea) {
+                    textarea.addEventListener('input', function(e) {
+                        editedRules[index] = e.target.value;
+                    });
+                }
+            });
+            
+            // Keyboard shortcuts: Ctrl+S to save, Escape to cancel
+            const handleKeyDown = function(e) {
+                if (e.ctrlKey && e.key === 's') {
+                    e.preventDefault();
+                    const playbook = selectedPlaybookForDetail;
+                    if (playbook) {
+                        handleSaveEdit(playbook._id);
+                    }
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    handleCancelEdit();
+                }
+            };
+            
+            document.addEventListener('keydown', handleKeyDown);
+            
+            // Store handler for cleanup
+            window._playbookEditKeyHandler = handleKeyDown;
+        } else {
+            // Remove keyboard handler when not editing
+            if (window._playbookEditKeyHandler) {
+                document.removeEventListener('keydown', window._playbookEditKeyHandler);
+                window._playbookEditKeyHandler = null;
+            }
+        }
     }
     
-    // Handle edit playbook
+    // Handle edit playbook - enter edit mode
     window.handleEditPlaybook = function(playbookId) {
-        // TODO: Implement edit functionality
-        showToast('Edit functionality coming soon', 'info');
-    };
-    
-    // Handle delete playbook
-    window.handleDeletePlaybook = async function(playbookId) {
-        if (!confirm('Are you sure you want to delete this guide?')) {
+        const playbook = selectedPlaybookForDetail || playbooks.find(p => p._id === playbookId);
+        if (!playbook) {
+            showToast('Playbook not found', 'error');
             return;
         }
+        
+        try {
+            isEditing = true;
+            editedName = playbook.name || '';
+            const normalizedRules = (playbook.rules || []).map(rule => 
+                typeof rule === 'string' ? rule : rule.rule || rule.text || ''
+            );
+            editedRules = [...normalizedRules];
+            isSaving = false;
+            
+            renderPlaybookDetail(playbook);
+        } catch (error) {
+            console.error('Error entering edit mode:', error);
+            showToast('Failed to enter edit mode', 'error');
+        }
+    };
+    
+    // Handle add new rule
+    window.handleAddNewRule = function() {
+        if (!Array.isArray(editedRules)) {
+            editedRules = [];
+        }
+        
+        // Only add if last rule is not empty
+        const canAdd = editedRules.length === 0 || 
+            (editedRules.length > 0 && editedRules[editedRules.length - 1] && editedRules[editedRules.length - 1].trim() !== '');
+        
+        if (canAdd) {
+            editedRules.push('');
+            const playbook = selectedPlaybookForDetail;
+            if (playbook) {
+                renderPlaybookDetail(playbook);
+                // Scroll to the new rule
+                setTimeout(() => {
+                    const lastTextarea = document.getElementById(`rule-${editedRules.length - 1}`);
+                    if (lastTextarea) {
+                        lastTextarea.focus();
+                        lastTextarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }, 100);
+            }
+        }
+    };
+    
+    // Handle remove rule
+    window.handleRemoveRule = function(index) {
+        if (typeof index !== 'number' || index < 0 || !Array.isArray(editedRules) || index >= editedRules.length) {
+            return;
+        }
+        
+        editedRules = editedRules.filter((_, i) => i !== index);
+        const playbook = selectedPlaybookForDetail;
+        if (playbook) {
+            renderPlaybookDetail(playbook);
+            showToast('Guideline removed successfully!', 'success');
+        }
+    };
+    
+    // Handle save edit
+    window.handleSaveEdit = async function(playbookId) {
+        const playbook = selectedPlaybookForDetail || playbooks.find(p => p._id === playbookId);
+        if (!playbook) {
+            showToast('Playbook not found', 'error');
+            return;
+        }
+        
+        // Validate inputs
+        if (!editedName.trim()) {
+            showToast('Guide name cannot be empty', 'error');
+            return;
+        }
+        
+        // Clean up empty rules
+        const cleanedRules = (editedRules || []).filter(rule => rule && rule.trim() !== '');
+        if (cleanedRules.length === 0) {
+            showToast('At least one guideline is required', 'error');
+            return;
+        }
+        
+        isSaving = true;
+        renderPlaybookDetail(playbook);
         
         const pluginData = window.getPluginData();
         const backendUrl = window.getBackendUrl();
@@ -295,13 +512,139 @@
         
         if (!accessToken) {
             showToast('Access token not available', 'error');
+            isSaving = false;
+            renderPlaybookDetail(playbook);
             return;
         }
         
         try {
-            const url = `${backendUrl}/ai-assistant/delete-playbook/${playbookId}`;
+            const isStandard = playbook.organizationId === null;
+            
+            if (isStandard) {
+                // For standard playbooks, create a new copy with versioned name
+                const versionedName = await generateVersionedName(editedName);
+                
+                const createData = {
+                    name: versionedName,
+                    rules: cleanedRules,
+                    organizationId: pluginData?.organizationId || null
+                };
+                
+                const url = `${backendUrl}/ai-assistant/editor-create-playbook`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-auth-token': accessToken
+                    },
+                    body: JSON.stringify(createData)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result?.status) {
+                        isEditing = false;
+                        showToast(`New playbook "${versionedName}" created successfully!`, 'success');
+                        setTimeout(() => {
+                            handleBackFromDetail();
+                        }, 1500);
+                    } else {
+                        throw new Error(result?.msg || 'Failed to create new playbook');
+                    }
+                } else {
+                    throw new Error('Failed to create new playbook');
+                }
+            } else {
+                // For custom playbooks, update the existing one
+                const saveData = {
+                    playbookId: playbook._id,
+                    name: editedName,
+                    rules: cleanedRules
+                };
+                
+                const url = `${backendUrl}/ai-assistant/update-playbook-fields`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-auth-token': accessToken
+                    },
+                    body: JSON.stringify(saveData)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result?.status) {
+                        // Update local playbook object
+                        playbook.name = editedName;
+                        playbook.rules = cleanedRules;
+                        
+                        // Exit edit mode
+                        isEditing = false;
+                        editedName = '';
+                        editedRules = [];
+                        
+                        showToast('Playbook updated successfully!', 'success');
+                        renderPlaybookDetail(playbook);
+                    } else {
+                        throw new Error(result?.msg || 'Failed to update playbook');
+                    }
+                } else {
+                    throw new Error('Failed to update playbook');
+                }
+            }
+        } catch (error) {
+            console.error('Error saving playbook:', error);
+            showToast(error?.message || 'Failed to save playbook', 'error');
+        } finally {
+            isSaving = false;
+            if (selectedPlaybookForDetail) {
+                renderPlaybookDetail(selectedPlaybookForDetail);
+            }
+        }
+    };
+    
+    // Handle cancel edit
+    window.handleCancelEdit = function() {
+        const playbook = selectedPlaybookForDetail;
+        if (!playbook) return;
+        
+        // Check for unsaved changes
+        const hasNameChanges = editedName !== playbook.name;
+        const originalRules = (playbook.rules || []).map(rule => 
+            typeof rule === 'string' ? rule : rule.rule || rule.text || ''
+        );
+        const hasRuleChanges = JSON.stringify(editedRules) !== JSON.stringify(originalRules);
+        
+        if (hasNameChanges || hasRuleChanges) {
+            if (confirm('You have unsaved changes. Are you sure you want to cancel?')) {
+                isEditing = false;
+                editedName = '';
+                editedRules = [];
+                renderPlaybookDetail(playbook);
+                showToast('Changes discarded', 'info');
+            }
+        } else {
+            isEditing = false;
+            editedName = '';
+            editedRules = [];
+            renderPlaybookDetail(playbook);
+        }
+    };
+    
+    // Generate versioned name for standard playbooks
+    async function generateVersionedName(originalName) {
+        try {
+            const baseName = originalName.replace(/\s+\d+$/, '');
+            const pluginData = window.getPluginData();
+            const backendUrl = window.getBackendUrl();
+            const accessToken = window.getAccessToken();
+            
+            if (!accessToken) return `${baseName} 1`;
+            
+            const url = `${backendUrl}/ai-assistant/global-playbooks`;
             const response = await fetch(url, {
-                method: 'DELETE',
+                method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
                     'x-auth-token': accessToken
@@ -310,23 +653,135 @@
             
             if (response.ok) {
                 const data = await response.json();
-                if (data?.status) {
-                    showToast('Guide deleted successfully', 'success');
+                if (data?.status && data?.data?.result) {
+                    const allPlaybooks = data.data.result;
+                    const existingVersions = allPlaybooks
+                        .filter(pb => pb.name.startsWith(baseName))
+                        .map(pb => {
+                            const versionMatch = pb.name.match(new RegExp(`^${baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s+(\\d+)$`));
+                            return versionMatch ? parseInt(versionMatch[1]) : 0;
+                        })
+                        .filter(version => version > 0)
+                        .sort((a, b) => b - a);
+                    
+                    const nextVersion = existingVersions.length > 0 ? existingVersions[0] + 1 : 1;
+                    return `${baseName} ${nextVersion}`;
+                }
+            }
+            
+            return `${baseName} 1`;
+        } catch (error) {
+            console.error('Error generating versioned name:', error);
+            const baseName = originalName.replace(/\s+\d+$/, '');
+            return `${baseName} 1`;
+        }
+    }
+    
+    // Handle delete playbook - show confirmation
+    window.handleDeletePlaybook = function(playbookId) {
+        showDeleteConfirm = true;
+        isDeleting = false;
+        const playbook = selectedPlaybookForDetail || playbooks.find(p => p._id === playbookId);
+        if (playbook) {
+            renderPlaybookDetail(playbook);
+        }
+    };
+    
+    // Handle delete confirm
+    window.handleDeleteConfirm = async function(playbookId) {
+        const playbook = selectedPlaybookForDetail || playbooks.find(p => p._id === playbookId);
+        if (!playbook) {
+            showToast('Playbook not found', 'error');
+            return;
+        }
+        
+        isDeleting = true;
+        showDeleteConfirm = false;
+        renderPlaybookDetail(playbook);
+        
+        const pluginData = window.getPluginData();
+        const backendUrl = window.getBackendUrl();
+        const accessToken = window.getAccessToken();
+        
+        if (!accessToken) {
+            showToast('Access token not available', 'error');
+            isDeleting = false;
+            renderPlaybookDetail(playbook);
+            return;
+        }
+        
+        try {
+            // Use POST method with playBookIds array (matching MS Editor)
+            const deleteData = {
+                playBookIds: [playbook._id]
+            };
+            
+            const url = `${backendUrl}/ai-assistant/delete-aiPlaybook-rules`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-auth-token': accessToken
+                },
+                body: JSON.stringify(deleteData)
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                if (result?.status) {
+                    showToast('Playbook deleted successfully!', 'success');
                     handleBackFromDetail();
                 } else {
-                    throw new Error(data?.msg || 'Failed to delete guide');
+                    throw new Error(result?.msg || 'Failed to delete playbook');
                 }
             } else {
-                throw new Error('Failed to delete guide');
+                throw new Error('Failed to delete playbook');
             }
         } catch (error) {
             console.error('Error deleting playbook:', error);
-            showToast(error?.message || 'Failed to delete guide', 'error');
+            showToast(error?.message || 'Failed to delete playbook', 'error');
+        } finally {
+            isDeleting = false;
+            showDeleteConfirm = false;
+        }
+    };
+    
+    // Handle delete cancel
+    window.handleDeleteCancel = function() {
+        showDeleteConfirm = false;
+        isDeleting = false;
+        const playbook = selectedPlaybookForDetail;
+        if (playbook) {
+            renderPlaybookDetail(playbook);
         }
     };
     
     // Handle back from detail
     window.handleBackFromDetail = function() {
+        // Reset edit state
+        if (isEditing) {
+            const playbook = selectedPlaybookForDetail;
+            if (playbook) {
+                const hasNameChanges = editedName !== playbook.name;
+                const originalRules = (playbook.rules || []).map(rule => 
+                    typeof rule === 'string' ? rule : rule.rule || rule.text || ''
+                );
+                const hasRuleChanges = JSON.stringify(editedRules) !== JSON.stringify(originalRules);
+                
+                if (hasNameChanges || hasRuleChanges) {
+                    if (!confirm('You have unsaved changes. Are you sure you want to go back?')) {
+                        return;
+                    }
+                }
+            }
+        }
+        
+        isEditing = false;
+        editedName = '';
+        editedRules = [];
+        isSaving = false;
+        showDeleteConfirm = false;
+        isDeleting = false;
         showDetailView = false;
         selectedPlaybookForDetail = null;
         renderPlaybookList();
