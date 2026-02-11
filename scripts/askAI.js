@@ -159,7 +159,7 @@
                         ` : ''}
                         <div class="prompt-outer-container" style="flex-shrink: 0; background-color: #fff; width: 100%; max-width: 49.7rem; margin: 0 auto; padding: 11px; padding-top: 8px; box-sizing: border-box; display: flex; align-items: center;">
                             <div class="g-prompt-container" style="width: 95%; flex: 1;">
-                                <textarea id="prompt-input-ref" class="prompt-input" oninput="handlePromptInput(event)" placeholder="Ask any questions about this agreement" style="width: 100%; background: white; padding: 10px 14px; border: none; outline: none; resize: vertical; height: 45px; min-height: 45px; font-size: 14px; font-family: inherit; line-height: 1.5; box-sizing: border-box; direction: ltr; text-align: left; display: block !important; visibility: visible !important; border-radius: 10px; color: #212529; overflow-y: auto;">${escapeHtml(prompt || '')}</textarea>
+                                <textarea id="prompt-input-ref" class="prompt-input" oninput="handlePromptInput(event)" onfocus="handlePromptFocus(event)" onblur="handlePromptBlur(event)" placeholder="Ask any questions about this agreement" style="width: 100%; background: white; padding: 10px 14px; border: none; outline: none; resize: vertical; height: 30px; min-height: 30px; font-size: 12px; font-family: inherit; line-height: 1.5; box-sizing: border-box; direction: ltr; text-align: left; display: block !important; visibility: visible !important; border-radius: 10px; color: #212529; overflow-y: auto;">${escapeHtml(prompt || '')}</textarea>
                             </div>
                             <div class="prompt-actions" style="padding-left: 10px; padding-right: 5px; flex-shrink: 0;">
                                 <label id="prompt-send-btn" class="prompt-action-send" onclick="handleGenerate()" style="border-radius: 10px; padding: 8px; cursor: ${error || !prompt?.trim() || loader ? 'not-allowed' : 'pointer'}; margin: 0; display: flex !important; align-items: center; justify-content: center; background-color: ${error || !prompt?.trim() || loader ? 'gray' : '#2667FF'}; color: #fff; transition: background-color 0.2s; border: none; min-width: 36px; min-height: 36px; box-sizing: border-box; visibility: visible !important;">
@@ -251,17 +251,9 @@
                                 <div style="margin-right: 7px;" class="prompt-container">
                                     <p class="p1">${escapeHtml(item?.instruction || '')}</p>
                                 </div>
-                                <div style="width: 32px; height: 32px; border-radius: 50%; background: #2667ff; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0;">
-                                    ${getUserInitials()}
-                                </div>
                             </div>
                             <p style="margin-top: 3px;" class="p2">${formatTime(item?.createdAt)}</p>
                             <div class="div2">
-                                <div>
-                                    <button class="btn-outline-success" style="padding: 8px 9px; border-radius: 50%; margin-top: 10px; cursor: pointer;">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle></svg>
-                                    </button>
-                                </div>
                                 <div style="margin-left: 7px;" class="response-container">
                                     <p class="p3">${formatResponse(item.response || '')}</p>
                                     <div onclick="copyToClipboard('${escapeHtml(item.response || '')}')" class="copy-clause">
@@ -510,15 +502,101 @@
         }
     };
 
+    // Handle prompt focus - expand to 50px, allow growth up to 80px
+    window.handlePromptFocus = function(event) {
+        if (event.target) {
+            const maxHeight = 80;
+            const value = event.target.value;
+            
+            // If empty, set to 50px
+            if (!value || !value.trim()) {
+                event.target.style.setProperty('height', '50px', 'important');
+                event.target.style.setProperty('min-height', '50px', 'important');
+            } else {
+                // If has content, calculate height based on content (max 80px)
+                event.target.style.height = 'auto';
+                let newHeight = Math.max(50, event.target.scrollHeight);
+                newHeight = Math.min(maxHeight, newHeight);
+                event.target.style.setProperty('height', newHeight + 'px', 'important');
+                event.target.style.setProperty('min-height', '50px', 'important');
+            }
+            
+            event.target.style.setProperty('max-height', maxHeight + 'px', 'important');
+            
+            // Enable scrolling if content exceeds max height
+            if (event.target.scrollHeight > maxHeight) {
+                event.target.style.overflowY = 'auto';
+            } else {
+                event.target.style.overflowY = 'hidden';
+            }
+        }
+    };
+
+    // Handle prompt blur - collapse to 30px if empty, otherwise keep current height (max 80px)
+    window.handlePromptBlur = function(event) {
+        if (event.target) {
+            const value = event.target.value;
+            const maxHeight = 80;
+            
+            if (!value || !value.trim()) {
+                // If empty, collapse to 30px
+                event.target.style.setProperty('height', '30px', 'important');
+                event.target.style.setProperty('min-height', '30px', 'important');
+                event.target.style.setProperty('max-height', 'none', 'important');
+                event.target.style.overflowY = 'auto';
+            } else {
+                // If has content, keep auto-resized height but ensure min is 30px, max is 80px
+                event.target.style.height = 'auto';
+                let newHeight = Math.max(30, event.target.scrollHeight);
+                newHeight = Math.min(maxHeight, newHeight);
+                event.target.style.setProperty('height', newHeight + 'px', 'important');
+                event.target.style.setProperty('min-height', '30px', 'important');
+                event.target.style.setProperty('max-height', maxHeight + 'px', 'important');
+                
+                // Enable scrolling if content exceeds max height
+                if (event.target.scrollHeight > maxHeight) {
+                    event.target.style.overflowY = 'auto';
+                } else {
+                    event.target.style.overflowY = 'hidden';
+                }
+            }
+        }
+    };
+
     // Handle prompt input
     window.handlePromptInput = function(event) {
         prompt = event.target.value;
         error = prompt.length >= 2000;
         
-        // Auto-resize textarea
+        // Auto-resize textarea - grows line by line, max 80px
         if (event.target) {
+            const isFocused = document.activeElement === event.target;
+            const minHeight = isFocused ? 50 : 30;
+            const maxHeight = 80;
+            
+            // Reset height to auto to get accurate scrollHeight
             event.target.style.height = 'auto';
-            event.target.style.height = Math.max(38, event.target.scrollHeight) + 'px';
+            
+            // Calculate new height based on content
+            let newHeight = event.target.scrollHeight;
+            
+            // Ensure minimum height
+            newHeight = Math.max(minHeight, newHeight);
+            
+            // Cap at maximum height
+            newHeight = Math.min(maxHeight, newHeight);
+            
+            // Apply the calculated height
+            event.target.style.setProperty('height', newHeight + 'px', 'important');
+            event.target.style.setProperty('min-height', minHeight + 'px', 'important');
+            event.target.style.setProperty('max-height', maxHeight + 'px', 'important');
+            
+            // Enable/disable scrolling based on whether content exceeds max height
+            if (event.target.scrollHeight > maxHeight) {
+                event.target.style.overflowY = 'auto';
+            } else {
+                event.target.style.overflowY = 'hidden';
+            }
         }
         
         // Update send button state without re-rendering entire view

@@ -2436,8 +2436,9 @@ body {
     border: none !important;
     outline: none !important;
     resize: vertical;
-    height: 45px !important;
-    min-height: 45px !important;
+    height: 30px !important;
+    min-height: 30px !important;
+    max-height: 80px;
     font-size: 14px;
     font-family: inherit;
     direction: ltr;
@@ -2453,8 +2454,9 @@ body {
 }
 
 .prompt-input:focus {
-    height: 55px !important;
-    min-height: 55px !important;
+    height: 50px;
+    min-height: 50px;
+    max-height: 80px;
     overflow-y: auto;
 }
 
