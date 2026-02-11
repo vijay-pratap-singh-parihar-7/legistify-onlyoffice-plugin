@@ -125,7 +125,7 @@ body {
 
 .tab-button.active:hover {
     background-color: #fff !important;
-    color: rgb(0, 0, 0);
+    color: black !important;
     visibility: visible;
     opacity: 1;
 }
@@ -668,7 +668,7 @@ body {
 
 .tab-button.active:hover {
     background: #2667ff;
-    color: white;
+    color: black !important;
     visibility: visible;
     opacity: 1;
 }
