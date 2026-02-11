@@ -282,6 +282,7 @@ body {
     top: 0;
     z-index: 10;
     background-color: #fff;
+    height: 20px;
 }
 
 .drawer-header-actions {
@@ -1100,7 +1101,7 @@ body {
 .summary-button {
     display: flex;
     align-content: center;
-    padding: 5px;
+    padding: 4px;
     border-radius: 5px;
     cursor: pointer;
     border: 1px solid #0000003d;

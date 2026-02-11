@@ -270,15 +270,9 @@
                         </div>
                         ` : `
                         <h1 style="font-size: 14px; font-weight: bold; color: #212529; margin: 0 0 6px 0;">${escapeHtml(currentName)}</h1>
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
-                            <span class="standard-text">${isStandard ? 'Standard' : 'Custom'}</span>
-                            <span>•</span>
-                            <span style="font-size: 14px; color: #6c757d;">${rules.length} Guidelines</span>
-                        </div>
                         `}
                     </div>
                     <div class="playbook-detail-guidelines">
-                        <h3 style="font-size: 14px; font-weight: 600; color: #2667ff; margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 0.3px;">Guidelines</h3>
                         <div class="guidelines-list" id="guidelines-list-container">
                             ${isEditing ? editedRules.map((rule, index) => {
                                 const ruleText = typeof rule === 'string' ? rule : rule.rule || rule.text || '';
