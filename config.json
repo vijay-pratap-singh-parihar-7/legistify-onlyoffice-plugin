@@ -34,7 +34,7 @@
       "initDataType": "text",
       "initOnSelectionChanged": false,
       "size": {
-        "width": 600
+        "width": 400
       },
       "buttons": [
         {

@@ -28,6 +28,93 @@ body {
     position: relative;
 }
 
+/* Dynamic Plugin Header Container */
+.plugin-header-container {
+    display: flex;
+    flex-direction: column;
+    background-color: #fff;
+    border-bottom: 1px solid #80808036;
+    z-index: 1000;
+    flex-shrink: 0;
+}
+
+.plugin-header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    gap: 12px;
+}
+
+.plugin-header-title {
+    font-size: 16px;
+    font-weight: 650;
+    color: #212529;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.plugin-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+}
+
+.plugin-header-action-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 6px 12px;
+    background: none;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #495057;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.plugin-header-action-button:hover {
+    background-color: #f8f9fa;
+    border-color: #2667ff;
+    color: #2667ff;
+}
+
+.plugin-header-action-button svg {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+}
+
+.plugin-header-icon-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    background: none;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #495057;
+    transition: all 0.2s ease;
+}
+
+.plugin-header-icon-button:hover {
+    background-color: #f8f9fa;
+    color: #2667ff;
+}
+
+.plugin-header-icon-button svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+}
+
 /* Plugin Header - Matches MS Editor */
 .plugin-header {
     display: flex;
@@ -274,7 +361,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 16px;
+    padding: 8px 16px;
     border-bottom: 1px solid #e0e0e0;
     flex-shrink: 0;
     gap: 12px;
@@ -2435,7 +2522,8 @@ body {
     border: none !important;
     outline: none !important;
     resize: vertical;
-    min-height: 38px !important;
+    height: 45px !important;
+    min-height: 45px !important;
     font-size: 14px;
     font-family: inherit;
     direction: ltr;
@@ -2444,6 +2532,16 @@ body {
     visibility: visible !important;
     opacity: 1 !important;
     display: block !important;
+    transition: height 0.2s ease;
+    color: #212529 !important;
+    overflow-y: auto;
+    line-height: 1.5;
+}
+
+.prompt-input:focus {
+    height: 55px !important;
+    min-height: 55px !important;
+    overflow-y: auto;
 }
 
 .prompt-actions {

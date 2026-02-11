@@ -376,6 +376,199 @@
     function setActiveContent(contentKey) {
         activeContent = contentKey;
         updateContentView();
+        updatePluginHeader();
+    }
+
+    // Update plugin header dynamically based on current view
+    window.updatePluginHeader = function(viewType, viewData) {
+        const pluginHeader = document.getElementById('plugin-header');
+        const pluginHeaderTitle = document.getElementById('plugin-header-title');
+        const pluginHeaderActions = document.getElementById('plugin-header-actions');
+        
+        if (!pluginHeader || !pluginHeaderTitle || !pluginHeaderActions) return;
+        
+        // Clear previous actions
+        pluginHeaderActions.innerHTML = '';
+        pluginHeaderTitle.textContent = '';
+        
+        if (!viewType) {
+            // Hide header when no specific view
+            pluginHeader.style.display = 'none';
+            return;
+        }
+        
+        // Show header
+        pluginHeader.style.display = 'block';
+        
+        // Configure header based on view type
+        switch(viewType) {
+            case 'ai-copilot':
+                pluginHeaderTitle.textContent = 'AI Copilot';
+                // Add refresh/sync button
+                const refreshBtn = document.createElement('button');
+                refreshBtn.className = 'plugin-header-icon-button';
+                refreshBtn.title = 'Sync Document';
+                refreshBtn.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <polyline points="1 20 1 14 7 14"></polyline>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                    </svg>
+                `;
+                refreshBtn.onclick = () => {
+                    if (window.syncDocumentWithAi) {
+                        window.syncDocumentWithAi(true);
+                    }
+                };
+                pluginHeaderActions.appendChild(refreshBtn);
+                break;
+                
+            case 'playbook-detail':
+                const playbook = viewData?.playbook;
+                if (playbook) {
+                    pluginHeaderTitle.textContent = playbook.name || 'Playbook Detail';
+                    
+                    // Add edit button
+                    if (!viewData.isEditing) {
+                        const editBtn = document.createElement('button');
+                        editBtn.className = 'plugin-header-icon-button';
+                        editBtn.title = 'Edit guide name and rules';
+                        editBtn.innerHTML = `
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                        `;
+                        editBtn.onclick = () => {
+                            if (window.handleEditPlaybook) {
+                                window.handleEditPlaybook(playbook._id);
+                            }
+                        };
+                        pluginHeaderActions.appendChild(editBtn);
+                        
+                        // Add delete button (only for custom playbooks)
+                        if (playbook.organizationId !== null) {
+                            const deleteBtn = document.createElement('button');
+                            deleteBtn.className = 'plugin-header-icon-button';
+                            deleteBtn.style.color = '#ea5455';
+                            deleteBtn.title = 'Delete this playbook';
+                            deleteBtn.innerHTML = `
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                            `;
+                            deleteBtn.onclick = () => {
+                                if (window.handleDeletePlaybook) {
+                                    window.handleDeletePlaybook(playbook._id);
+                                }
+                            };
+                            pluginHeaderActions.appendChild(deleteBtn);
+                        }
+                    }
+                }
+                break;
+                
+            case 'summary':
+            case 'clause':
+            case 'obligation':
+                const titleMap = {
+                    'summary': 'Summary',
+                    'clause': 'Clauses',
+                    'obligation': 'Obligations'
+                };
+                pluginHeaderTitle.textContent = titleMap[viewType] || viewType;
+                
+                // Add regenerate button
+                const regenerateBtn = document.createElement('button');
+                regenerateBtn.className = 'plugin-header-icon-button';
+                regenerateBtn.title = `Regenerate ${titleMap[viewType]}`;
+                regenerateBtn.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <polyline points="1 20 1 14 7 14"></polyline>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                    </svg>
+                `;
+                regenerateBtn.onclick = () => {
+                    if (viewType === 'summary' && window.regenerateSummary) {
+                        window.regenerateSummary();
+                    } else if (viewType === 'clause' && window.regenerateClauses) {
+                        window.regenerateClauses();
+                    } else if (viewType === 'obligation' && window.regenerateObligations) {
+                        window.regenerateObligations();
+                    }
+                };
+                pluginHeaderActions.appendChild(regenerateBtn);
+                
+                // Add copy button
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'plugin-header-icon-button';
+                copyBtn.title = `Copy ${titleMap[viewType]}`;
+                copyBtn.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                `;
+                copyBtn.onclick = () => {
+                    if (viewType === 'summary' && window.copySummary) {
+                        window.copySummary();
+                    } else if (viewType === 'clause' && window.copyClauses) {
+                        window.copyClauses();
+                    } else if (viewType === 'obligation' && window.copyObligations) {
+                        window.copyObligations();
+                    }
+                };
+                pluginHeaderActions.appendChild(copyBtn);
+                break;
+                
+            default:
+                // Hide header for other views
+                pluginHeader.style.display = 'none';
+        }
+    };
+    
+    // Helper function to update plugin header based on current state
+    function updatePluginHeader() {
+        // Check if playbook detail is showing
+        const playbookView = document.getElementById('playbook-view');
+        if (playbookView && playbookView.innerHTML.includes('playbook-detail-root')) {
+            // Extract playbook data from the view if available
+            if (window.getSelectedPlaybookForDetail) {
+                const playbook = window.getSelectedPlaybookForDetail();
+                const isEditing = window.getIsEditingPlaybook ? window.getIsEditingPlaybook() : false;
+                if (playbook) {
+                    window.updatePluginHeader('playbook-detail', { playbook, isEditing });
+                    return;
+                }
+            }
+        }
+        
+        // Check if drawer is open with AI Copilot
+        const drawer = document.getElementById('drawer');
+        if (drawer && drawer.style.display !== 'none') {
+            const drawerTitle = document.getElementById('drawer-title');
+            if (drawerTitle) {
+                const title = drawerTitle.textContent;
+                if (title === 'AI Copilot') {
+                    window.updatePluginHeader('ai-copilot');
+                    return;
+                } else if (title === 'Summary') {
+                    window.updatePluginHeader('summary');
+                    return;
+                } else if (title === 'Clauses') {
+                    window.updatePluginHeader('clause');
+                    return;
+                } else if (title === 'Obligations') {
+                    window.updatePluginHeader('obligation');
+                    return;
+                }
+            }
+        }
+        
+        // Hide header for other views
+        window.updatePluginHeader(null);
     }
 
     // Update content view based on activeContent
@@ -494,60 +687,21 @@
                 drawerTitle.textContent = titleMap[contentKey] || contentKey;
             }
             
-            // Setup header action buttons for Summary, Clauses, Obligations
-            if (drawerHeaderActions && (contentKey === 'summary' || contentKey === 'clause' || contentKey === 'obligation')) {
-                drawerHeaderActions.style.display = 'flex';
-                
-                if (drawerRegenerateBtn) {
-                    drawerRegenerateBtn.style.display = 'flex';
-                    drawerRegenerateBtn.onclick = () => {
-                        if (contentKey === 'summary' && window.regenerateSummary) {
-                            window.regenerateSummary();
-                        } else if (contentKey === 'clause' && window.regenerateClauses) {
-                            window.regenerateClauses();
-                        } else if (contentKey === 'obligation' && window.regenerateObligations) {
-                            window.regenerateObligations();
-                        }
-                    };
-                }
-                
-                if (drawerCopyBtn) {
-                    drawerCopyBtn.style.display = 'flex';
-                    drawerCopyBtn.onclick = () => {
-                        if (contentKey === 'summary' && window.copySummary) {
-                            window.copySummary();
-                        } else if (contentKey === 'clause' && window.copyClauses) {
-                            window.copyClauses();
-                        } else if (contentKey === 'obligation' && window.copyObligations) {
-                            window.copyObligations();
-                        }
-                    };
-                }
-            } else if (drawerHeaderActions) {
-                // Setup refresh button for AI Copilot
-                if (contentKey === 'genai' || contentKey === 'askai') {
-                    drawerHeaderActions.style.display = 'flex';
-                    if (drawerRegenerateBtn) {
-                        drawerRegenerateBtn.style.display = 'flex';
-                        drawerRegenerateBtn.onclick = () => {
-                            if (window.syncDocumentWithAi) {
-                                window.syncDocumentWithAi(true);
-                            }
-                        };
-                    }
-                    if (drawerCopyBtn) {
-                        drawerCopyBtn.style.display = 'none';
-                    }
-                } else {
-                    // Hide header actions for other views (Library, Approval)
-                    drawerHeaderActions.style.display = 'none';
-                }
+            // Hide drawer header actions - they're now in the plugin header
+            // Actions are moved to plugin header for better UX
+            if (drawerHeaderActions) {
+                drawerHeaderActions.style.display = 'none';
             }
         }
 
         // Show drawer and overlay
         if (drawer) drawer.style.display = 'block';
         if (drawerOverlay) drawerOverlay.style.display = 'block';
+
+        // Update plugin header based on drawer content
+        setTimeout(() => {
+            updatePluginHeader();
+        }, 50);
 
         // Initialize the view after drawer is shown (for progress loader)
         // Use a small delay to ensure DOM is ready
@@ -606,6 +760,11 @@
         });
         
         setActiveContent(null);
+        
+        // Update plugin header after closing drawer
+        setTimeout(() => {
+            updatePluginHeader();
+        }, 50);
         
         // If closing Copilot, restore previous tab
         if (wasCopilot && previousTab) {

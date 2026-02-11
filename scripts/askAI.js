@@ -159,7 +159,7 @@
                         ` : ''}
                         <div class="prompt-outer-container" style="flex-shrink: 0; background-color: #fff; width: 100%; max-width: 49.7rem; margin: 0 auto; padding: 11px; padding-top: 8px; box-sizing: border-box; display: flex; align-items: center;">
                             <div class="g-prompt-container" style="width: 95%; flex: 1;">
-                                <textarea id="prompt-input-ref" class="prompt-input" oninput="handlePromptInput(event)" placeholder="Ask any questions about this agreement" style="width: 100%; background: white; padding: 10px 14px; border: none; outline: none; resize: vertical; min-height: 38px; font-size: 14px; font-family: inherit; line-height: 1.5; box-sizing: border-box; direction: ltr; text-align: left; display: block !important; visibility: visible !important; border-radius: 10px;">${escapeHtml(prompt || '')}</textarea>
+                                <textarea id="prompt-input-ref" class="prompt-input" oninput="handlePromptInput(event)" placeholder="Ask any questions about this agreement" style="width: 100%; background: white; padding: 10px 14px; border: none; outline: none; resize: vertical; height: 45px; min-height: 45px; font-size: 14px; font-family: inherit; line-height: 1.5; box-sizing: border-box; direction: ltr; text-align: left; display: block !important; visibility: visible !important; border-radius: 10px; color: #212529; overflow-y: auto;">${escapeHtml(prompt || '')}</textarea>
                             </div>
                             <div class="prompt-actions" style="padding-left: 10px; padding-right: 5px; flex-shrink: 0;">
                                 <label id="prompt-send-btn" class="prompt-action-send" onclick="handleGenerate()" style="border-radius: 10px; padding: 8px; cursor: ${error || !prompt?.trim() || loader ? 'not-allowed' : 'pointer'}; margin: 0; display: flex !important; align-items: center; justify-content: center; background-color: ${error || !prompt?.trim() || loader ? 'gray' : '#2667FF'}; color: #fff; transition: background-color 0.2s; border: none; min-width: 36px; min-height: 36px; box-sizing: border-box; visibility: visible !important;">
@@ -746,9 +746,49 @@
         }
     };
 
-    // Copy to clipboard
+    // Utility function to strip HTML tags and convert to plain text
+    // Matches contract-frontend/src/utility/Utils.js htmlToString function
+    window.htmlToString = function(html) {
+        if (!html) return '';
+        
+        // First, try using DOM to extract text (handles HTML entities automatically)
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        let text = tempDiv.textContent || tempDiv.innerText || '';
+        
+        // If DOM method didn't work, fall back to regex (matches contract-frontend)
+        if (!text || text.trim() === '') {
+            text = html.replace(/<\/?[^>]+(>|$)/g, '');
+        }
+        
+        // Clean up HTML entities (in case regex was used)
+        text = text.replace(/&nbsp;/g, ' ');
+        text = text.replace(/&amp;/g, '&');
+        text = text.replace(/&lt;/g, '<');
+        text = text.replace(/&gt;/g, '>');
+        text = text.replace(/&quot;/g, '"');
+        text = text.replace(/&#39;/g, "'");
+        text = text.replace(/&apos;/g, "'");
+        
+        // Clean up excessive whitespace but preserve line breaks
+        text = text.replace(/[ \t]+/g, ' '); // Multiple spaces/tabs to single space
+        text = text.replace(/\n{3,}/g, '\n\n'); // More than 2 newlines to 2
+        text = text.trim();
+        
+        return text;
+    };
+
+    // Copy to clipboard - strips HTML tags and copies only plain text
     window.copyToClipboard = function(text) {
-        navigator.clipboard.writeText(text).then(() => {
+        if (!text) {
+            showToast('Nothing to copy', 'error');
+            return;
+        }
+        
+        // Strip HTML tags and get plain text
+        const plainText = window.htmlToString(text);
+        
+        navigator.clipboard.writeText(plainText).then(() => {
             showToast('Copied To Clipboard!', 'success');
         }).catch(err => {
             console.error('Failed to copy:', err);
@@ -792,7 +832,7 @@
         
         const hours = date.getHours();
         const minutes = date.getMinutes();
-        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const ampm = (hours >= 12 ? 'PM' : 'AM').toUpperCase();
         const displayHours = hours % 12 || 12;
         const displayMinutes = minutes < 10 ? `0${minutes}` : minutes;
         const timeStr = `${displayHours}:${displayMinutes} ${ampm}`;
