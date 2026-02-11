@@ -3592,6 +3592,7 @@ body {
     padding: 8px 10px;
     flex-shrink: 0;
     width: 95%;
+    height: 20px;
 }
 
 .playbook-detail-header-left {
@@ -3674,7 +3675,7 @@ body {
 }
 
 .playbook-detail-info {
-    margin-bottom: 24px;
+    margin-bottom: 0px;
 }
 
 .playbook-detail-guidelines {

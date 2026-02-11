@@ -543,22 +543,34 @@
     // Copy sub clause
     window.copySubClause = function() {
         const contentContainer = document.getElementById('subClauseHtmlContentContainer');
-        if (contentContainer) {
-            const range = document.createRange();
-            range.selectNodeContents(contentContainer);
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(range);
-            
-            try {
-                document.execCommand('copy');
-                selection.removeAllRanges();
-                showToast('Sub clause copied to clipboard', 'success');
-            } catch (err) {
-                console.error('Failed to copy:', err);
-                showToast('Failed to copy sub clause', 'error');
-            }
+        if (!contentContainer) {
+            showToast('No sub clause content to copy', 'error');
+            return;
         }
+
+        // Extract plain text from the rendered HTML (no HTML tags)
+        let text = '';
+        if (window.htmlToString) {
+            // Use the utility function if available
+            text = window.htmlToString(contentContainer.innerHTML);
+        } else {
+            // Fallback: extract text using DOM
+            text = contentContainer.textContent || contentContainer.innerText || '';
+            // Clean up whitespace
+            text = text.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+        }
+        
+        if (!text) {
+            showToast('No sub clause content to copy', 'error');
+            return;
+        }
+        
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('Sub clause copied to clipboard', 'success');
+        }).catch(err => {
+            console.error('Failed to copy:', err);
+            showToast('Failed to copy sub clause', 'error');
+        });
     };
 
     // Handle back from library

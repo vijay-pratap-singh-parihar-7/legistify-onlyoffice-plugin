@@ -522,26 +522,40 @@
 
     function copyClauses() {
         const resultContainer = document.getElementById('clauses-result');
-        if (!resultContainer) return;
+        if (!resultContainer) {
+            showToast('No clauses content to copy', 'error');
+            return;
+        }
 
         const htmlClausesText = document.getElementById('html_clauses_text');
-        if (htmlClausesText) {
-            // Select all text in the container
-            const range = document.createRange();
-            range.selectNodeContents(htmlClausesText);
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(range);
-            
-            try {
-                document.execCommand('copy');
-                selection.removeAllRanges();
-                showToast('Clauses copied to clipboard', 'success');
-            } catch (err) {
-                console.error('Failed to copy:', err);
-                showToast('Failed to copy clauses', 'error');
-            }
+        if (!htmlClausesText) {
+            showToast('No clauses content to copy', 'error');
+            return;
         }
+
+        // Extract plain text from the rendered HTML (no HTML tags)
+        let text = '';
+        if (window.htmlToString) {
+            // Use the utility function if available
+            text = window.htmlToString(htmlClausesText.innerHTML);
+        } else {
+            // Fallback: extract text using DOM
+            text = htmlClausesText.textContent || htmlClausesText.innerText || '';
+            // Clean up whitespace
+            text = text.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+        }
+        
+        if (!text) {
+            showToast('No clauses content to copy', 'error');
+            return;
+        }
+        
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('Clauses copied to clipboard', 'success');
+        }).catch(err => {
+            console.error('Failed to copy:', err);
+            showToast('Failed to copy clauses', 'error');
+        });
     }
 
     function regenerateClauses() {

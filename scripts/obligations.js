@@ -522,26 +522,40 @@
 
     function copyObligations() {
         const resultContainer = document.getElementById('obligations-result');
-        if (!resultContainer) return;
+        if (!resultContainer) {
+            showToast('No obligations content to copy', 'error');
+            return;
+        }
 
         const htmlObligationsText = document.getElementById('html_obligations_text');
-        if (htmlObligationsText) {
-            // Select all text in the container
-            const range = document.createRange();
-            range.selectNodeContents(htmlObligationsText);
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(range);
-            
-            try {
-                document.execCommand('copy');
-                selection.removeAllRanges();
-                showToast('Obligations copied to clipboard', 'success');
-            } catch (err) {
-                console.error('Failed to copy:', err);
-                showToast('Failed to copy obligations', 'error');
-            }
+        if (!htmlObligationsText) {
+            showToast('No obligations content to copy', 'error');
+            return;
         }
+
+        // Extract plain text from the rendered HTML (no HTML tags)
+        let text = '';
+        if (window.htmlToString) {
+            // Use the utility function if available
+            text = window.htmlToString(htmlObligationsText.innerHTML);
+        } else {
+            // Fallback: extract text using DOM
+            text = htmlObligationsText.textContent || htmlObligationsText.innerText || '';
+            // Clean up whitespace
+            text = text.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+        }
+        
+        if (!text) {
+            showToast('No obligations content to copy', 'error');
+            return;
+        }
+        
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('Obligations copied to clipboard', 'success');
+        }).catch(err => {
+            console.error('Failed to copy:', err);
+            showToast('Failed to copy obligations', 'error');
+        });
     }
 
     function regenerateObligations() {

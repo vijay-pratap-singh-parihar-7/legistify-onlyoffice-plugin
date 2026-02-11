@@ -618,20 +618,36 @@
     }
 
     function copySummary() {
-        const displayData = savedSummary || (responseChunks.length > 0 ? responseChunks.join('') : summaryData);
-        if (displayData) {
-            // Extract text from HTML
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = displayData;
-            const text = tempDiv.textContent || tempDiv.innerText || displayData;
-            
-            navigator.clipboard.writeText(text).then(() => {
-                showToast('Summary copied to clipboard');
-            }).catch(err => {
-                console.error('Failed to copy:', err);
-                showToast('Failed to copy summary');
-            });
+        // Get the rendered content from the UI
+        const resultContainer = document.getElementById('summary-result');
+        if (!resultContainer) {
+            showToast('No summary content to copy');
+            return;
         }
+
+        // Extract plain text from the rendered HTML (no HTML tags)
+        let text = '';
+        if (window.htmlToString) {
+            // Use the utility function if available
+            text = window.htmlToString(resultContainer.innerHTML);
+        } else {
+            // Fallback: extract text using DOM
+            text = resultContainer.textContent || resultContainer.innerText || '';
+            // Clean up whitespace
+            text = text.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+        }
+        
+        if (!text) {
+            showToast('No summary content to copy');
+            return;
+        }
+        
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('Summary copied to clipboard');
+        }).catch(err => {
+            console.error('Failed to copy:', err);
+            showToast('Failed to copy summary');
+        });
     }
 
     function regenerateSummary() {
