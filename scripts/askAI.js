@@ -139,7 +139,9 @@
         const htmlContent = `
             <div class="ask-ai-container" style="display: flex; flex-direction: column; height: 100%; width: 100%; overflow: hidden;">
                 ${isHistoryLoading ? `
-                    <div class="loading-spinner" style="margin-top: 150px;"></div>
+                    <div style="display: flex; align-items: center; justify-content: center; height: 100%; width: 100%;">
+                        <div class="loading-spinner"></div>
+                    </div>
                 ` : `
                 <div class="ask-ai-body" style="display: flex; flex-direction: column; overflow: scroll; height: calc(100vh - 52px);">
                     <div class="" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto !important; overflow-x: hidden !important; min-height: 0; position: relative;">
