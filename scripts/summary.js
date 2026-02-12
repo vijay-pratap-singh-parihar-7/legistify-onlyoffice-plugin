@@ -426,6 +426,13 @@
                 
                 // Update UI with streaming chunks
                 updateStreamingUI();
+                
+                // Auto-scroll to bottom during streaming
+                if (isStreaming) {
+                    setTimeout(() => {
+                        scrollToBottom();
+                    }, 50);
+                }
             }
             
             // Save accumulated chunks after streaming completes
@@ -481,6 +488,39 @@
             
             // Final UI update
             updateStreamingUI();
+            
+            // Scroll to top after streaming completes
+            setTimeout(() => {
+                scrollToTop();
+            }, 100);
+        }
+    }
+
+    // Auto-scroll to bottom when new chunks arrive during streaming
+    function scrollToBottom() {
+        if (isStreaming && responseContainerRef) {
+            responseContainerRef.scrollTop = responseContainerRef.scrollHeight;
+        }
+    }
+
+    // Scroll to top after streaming completes
+    function scrollToTop() {
+        // Find result container - check drawer first (with -drawer suffix), then original view
+        const drawerContent = document.getElementById('drawer-content');
+        let resultContainer = null;
+        
+        if (drawerContent) {
+            resultContainer = drawerContent.querySelector('#summary-result-drawer') || 
+                             drawerContent.querySelector('#summary-result') ||
+                             drawerContent.querySelector('[id*="summary-result"]');
+        }
+        
+        if (!resultContainer) {
+            resultContainer = document.getElementById('summary-result');
+        }
+        
+        if (resultContainer) {
+            resultContainer.scrollTop = 0;
         }
     }
 
@@ -511,6 +551,9 @@
             console.warn('Summary result container not found');
             return;
         }
+
+        // Set responseContainerRef for scrolling
+        responseContainerRef = resultContainer;
 
         // Determine what to display
         const displayData = savedSummary || (responseChunks.length > 0 ? responseChunks.join('') : summaryData);
@@ -558,9 +601,9 @@
             // Show action buttons
             showSummaryActions(resultContainer);
             
-            // Auto-scroll to bottom during streaming
+            // Auto-scroll to bottom during streaming (will be called after each chunk update)
             if (isStreaming) {
-                window.scrollToBottom(resultContainer, false);
+                setTimeout(scrollToBottom, 50);
             }
         }
     }

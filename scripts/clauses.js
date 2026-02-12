@@ -229,6 +229,13 @@
                 
                 // Update UI with streaming chunks
                 updateStreamingUI();
+                
+                // Auto-scroll to bottom during streaming
+                if (isStreaming) {
+                    setTimeout(() => {
+                        scrollToBottom();
+                    }, 50);
+                }
             }
             
             // Save accumulated chunks after streaming completes
@@ -286,6 +293,11 @@
             
             // Final UI update
             updateStreamingUI();
+            
+            // Scroll to top after streaming completes
+            setTimeout(() => {
+                scrollToTop();
+            }, 100);
         }
     }
 
@@ -293,6 +305,27 @@
     function scrollToBottom() {
         if (isStreaming && responseContainerRef) {
             responseContainerRef.scrollTop = responseContainerRef.scrollHeight;
+        }
+    }
+
+    // Scroll to top after streaming completes
+    function scrollToTop() {
+        // Find result container - check drawer first (with -drawer suffix), then original view
+        const drawerContent = document.getElementById('drawer-content');
+        let resultContainer = null;
+        
+        if (drawerContent) {
+            resultContainer = drawerContent.querySelector('#clauses-result-drawer') || 
+                             drawerContent.querySelector('#clauses-result') ||
+                             drawerContent.querySelector('[id*="clauses-result"]');
+        }
+        
+        if (!resultContainer) {
+            resultContainer = document.getElementById('clauses-result');
+        }
+        
+        if (resultContainer) {
+            resultContainer.scrollTop = 0;
         }
     }
 
@@ -323,6 +356,9 @@
             console.warn('Clauses result container not found');
             return;
         }
+
+        // Set responseContainerRef for scrolling
+        responseContainerRef = resultContainer;
 
         // Show blank loading screen when regenerating and no chunks/data yet
         if (regenerateLoader && responseChunks.length === 0 && !savedClause && !clausesData) {
@@ -441,9 +477,9 @@
             drawerHeaderActions.style.display = 'flex';
         }
         
-        // Auto-scroll to bottom during streaming
+        // Auto-scroll to bottom during streaming (will be called after each chunk update)
         if (isStreaming) {
-            setTimeout(scrollToBottom, 10);
+            setTimeout(scrollToBottom, 50);
         }
     }
 

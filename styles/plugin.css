@@ -1157,6 +1157,22 @@ body {
     overflow-x: hidden;
 }
 
+/* Center progress loader container within result containers */
+#summary-result .progress-loader-container,
+#clauses-result .progress-loader-container,
+#obligations-result .progress-loader-container,
+#summary-result-drawer .progress-loader-container,
+#clauses-result-drawer .progress-loader-container,
+#obligations-result-drawer .progress-loader-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+}
+
 .summary-text-card h2 {
     margin: 0px;
     font-size: 14px;
@@ -1432,7 +1448,7 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: clamp(1rem, 3vw, 2rem) clamp(1rem, 4vw, 2.5rem);
+    padding: clamp(1rem, 3vw, 2rem);
     background: #fff;
     box-sizing: border-box;
     position: relative;
@@ -1446,6 +1462,8 @@ body {
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
+    margin: 0 auto;
+    padding: 0;
 }
 
 .progress-loader-title {
@@ -1466,15 +1484,20 @@ body {
     width: 100%;
     max-width: min(400px, 90%);
     margin: 0 auto;
+    padding: 0;
     box-sizing: border-box;
 }
 
 .progress-loader-step {
     display: flex;
     align-items: center;
+    justify-content: flex-start;
     gap: clamp(0.5rem, 2vw, 1rem);
     width: 100%;
+    max-width: 100%;
     box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 .progress-loader-icon-wrapper {
