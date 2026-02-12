@@ -13,7 +13,6 @@
     let abortControllerRef = null;
     let readerRef = null;
     let progressLoaderInstance = null;
-    let progressLoaderStartTime = null;
     let responseContainerRef = null;
 
     // Initialize when DOM is ready
@@ -65,7 +64,6 @@
 
         // Show progress loader immediately
         if (window.createProgressLoader) {
-            progressLoaderStartTime = Date.now();
             progressLoaderInstance = window.createProgressLoader(resultContainer, {
                     title: 'Generating contract summary',
                     steps: [
@@ -237,7 +235,6 @@
                 
                 // Show progress loader
                 if (window.createProgressLoader) {
-                    progressLoaderStartTime = Date.now();
                     progressLoaderInstance = window.createProgressLoader(resultContainer, {
                     title: 'Generating contract summary',
                     steps: [
@@ -561,31 +558,15 @@
         // Determine what to display
         const displayData = savedSummary || (responseChunks.length > 0 ? responseChunks.join('') : summaryData);
         
-        // Helper function to count words (excluding HTML tags)
-        function countWords(text) {
-            if (!text) return 0;
-            // Remove HTML tags
-            const textWithoutHtml = text.replace(/<[^>]+>/g, ' ');
-            // Remove extra whitespace and split into words
-            const words = textWithoutHtml.trim().split(/\s+/).filter(word => word.length > 0);
-            return words.length;
-        }
-        
-        // Hide progress loader only when we have at least 3 words AND at least 3 seconds have passed
-        const wordCount = countWords(displayData);
-        const elapsedTime = progressLoaderStartTime ? Date.now() - progressLoaderStartTime : 0;
-        const minDisplayTime = 3000; // 3 seconds
-        
-        if (wordCount >= 3 && elapsedTime >= minDisplayTime && progressLoaderInstance) {
+        // Hide progress loader only when we have meaningful content to display
+        if (displayData && displayData.trim() && progressLoaderInstance) {
             progressLoaderInstance.hide();
             progressLoaderInstance = null;
-            progressLoaderStartTime = null;
         }
         
-        // If no data yet, less than 3 words, or less than 3 seconds passed, keep showing loader or show it if still loading
-        if (!displayData || !displayData.trim() || wordCount < 3 || elapsedTime < minDisplayTime) {
+        // If no data yet, keep showing loader or show it if still loading
+        if (!displayData || !displayData.trim()) {
             if ((isStreaming || regenerateLoader) && !progressLoaderInstance && window.createProgressLoader) {
-                progressLoaderStartTime = Date.now();
                 progressLoaderInstance = window.createProgressLoader(resultContainer, {
                     title: 'Generating contract summary',
                     steps: [
