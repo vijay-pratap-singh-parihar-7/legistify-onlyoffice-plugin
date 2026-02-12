@@ -406,14 +406,25 @@
         // Determine what to display
         const displayData = savedClause || (responseChunks.length > 0 ? responseChunks.join('') : clausesData);
         
-        // Hide progress loader only when we have meaningful content to display
-        if (displayData && displayData.trim() && progressLoaderInstance) {
+        // Helper function to count words (excluding HTML tags)
+        function countWords(text) {
+            if (!text) return 0;
+            // Remove HTML tags
+            const textWithoutHtml = text.replace(/<[^>]+>/g, ' ');
+            // Remove extra whitespace and split into words
+            const words = textWithoutHtml.trim().split(/\s+/).filter(word => word.length > 0);
+            return words.length;
+        }
+        
+        // Hide progress loader only when we have at least 3 words rendered
+        const wordCount = countWords(displayData);
+        if (wordCount >= 3 && progressLoaderInstance) {
             progressLoaderInstance.hide();
             progressLoaderInstance = null;
         }
         
-        // If no data yet, keep showing loader
-        if (!displayData || !displayData.trim()) {
+        // If no data yet or less than 3 words, keep showing loader
+        if (!displayData || !displayData.trim() || wordCount < 3) {
             return;
         }
 
