@@ -512,19 +512,19 @@
             return;
         }
 
-        // Hide progress loader if we have chunks
-        if (responseChunks.length > 0 && progressLoaderInstance) {
-            progressLoaderInstance.hide();
-            progressLoaderInstance = null;
-        }
-
         // Determine what to display
         const displayData = savedSummary || (responseChunks.length > 0 ? responseChunks.join('') : summaryData);
         
-        if (!displayData && (isStreaming || regenerateLoader)) {
-            // Show progress loader if still loading and no data
-            if (!progressLoaderInstance && window.createProgressLoader) {
-                    progressLoaderInstance = window.createProgressLoader(resultContainer, {
+        // Hide progress loader only when we have meaningful content to display
+        if (displayData && displayData.trim() && progressLoaderInstance) {
+            progressLoaderInstance.hide();
+            progressLoaderInstance = null;
+        }
+        
+        // If no data yet, keep showing loader or show it if still loading
+        if (!displayData || !displayData.trim()) {
+            if ((isStreaming || regenerateLoader) && !progressLoaderInstance && window.createProgressLoader) {
+                progressLoaderInstance = window.createProgressLoader(resultContainer, {
                     title: 'Generating contract summary',
                     steps: [
                         'Reading document',
@@ -532,9 +532,9 @@
                         'Extracting critical information',
                         'Synthesizing summary'
                     ],
-                        stepDelay: 1000,
-                        minDisplayTime: 3000
-                    });
+                    stepDelay: 1000,
+                    minDisplayTime: 3000
+                });
             }
             return;
         }

@@ -324,6 +324,7 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 0;
+    height: calc(100vh - 36px);
 }
 
 .drawer-view {
@@ -1464,6 +1465,7 @@ body {
     gap: clamp(0.75rem, 3vw, 1.5rem);
     width: 100%;
     max-width: min(400px, 90%);
+    margin: 0 auto;
     box-sizing: border-box;
 }
 

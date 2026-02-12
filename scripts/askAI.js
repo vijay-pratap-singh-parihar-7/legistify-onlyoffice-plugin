@@ -137,9 +137,9 @@
         console.log('🔵 Rendering Ask AI view into:', askAIView.id, 'isHistoryLoading:', isHistoryLoading, 'historySearch length:', historySearch?.length);
 
         const htmlContent = `
-            <div class="ask-ai-container" style="display: flex; flex-direction: column; height: 100%; width: 100%; overflow: hidden;">
+            <div class="ask-ai-container" style="display: flex; flex-direction: column; height: 100%; width: 100%; overflow: hidden; position: relative;">
                 ${isHistoryLoading ? `
-                    <div style="display: flex; align-items: center; justify-content: center; height: 100%; width: 100%;">
+                    <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;">
                         <div class="loading-spinner"></div>
                     </div>
                 ` : `

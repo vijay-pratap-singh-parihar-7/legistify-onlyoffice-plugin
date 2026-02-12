@@ -326,11 +326,7 @@
 
         // Show blank loading screen when regenerating and no chunks/data yet
         if (regenerateLoader && responseChunks.length === 0 && !savedClause && !clausesData) {
-            resultContainer.innerHTML = `
-                <div style="width: 100%; minHeight: 400px; backgroundColor: #fff;">
-                    ${window.createProgressLoader ? '' : '<div class="loading-spinner"></div>'}
-                </div>
-            `;
+            resultContainer.innerHTML = '';
             if (window.createProgressLoader) {
                 progressLoaderInstance = window.createProgressLoader(resultContainer, {
                     title: 'Analyzing contract clauses',
@@ -344,16 +340,14 @@
                     minDisplayTime: 3000,
                     titleMarginBottom: '1.5rem'
                 });
+            } else {
+                resultContainer.innerHTML = '<div class="loading-spinner"></div>';
             }
             return;
         }
 
         if (isStreaming && responseChunks.length === 0 && !savedClause && !clausesData) {
-            resultContainer.innerHTML = `
-                <div style="padding: 0px; textAlign: left; minHeight: 200px;">
-                    ${window.createProgressLoader ? '' : '<div class="loading-spinner"></div>'}
-                </div>
-            `;
+            resultContainer.innerHTML = '';
             if (window.createProgressLoader) {
                 progressLoaderInstance = window.createProgressLoader(resultContainer, {
                     title: 'Analyzing contract clauses',
@@ -367,20 +361,23 @@
                     minDisplayTime: 3000,
                     titleMarginBottom: '1.5rem'
                 });
+            } else {
+                resultContainer.innerHTML = '<div class="loading-spinner"></div>';
             }
             return;
-        }
-
-        // Hide progress loader if we have chunks
-        if (responseChunks.length > 0 && progressLoaderInstance) {
-            progressLoaderInstance.hide();
-            progressLoaderInstance = null;
         }
 
         // Determine what to display
         const displayData = savedClause || (responseChunks.length > 0 ? responseChunks.join('') : clausesData);
         
-        if (!displayData) {
+        // Hide progress loader only when we have meaningful content to display
+        if (displayData && displayData.trim() && progressLoaderInstance) {
+            progressLoaderInstance.hide();
+            progressLoaderInstance = null;
+        }
+        
+        // If no data yet, keep showing loader
+        if (!displayData || !displayData.trim()) {
             return;
         }
 
