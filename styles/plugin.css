@@ -3888,6 +3888,26 @@ body {
     width: auto;
     padding-top: 0;
     flex-shrink: 0;
+    min-width: 40px;
+}
+
+.c_d_ai_prompt_icons_container_v2 .c_d_ai_prompt_left_icons {
+    flex: 0;
+    min-width: 0;
+}
+
+.c_d_ai_prompt_icons_container_v2 .c_d_ai_prompt_send_btn {
+    margin-left: auto;
+}
+
+.c_d_ai_prompt_left_icons {
+    display: flex;
+    align-items: center;
+    gap: 0;
+}
+
+.c_d_ai_prompt_icons_container:not(.c_d_ai_prompt_icons_container_v2) .c_d_ai_prompt_left_icons {
+    flex: 1;
 }
 
 .c_d_ai_prompt_input {

@@ -166,7 +166,8 @@
                                         <textarea id="prompt-input-ref" rows="1" placeholder="Ask Legistify AI" class="c_d_ai_prompt_input form-control" aria-invalid="false" oninput="handlePromptInput(event)" onfocus="handlePromptFocus(event)" onblur="handlePromptBlur(event)" style="resize: none; height: auto; width: 100%; background: transparent; padding: 0; border: none; outline: none; font-size: 16px; font-family: inherit; line-height: 24px; box-sizing: border-box; direction: ltr; text-align: left; display: block !important; visibility: visible !important; color: #202124; overflow-y: auto; min-height: 24px; max-height: 200px; font-weight: 400; margin: 0;">${escapeHtml(prompt || '')}</textarea>
                                     </div>
                                     <div class="c_d_ai_prompt_icons_container ${!prompt?.trim() ? 'c_d_ai_prompt_icons_container_v2' : ''}" style="display: flex; justify-content: space-between; align-items: center; ${!prompt?.trim() ? 'position: static; width: auto; padding-top: 0; flex-shrink: 0;' : 'width: 100%; padding-top: 4px;'}">
-                                        <button id="prompt-send-btn" class="c_d_ai_prompt_icon_btn c_d_ai_prompt_send_btn ${prompt?.trim() ? 'c_d_ai_prompt_send_btn_active' : ''}" type="button" onclick="handleGenerate()" ${error || !prompt?.trim() || loader ? 'disabled=""' : ''} style="cursor: ${error || !prompt?.trim() || loader ? 'not-allowed' : 'pointer'}; margin: 0; display: flex !important; align-items: center; justify-content: center; border: none; width: 40px; height: 40px; box-sizing: border-box; visibility: visible !important; background-color: ${prompt?.trim() && !error && !loader ? '#2567ff' : '#f1f3f4'} !important; padding: 0; border-radius: 50%; transition: background-color 0.2s;">
+                                        <div class="c_d_ai_prompt_left_icons"></div>
+                                        <button id="prompt-send-btn" class="c_d_ai_prompt_icon_btn c_d_ai_prompt_send_btn ${prompt?.trim() && !error && !loader ? 'c_d_ai_prompt_send_btn_active' : ''}" type="button" onclick="handleGenerate()" ${error || !prompt?.trim() || loader ? 'disabled=""' : ''} style="cursor: ${error || !prompt?.trim() || loader ? 'not-allowed' : 'pointer'}; margin: 0; display: flex !important; align-items: center; justify-content: center; border: none; width: 40px; height: 40px; box-sizing: border-box; visibility: visible !important; padding: 0; border-radius: 50%; transition: background-color 0.2s;">
                                         ${loader ? '<div class="loading-spinner-small"></div>' : '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="' + (prompt?.trim() && !error && !loader ? '#ffffff' : '#9aa0a6') + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>'}
                                         </button>
                                     </div>
@@ -705,14 +706,12 @@
         if (sendButton) {
             if (prompt?.trim() && !error && !loader) {
                 sendButton.classList.add('c_d_ai_prompt_send_btn_active');
-                sendButton.style.backgroundColor = '#2567ff !important';
                 const svg = sendButton.querySelector('svg');
                 if (svg) {
                     svg.setAttribute('stroke', '#ffffff');
                 }
             } else {
                 sendButton.classList.remove('c_d_ai_prompt_send_btn_active');
-                sendButton.style.backgroundColor = '#f1f3f4 !important';
                 const svg = sendButton.querySelector('svg');
                 if (svg) {
                     svg.setAttribute('stroke', '#9aa0a6');
@@ -957,14 +956,12 @@
             if (sendButton) {
                 if (prompt?.trim() && !error && !loader) {
                     sendButton.classList.add('c_d_ai_prompt_send_btn_active');
-                    sendButton.style.backgroundColor = '#2567ff !important';
                     const svg = sendButton.querySelector('svg');
                     if (svg) {
                         svg.setAttribute('stroke', '#ffffff');
                     }
                 } else {
                     sendButton.classList.remove('c_d_ai_prompt_send_btn_active');
-                    sendButton.style.backgroundColor = '#f1f3f4 !important';
                     const svg = sendButton.querySelector('svg');
                     if (svg) {
                         svg.setAttribute('stroke', '#9aa0a6');
