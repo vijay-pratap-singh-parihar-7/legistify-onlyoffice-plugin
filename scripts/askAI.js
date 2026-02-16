@@ -284,7 +284,7 @@
                                 <div style="margin-left: 7px;" class="response-container">
                                     <p class="p3">${formatResponse(item.response || '')}</p>
                                     <div class="chat_response_footer">
-                                        <div onclick="copyToClipboard('${escapeHtml(item.response || '')}')" style="cursor: pointer; display: flex; align-items: center;">
+                                        <div onclick="copyResponseText(this)" style="cursor: pointer; display: flex; align-items: center;">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="cursor: pointer;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                                         </div>
                                         <span class="chat_response_date fs-11 text-secondary">${formatTime(item?.createdAt)}</span>
@@ -307,35 +307,34 @@
         const Questions = matches?.map((match) => match[1]) || [];
         const regex2 = /<ol>.*?<\/ol>/gs;
         const noOlHtmlData = cleanedHtmlData?.replace(regex2, '');
-        const removeInlineStyles = (html) => {
-            return html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
-        };
+        
+        // Convert HTML to plain text for formatting (like regular responses)
+        const plainText = window.htmlToString ? window.htmlToString(noOlHtmlData) : noOlHtmlData.replace(/<[^>]*>/g, '');
+        
+        // Format the response text exactly like regular responses
+        const responseText = formatResponse(plainText);
+        
+        // Prepare plain text for copying (same as what's rendered)
+        const textToCopy = plainText;
 
         return `
-            <div class="div5" style="display: flex; align-items: top;">
-                <div>
-                    <button style="border: 0; background-color: rgba(40, 199, 111, .1); color: #28c76f; padding: 8px 9px; border-radius: 50%; margin-top: 10px; cursor: pointer;">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle></svg>
-                    </button>
-                </div>
-                <div key="${item._id}" class="outer-container" style="margin-bottom: 20px; padding: 0 6px; margin-top: 12px; box-sizing: border-box;">
-                    <div id="syncDocResponse" class="response-container" style="border-radius: 8px; position: relative; background-color: #f9f9f9; padding: 12px; max-width: calc(100% - 50px); width: fit-content; box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px; font-size: 12px; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.6; box-sizing: border-box;">
-                        <div style="line-height: 1.6; color: #333; margin-bottom: ${Questions?.length ? '12px' : '0'};">
-                            ${formatHtmlContent(removeInlineStyles(noOlHtmlData))}
-                        </div>
+            <div key="${item?._id || ''}" class="outer-container" style="margin-bottom: 10px; padding: 0 6px; margin-top: 12px;">
+                <div class="div2">
+                    <div style="margin-left: 7px;" class="response-container">
+                        <p class="p3">${responseText}</p>
                         ${Questions?.length ? Questions.map((qs, i) => `
                             <div key="${i}" id="question-${i}" onclick="setPromptFromQuestion('${escapeHtml(qs)}')" class="doc-questions" style="display: flex; align-items: flex-start; cursor: pointer; margin-bottom: 8px;" onmouseover="this.style.color='#446995'; this.style.textDecoration='dotted';" onmouseout="this.style.color=''; this.style.textDecoration='none';">
                                 <p class="p8" style="margin: 0; margin-right: 8px; font-size: 12px; flex-shrink: 0;">${i + 1}</p>
                                 <p style="margin: 0; font-size: 12px; flex: 1;">- ${escapeHtml(qs)}</p>
                             </div>
                         `).join('') : ''}
-                        <div onclick="copyToClipboard('${escapeHtml(item.response)}')" class="copy-clause" style="padding: 2px 5px; border-radius: 0 0 8px 0; position: absolute; bottom: 0; right: 0; cursor: pointer; background-color: rgba(255, 255, 255, 0.8);">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        <div class="chat_response_footer">
+                            <div onclick="copyResponseText(this)" style="cursor: pointer; display: flex; align-items: center;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="cursor: pointer;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                            </div>
+                            <span class="chat_response_date fs-11 text-secondary">${formatTime(item?.createdAt)}</span>
                         </div>
                     </div>
-                    <p class="p9" style="font-size: 11px; color: #6c757d; text-align: end; margin-top: 8px; margin-bottom: 0; padding-top: 4px;">
-                        ${formatTime(item.createdAt)}
-                    </p>
                 </div>
             </div>
         `;
@@ -1022,6 +1021,55 @@
         return text;
     };
 
+    // Copy response text - extracts plain text from the rendered response container
+    window.copyResponseText = function(element) {
+        if (!element) {
+            showToast('Nothing to copy', 'error');
+            return;
+        }
+        
+        // Find the parent response-container
+        const responseContainer = element.closest('.response-container');
+        if (!responseContainer) {
+            showToast('Nothing to copy', 'error');
+            return;
+        }
+        
+        // Clone the container to avoid modifying the original
+        const clone = responseContainer.cloneNode(true);
+        
+        // Remove the footer (copy button and date) from the clone
+        const footer = clone.querySelector('.chat_response_footer');
+        if (footer) {
+            footer.remove();
+        }
+        
+        // Remove questions if present
+        const questions = clone.querySelectorAll('.doc-questions');
+        questions.forEach(q => q.remove());
+        
+        // Extract plain text from the cloned element
+        let plainText = clone.textContent || clone.innerText || '';
+        
+        // Clean up the text (normalize whitespace)
+        plainText = plainText
+            .replace(/\s+/g, ' ')  // Replace multiple spaces with single space
+            .replace(/\n\s*\n/g, '\n\n')  // Normalize line breaks
+            .trim();
+        
+        if (!plainText) {
+            showToast('Nothing to copy', 'error');
+            return;
+        }
+        
+        navigator.clipboard.writeText(plainText).then(() => {
+            showToast('Copied To Clipboard!', 'success');
+        }).catch(err => {
+            console.error('Failed to copy:', err);
+            showToast('Failed to copy', 'error');
+        });
+    };
+
     // Copy to clipboard - strips HTML tags and copies only plain text
     window.copyToClipboard = function(text) {
         if (!text) {
@@ -1030,7 +1078,7 @@
         }
         
         // Strip HTML tags and get plain text
-        const plainText = window.htmlToString(text);
+        const plainText = window.htmlToString ? window.htmlToString(text) : text;
         
         navigator.clipboard.writeText(plainText).then(() => {
             showToast('Copied To Clipboard!', 'success');
