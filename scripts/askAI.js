@@ -160,13 +160,15 @@
                             </div>
                         ` : ''}
                         <div class="prompt-outer-container" style="flex-shrink: 0; background-color: #fff; width: 100%; max-width: 49.7rem; margin: 0 auto; padding: 11px; padding-top: 8px; box-sizing: border-box; display: flex; align-items: center;">
-                            <div class="g-prompt-container" style="width: 95%; flex: 1;">
-                                <textarea id="prompt-input-ref" class="prompt-input" oninput="handlePromptInput(event)" onfocus="handlePromptFocus(event)" onblur="handlePromptBlur(event)" placeholder="Ask any questions about this agreement" style="width: 100%; background: white; padding: 10px 14px; border: none; outline: none; resize: vertical; height: 30px; min-height: 30px; font-size: 12px; font-family: inherit; line-height: 1.5; box-sizing: border-box; direction: ltr; text-align: left; display: block !important; visibility: visible !important; border-radius: 10px; color: #212529; overflow-y: auto;">${escapeHtml(prompt || '')}</textarea>
-                            </div>
-                            <div class="prompt-actions" style="padding-left: 10px; padding-right: 5px; flex-shrink: 0;">
-                                <label id="prompt-send-btn" class="prompt-action-send" onclick="handleGenerate()" style="border-radius: 10px; padding: 8px; cursor: ${error || !prompt?.trim() || loader ? 'not-allowed' : 'pointer'}; margin: 0; display: flex !important; align-items: center; justify-content: center; background-color: ${error || !prompt?.trim() || loader ? 'gray' : '#2667FF'}; color: #fff; transition: background-color 0.2s; border: none; min-width: 36px; min-height: 36px; box-sizing: border-box; visibility: visible !important;">
-                                    ${loader ? '<div class="loading-spinner-small"></div>' : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>'}
-                                </label>
+                            <div class="c_d_ai_prompt_input_wrapper c_d_ai_prompt_input_wrapper_v2">
+                                <div class="c_d_ai_prompt_input_area c_d_ai_prompt_input_area_v2">
+                                    <textarea id="prompt-input-ref" rows="1" placeholder="Ask Legistify AI" class="c_d_ai_prompt_input form-control" aria-invalid="false" oninput="handlePromptInput(event)" onfocus="handlePromptFocus(event)" onblur="handlePromptBlur(event)" style="resize: none; height: auto; width: 100%; background: white; padding: 10px 14px; border: none; outline: none; font-size: 12px; font-family: inherit; line-height: 1.5; box-sizing: border-box; direction: ltr; text-align: left; display: block !important; visibility: visible !important; border-radius: 10px; color: #212529; overflow-y: auto;">${escapeHtml(prompt || '')}</textarea>
+                                </div>
+                                <div class="c_d_ai_prompt_icons_container c_d_ai_prompt_icons_container_v2">
+                                    <button id="prompt-send-btn" class="c_d_ai_prompt_icon_btn c_d_ai_prompt_send_btn" type="button" onclick="handleGenerate()" ${error || !prompt?.trim() || loader ? 'disabled=""' : ''} style="cursor: ${error || !prompt?.trim() || loader ? 'not-allowed' : 'pointer'}; margin: 0; display: flex !important; align-items: center; justify-content: center; border: none; min-width: 36px; min-height: 36px; box-sizing: border-box; visibility: visible !important; background: transparent; padding: 8px;">
+                                    ${loader ? '<div class="loading-spinner-small"></div>' : '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9aa0a6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>'}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         ${prompt?.length >= 2000 ? `
@@ -258,12 +260,14 @@
                             <div class="div2">
                                 <div style="margin-left: 7px;" class="response-container">
                                     <p class="p3">${formatResponse(item.response || '')}</p>
-                                    <div onclick="copyToClipboard('${escapeHtml(item.response || '')}')" class="copy-clause">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                    <div class="chat_response_footer">
+                                        <div onclick="copyToClipboard('${escapeHtml(item.response || '')}')" style="cursor: pointer; display: flex; align-items: center;">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="cursor: pointer;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                        </div>
+                                        <span class="chat_response_date fs-11 text-secondary">${formatTime(item?.createdAt)}</span>
                                     </div>
                                 </div>
                             </div>
-                            <p style="margin-left: 31px; margin-top: 3px;" class="p4">${formatTime(item?.createdAt)}</p>
                         </div>
                     `;
                 }
