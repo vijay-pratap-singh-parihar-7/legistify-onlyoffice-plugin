@@ -159,15 +159,17 @@
                                 <p style="margin-right: 34px; margin-top: 3px; text-align: right;" class="p6">${formatTime(new Date())}</p>
                             </div>
                         ` : ''}
-                        <div class="prompt-outer-container" style="flex-shrink: 0; background-color: #fff; width: 100%; max-width: 49.7rem; margin: 0 auto; padding: 11px; padding-top: 8px; box-sizing: border-box; display: flex; align-items: center;">
-                            <div class="c_d_ai_prompt_input_wrapper c_d_ai_prompt_input_wrapper_v2">
-                                <div class="c_d_ai_prompt_input_area c_d_ai_prompt_input_area_v2">
-                                    <textarea id="prompt-input-ref" rows="1" placeholder="Ask Legistify AI" class="c_d_ai_prompt_input form-control" aria-invalid="false" oninput="handlePromptInput(event)" onfocus="handlePromptFocus(event)" onblur="handlePromptBlur(event)" style="resize: none; height: auto; width: 100%; background: white; padding: 10px 14px; border: none; outline: none; font-size: 12px; font-family: inherit; line-height: 1.5; box-sizing: border-box; direction: ltr; text-align: left; display: block !important; visibility: visible !important; border-radius: 10px; color: #212529; overflow-y: auto;">${escapeHtml(prompt || '')}</textarea>
-                                </div>
-                                <div class="c_d_ai_prompt_icons_container c_d_ai_prompt_icons_container_v2">
-                                    <button id="prompt-send-btn" class="c_d_ai_prompt_icon_btn c_d_ai_prompt_send_btn" type="button" onclick="handleGenerate()" ${error || !prompt?.trim() || loader ? 'disabled=""' : ''} style="cursor: ${error || !prompt?.trim() || loader ? 'not-allowed' : 'pointer'}; margin: 0; display: flex !important; align-items: center; justify-content: center; border: none; min-width: 36px; min-height: 36px; box-sizing: border-box; visibility: visible !important; background: transparent; padding: 8px;">
-                                    ${loader ? '<div class="loading-spinner-small"></div>' : '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9aa0a6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>'}
-                                    </button>
+                        <div class="prompt-outer-container" style="flex-shrink: 0; background-color: #fff; width: 100%; max-width: 49.7rem; margin: 0 auto; padding: 11px; padding-top: 8px; box-sizing: border-box;">
+                            <div class="c_d_ai_prompt_container" style="width: 100%; max-width: 100%; background-color: #fff !important; border: 1px solid #dadce0; border-radius: 15px; box-shadow: 0 1px 6px rgba(32, 33, 36, 0.28); position: relative; transition: box-shadow 0.2s;">
+                                <div class="c_d_ai_prompt_input_wrapper ${!prompt?.trim() ? 'c_d_ai_prompt_input_wrapper_v2' : ''}" id="prompt-input-wrapper" style="display: flex; flex-direction: ${!prompt?.trim() ? 'row' : 'column'}; align-items: ${!prompt?.trim() ? 'center' : 'flex-start'}; padding: ${!prompt?.trim() ? '8px 12px' : '12px'}; box-sizing: border-box; gap: 8px; ${!prompt?.trim() ? 'height: auto; min-height: 48px;' : ''} transition: all 0.2s ease;">
+                                    <div class="c_d_ai_prompt_input_area ${!prompt?.trim() ? 'c_d_ai_prompt_input_area_v2' : ''}" style="width: 100%; flex: 1; ${!prompt?.trim() ? 'margin-right: 8px;' : ''}">
+                                        <textarea id="prompt-input-ref" rows="1" placeholder="Ask Legistify AI" class="c_d_ai_prompt_input form-control" aria-invalid="false" oninput="handlePromptInput(event)" onfocus="handlePromptFocus(event)" onblur="handlePromptBlur(event)" style="resize: none; height: auto; width: 100%; background: transparent; padding: 0; border: none; outline: none; font-size: 16px; font-family: inherit; line-height: 24px; box-sizing: border-box; direction: ltr; text-align: left; display: block !important; visibility: visible !important; color: #202124; overflow-y: auto; min-height: 24px; max-height: 200px; font-weight: 400; margin: 0;">${escapeHtml(prompt || '')}</textarea>
+                                    </div>
+                                    <div class="c_d_ai_prompt_icons_container ${!prompt?.trim() ? 'c_d_ai_prompt_icons_container_v2' : ''}" style="display: flex; justify-content: space-between; align-items: center; ${!prompt?.trim() ? 'position: static; width: auto; padding-top: 0; flex-shrink: 0;' : 'width: 100%; padding-top: 4px;'}">
+                                        <button id="prompt-send-btn" class="c_d_ai_prompt_icon_btn c_d_ai_prompt_send_btn ${prompt?.trim() ? 'c_d_ai_prompt_send_btn_active' : ''}" type="button" onclick="handleGenerate()" ${error || !prompt?.trim() || loader ? 'disabled=""' : ''} style="cursor: ${error || !prompt?.trim() || loader ? 'not-allowed' : 'pointer'}; margin: 0; display: flex !important; align-items: center; justify-content: center; border: none; width: 40px; height: 40px; box-sizing: border-box; visibility: visible !important; background-color: ${prompt?.trim() && !error && !loader ? '#2567ff' : '#f1f3f4'} !important; padding: 0; border-radius: 50%; transition: background-color 0.2s;">
+                                        ${loader ? '<div class="loading-spinner-small"></div>' : '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="' + (prompt?.trim() && !error && !loader ? '#ffffff' : '#9aa0a6') + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>'}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -218,7 +220,21 @@
             promptInputRef.value = prompt || '';
             // Auto-resize textarea
             promptInputRef.style.height = 'auto';
-            promptInputRef.style.height = Math.max(38, promptInputRef.scrollHeight) + 'px';
+            const maxHeight = 200;
+            let newHeight = promptInputRef.scrollHeight;
+            newHeight = Math.max(24, newHeight);
+            newHeight = Math.min(maxHeight, newHeight);
+            promptInputRef.style.height = newHeight + 'px';
+            promptInputRef.style.minHeight = '24px';
+            promptInputRef.style.maxHeight = maxHeight + 'px';
+            
+            // Set initial wrapper state based on content
+            const wrapper = document.getElementById('prompt-input-wrapper');
+            if (wrapper && (!prompt || !prompt.trim())) {
+                // Empty - should be in compact mode
+                wrapper.classList.add('c_d_ai_prompt_input_wrapper_v2');
+            }
+            
             // Auto-focus input
             promptInputRef.focus();
         }
@@ -228,7 +244,13 @@
             promptInputRef.setAttribute('data-resize-listener', 'true');
             promptInputRef.addEventListener('input', function() {
                 this.style.height = 'auto';
-                this.style.height = Math.max(38, this.scrollHeight) + 'px';
+                const maxHeight = 200;
+                let newHeight = this.scrollHeight;
+                newHeight = Math.max(24, newHeight);
+                newHeight = Math.min(maxHeight, newHeight);
+                this.style.height = newHeight + 'px';
+                this.style.minHeight = '24px';
+                this.style.maxHeight = maxHeight + 'px';
             });
         }
 
@@ -508,26 +530,46 @@
         }
     };
 
-    // Handle prompt focus - expand to 50px, allow growth up to 80px
+    // Handle prompt focus - expand wrapper and textarea
     window.handlePromptFocus = function(event) {
         if (event.target) {
-            const maxHeight = 80;
-            const value = event.target.value;
+            const wrapper = document.getElementById('prompt-input-wrapper');
+            const inputArea = wrapper?.querySelector('.c_d_ai_prompt_input_area');
+            const iconsContainer = wrapper?.querySelector('.c_d_ai_prompt_icons_container');
             
-            // If empty, set to 50px
-            if (!value || !value.trim()) {
-                event.target.style.setProperty('height', '50px', 'important');
-                event.target.style.setProperty('min-height', '50px', 'important');
-            } else {
-                // If has content, calculate height based on content (max 80px)
-                event.target.style.height = 'auto';
-                let newHeight = Math.max(50, event.target.scrollHeight);
-                newHeight = Math.min(maxHeight, newHeight);
-                event.target.style.setProperty('height', newHeight + 'px', 'important');
-                event.target.style.setProperty('min-height', '50px', 'important');
+            // Remove _v2 class to expand the wrapper
+            if (wrapper) {
+                wrapper.classList.remove('c_d_ai_prompt_input_wrapper_v2');
+                wrapper.style.flexDirection = 'column';
+                wrapper.style.alignItems = 'flex-start';
+                wrapper.style.padding = '12px';
+                wrapper.style.height = 'auto';
+                wrapper.style.minHeight = 'auto';
             }
             
-            event.target.style.setProperty('max-height', maxHeight + 'px', 'important');
+            // Update input area
+            if (inputArea) {
+                inputArea.classList.remove('c_d_ai_prompt_input_area_v2');
+                inputArea.style.marginRight = '0';
+            }
+            
+            // Update icons container
+            if (iconsContainer) {
+                iconsContainer.classList.remove('c_d_ai_prompt_icons_container_v2');
+                iconsContainer.style.position = 'static';
+                iconsContainer.style.width = '100%';
+                iconsContainer.style.paddingTop = '4px';
+                iconsContainer.style.flexShrink = 'auto';
+            }
+            
+            // Auto-resize textarea
+            event.target.style.height = 'auto';
+            const maxHeight = 200;
+            let newHeight = event.target.scrollHeight;
+            newHeight = Math.min(maxHeight, newHeight);
+            event.target.style.height = newHeight + 'px';
+            event.target.style.minHeight = '24px';
+            event.target.style.maxHeight = maxHeight + 'px';
             
             // Enable scrolling if content exceeds max height
             if (event.target.scrollHeight > maxHeight) {
@@ -538,26 +580,54 @@
         }
     };
 
-    // Handle prompt blur - collapse to 30px if empty, otherwise keep current height (max 80px)
+    // Handle prompt blur - shrink wrapper if empty, keep expanded if has content
     window.handlePromptBlur = function(event) {
         if (event.target) {
             const value = event.target.value;
-            const maxHeight = 80;
+            const wrapper = document.getElementById('prompt-input-wrapper');
+            const inputArea = wrapper?.querySelector('.c_d_ai_prompt_input_area');
+            const iconsContainer = wrapper?.querySelector('.c_d_ai_prompt_icons_container');
             
             if (!value || !value.trim()) {
-                // If empty, collapse to 30px
-                event.target.style.setProperty('height', '30px', 'important');
-                event.target.style.setProperty('min-height', '30px', 'important');
-                event.target.style.setProperty('max-height', 'none', 'important');
-                event.target.style.overflowY = 'auto';
-            } else {
-                // If has content, keep auto-resized height but ensure min is 30px, max is 80px
+                // If empty, add _v2 class to shrink the wrapper
+                if (wrapper) {
+                    wrapper.classList.add('c_d_ai_prompt_input_wrapper_v2');
+                    wrapper.style.flexDirection = 'row';
+                    wrapper.style.alignItems = 'center';
+                    wrapper.style.padding = '8px 12px';
+                    wrapper.style.height = 'auto';
+                    wrapper.style.minHeight = '48px';
+                }
+                
+                // Update input area
+                if (inputArea) {
+                    inputArea.classList.add('c_d_ai_prompt_input_area_v2');
+                    inputArea.style.marginRight = '8px';
+                }
+                
+                // Update icons container
+                if (iconsContainer) {
+                    iconsContainer.classList.add('c_d_ai_prompt_icons_container_v2');
+                    iconsContainer.style.position = 'static';
+                    iconsContainer.style.width = 'auto';
+                    iconsContainer.style.paddingTop = '0';
+                    iconsContainer.style.flexShrink = '0';
+                }
+                
+                // Reset textarea height
                 event.target.style.height = 'auto';
-                let newHeight = Math.max(30, event.target.scrollHeight);
+                event.target.style.minHeight = '24px';
+                event.target.style.maxHeight = '200px';
+            } else {
+                // If has content, keep expanded (no _v2 class)
+                // Just adjust textarea height
+                event.target.style.height = 'auto';
+                const maxHeight = 200;
+                let newHeight = event.target.scrollHeight;
                 newHeight = Math.min(maxHeight, newHeight);
-                event.target.style.setProperty('height', newHeight + 'px', 'important');
-                event.target.style.setProperty('min-height', '30px', 'important');
-                event.target.style.setProperty('max-height', maxHeight + 'px', 'important');
+                event.target.style.height = newHeight + 'px';
+                event.target.style.minHeight = '24px';
+                event.target.style.maxHeight = maxHeight + 'px';
                 
                 // Enable scrolling if content exceeds max height
                 if (event.target.scrollHeight > maxHeight) {
@@ -574,11 +644,36 @@
         prompt = event.target.value;
         error = prompt.length >= 2000;
         
-        // Auto-resize textarea - grows line by line, max 80px
+        const wrapper = document.getElementById('prompt-input-wrapper');
+        const inputArea = wrapper?.querySelector('.c_d_ai_prompt_input_area');
+        const iconsContainer = wrapper?.querySelector('.c_d_ai_prompt_icons_container');
+        
+        // If user starts typing, expand the wrapper (remove _v2 class)
+        if (prompt?.trim() && wrapper) {
+            wrapper.classList.remove('c_d_ai_prompt_input_wrapper_v2');
+            wrapper.style.flexDirection = 'column';
+            wrapper.style.alignItems = 'flex-start';
+            wrapper.style.padding = '12px';
+            wrapper.style.height = 'auto';
+            wrapper.style.minHeight = 'auto';
+            
+            if (inputArea) {
+                inputArea.classList.remove('c_d_ai_prompt_input_area_v2');
+                inputArea.style.marginRight = '0';
+            }
+            
+            if (iconsContainer) {
+                iconsContainer.classList.remove('c_d_ai_prompt_icons_container_v2');
+                iconsContainer.style.position = 'static';
+                iconsContainer.style.width = '100%';
+                iconsContainer.style.paddingTop = '4px';
+                iconsContainer.style.flexShrink = 'auto';
+            }
+        }
+        
+        // Auto-resize textarea - grows line by line, max 200px
         if (event.target) {
-            const isFocused = document.activeElement === event.target;
-            const minHeight = isFocused ? 50 : 30;
-            const maxHeight = 80;
+            const maxHeight = 200;
             
             // Reset height to auto to get accurate scrollHeight
             event.target.style.height = 'auto';
@@ -587,15 +682,15 @@
             let newHeight = event.target.scrollHeight;
             
             // Ensure minimum height
-            newHeight = Math.max(minHeight, newHeight);
+            newHeight = Math.max(24, newHeight);
             
             // Cap at maximum height
             newHeight = Math.min(maxHeight, newHeight);
             
             // Apply the calculated height
-            event.target.style.setProperty('height', newHeight + 'px', 'important');
-            event.target.style.setProperty('min-height', minHeight + 'px', 'important');
-            event.target.style.setProperty('max-height', maxHeight + 'px', 'important');
+            event.target.style.height = newHeight + 'px';
+            event.target.style.minHeight = '24px';
+            event.target.style.maxHeight = maxHeight + 'px';
             
             // Enable/disable scrolling based on whether content exceeds max height
             if (event.target.scrollHeight > maxHeight) {
@@ -608,8 +703,23 @@
         // Update send button state without re-rendering entire view
         const sendButton = document.getElementById('prompt-send-btn');
         if (sendButton) {
-            sendButton.style.backgroundColor = (error || !prompt?.trim() || loader) ? 'gray' : '#2667FF';
+            if (prompt?.trim() && !error && !loader) {
+                sendButton.classList.add('c_d_ai_prompt_send_btn_active');
+                sendButton.style.backgroundColor = '#2567ff !important';
+                const svg = sendButton.querySelector('svg');
+                if (svg) {
+                    svg.setAttribute('stroke', '#ffffff');
+                }
+            } else {
+                sendButton.classList.remove('c_d_ai_prompt_send_btn_active');
+                sendButton.style.backgroundColor = '#f1f3f4 !important';
+                const svg = sendButton.querySelector('svg');
+                if (svg) {
+                    svg.setAttribute('stroke', '#9aa0a6');
+                }
+            }
             sendButton.style.cursor = (error || !prompt?.trim() || loader) ? 'not-allowed' : 'pointer';
+            sendButton.disabled = (error || !prompt?.trim() || loader);
         }
         
         // Update error message if needed
@@ -802,13 +912,66 @@
             promptInput.value = question;
             const length = question.length;
             promptInput.setSelectionRange(length, length);
+            
+            // Expand wrapper since we have content
+            const wrapper = document.getElementById('prompt-input-wrapper');
+            const inputArea = wrapper?.querySelector('.c_d_ai_prompt_input_area');
+            const iconsContainer = wrapper?.querySelector('.c_d_ai_prompt_icons_container');
+            
+            if (wrapper && prompt?.trim()) {
+                wrapper.classList.remove('c_d_ai_prompt_input_wrapper_v2');
+                wrapper.style.flexDirection = 'column';
+                wrapper.style.alignItems = 'flex-start';
+                wrapper.style.padding = '12px';
+                wrapper.style.height = 'auto';
+                wrapper.style.minHeight = 'auto';
+                
+                if (inputArea) {
+                    inputArea.classList.remove('c_d_ai_prompt_input_area_v2');
+                    inputArea.style.marginRight = '0';
+                }
+                
+                if (iconsContainer) {
+                    iconsContainer.classList.remove('c_d_ai_prompt_icons_container_v2');
+                    iconsContainer.style.position = 'static';
+                    iconsContainer.style.width = '100%';
+                    iconsContainer.style.paddingTop = '4px';
+                    iconsContainer.style.flexShrink = 'auto';
+                }
+            }
+            
+            // Auto-resize textarea
+            promptInput.style.height = 'auto';
+            const maxHeight = 200;
+            let newHeight = promptInput.scrollHeight;
+            newHeight = Math.max(24, newHeight);
+            newHeight = Math.min(maxHeight, newHeight);
+            promptInput.style.height = newHeight + 'px';
+            promptInput.style.minHeight = '24px';
+            promptInput.style.maxHeight = maxHeight + 'px';
+            
             promptInput.focus();
             
             // Update send button state
             const sendButton = document.getElementById('prompt-send-btn');
             if (sendButton) {
-                sendButton.style.backgroundColor = (error || !prompt?.trim() || loader) ? 'gray' : '#2667FF';
+                if (prompt?.trim() && !error && !loader) {
+                    sendButton.classList.add('c_d_ai_prompt_send_btn_active');
+                    sendButton.style.backgroundColor = '#2567ff !important';
+                    const svg = sendButton.querySelector('svg');
+                    if (svg) {
+                        svg.setAttribute('stroke', '#ffffff');
+                    }
+                } else {
+                    sendButton.classList.remove('c_d_ai_prompt_send_btn_active');
+                    sendButton.style.backgroundColor = '#f1f3f4 !important';
+                    const svg = sendButton.querySelector('svg');
+                    if (svg) {
+                        svg.setAttribute('stroke', '#9aa0a6');
+                    }
+                }
                 sendButton.style.cursor = (error || !prompt?.trim() || loader) ? 'not-allowed' : 'pointer';
+                sendButton.disabled = (error || !prompt?.trim() || loader);
             }
             
             // Update error message if needed
