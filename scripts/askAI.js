@@ -152,9 +152,9 @@
                                     <div class="prompt-container">
                                         <p class="p5">${escapeHtml(prompt)}</p>
                                     </div>
-                                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #2667ff; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0; margin-left: 8px;">
-                                        ${getUserInitials()}
-                                    </div>
+                                    // <div style="width: 32px; height: 32px; border-radius: 50%; background: #2667ff; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0; margin-left: 8px;">
+                                    //     ${getUserInitials()}
+                                    // </div>
                                 </div>
                                 <p style="margin-right: 34px; margin-top: 3px; text-align: right;" class="p6">${formatTime(new Date())}</p>
                             </div>
@@ -168,7 +168,7 @@
                                     <div class="c_d_ai_prompt_icons_container ${!prompt?.trim() ? 'c_d_ai_prompt_icons_container_v2' : ''}" style="display: flex; justify-content: space-between; align-items: center; ${!prompt?.trim() ? 'position: static; width: auto; padding-top: 0; flex-shrink: 0;' : 'width: 100%; padding-top: 4px;'}">
                                         <div class="c_d_ai_prompt_left_icons"></div>
                                         <button id="prompt-send-btn" class="c_d_ai_prompt_icon_btn c_d_ai_prompt_send_btn ${prompt?.trim() && !error && !loader ? 'c_d_ai_prompt_send_btn_active' : ''}" type="button" onclick="handleGenerate()" ${error || !prompt?.trim() || loader ? 'disabled=""' : ''} style="cursor: ${error || !prompt?.trim() || loader ? 'not-allowed' : 'pointer'}; margin: 0; display: flex !important; align-items: center; justify-content: center; border: none; width: 40px; height: 40px; box-sizing: border-box; visibility: visible !important; padding: 0; border-radius: 50%; transition: background-color 0.2s;">
-                                        ${loader ? '<div class="loading-spinner-small"></div>' : '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="' + (prompt?.trim() && !error && !loader ? '#ffffff' : '#9aa0a6') + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>'}
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${prompt?.trim() && !error && !loader ? '#ffffff' : '#9aa0a6'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
                                         </button>
                                     </div>
                                 </div>
@@ -433,6 +433,8 @@
         if (prompt?.length > 2000 || loader || !prompt?.trim()) return;
         
         const currentPrompt = prompt.trim();
+        // Clear prompt immediately to clear input box
+        prompt = '';
         loader = true;
         error = false;
         errorMessage = '';
@@ -482,8 +484,7 @@
 
             const data = await response.json();
             if (data?.status && data?.data?.chat) {
-                // Clear prompt
-                prompt = '';
+                // Prompt already cleared on submit, no need to clear again
                 
                 // Add new chat to history
                 historySearch = [data.data.chat, ...historySearch];

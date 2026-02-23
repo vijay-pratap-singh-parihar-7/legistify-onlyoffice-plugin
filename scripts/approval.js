@@ -106,7 +106,7 @@
         ` : '';
         
         approvalView.innerHTML = `
-            <div id="${containerId}" class="clause-approval-container" style="position: relative; min-height: 0; height: auto; overflow: visible; margin-top: ${isInDrawer ? '0' : '-10px'}; display: flex; flex-direction: column; width: 100%;">
+            <div id="${containerId}" class="clause-approval-container" style="position: relative; min-height: 0; height: 100%; overflow: hidden; margin-top: ${isInDrawer ? '0' : '-10px'}; display: flex; flex-direction: column; width: 100%;">
                 ${shouldShowHeader ? `
                 <div class="feature-header">
                     <div style="width: 100%; display: flex; justify-content: space-between;">
@@ -121,7 +121,7 @@
                     ${statusBadge ? `<div style="display: flex; gap: 8px; align-items: center;">${statusBadge}</div>` : ''}
                 </div>
                 ` : ''}
-                <div id="${contentId}" style="flex: 0 1 auto; overflow: visible; padding: 16px; padding-bottom: 50px; min-height: 0; box-sizing: border-box; width: 100%;"></div>
+                <div id="${contentId}" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding: 16px; padding-bottom: 50px; min-height: 0; box-sizing: border-box; width: 100%; -webkit-overflow-scrolling: touch;"></div>
             </div>
         `;
 
@@ -430,7 +430,7 @@
     // Render form - matches MS Editor exactly
     function renderForm() {
         return `
-            <div class="form-container" style="width: 100%; padding: 12px; padding-bottom: 50px; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; overflow: visible; margin-bottom: 30px;">
+            <div class="form-container" style="width: 100%; padding: 12px; padding-bottom: 50px; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; overflow: visible; margin-bottom: 30px; min-height: 0;">
                 <div style="display: flex; gap: 10px; justify-content: flex-start; align-items: center; width: 100%;">
                     <div style="flex: 1; width: 50%;">
                         <input type="text" placeholder="Clause No" value="${escapeHtml(form.clauseNo || '')}" onchange="handleFormInputChange('clauseNo', this.value)" class="approval-form-input" style="width: 100%; padding: 8px 12px; border: 1px solid ${errors.clauseNo ? 'red' : 'rgb(153 153 153 / 64%)'}; border-radius: 4px; font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; box-sizing: border-box;" />
