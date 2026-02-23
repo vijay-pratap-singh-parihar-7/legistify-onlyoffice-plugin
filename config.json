@@ -3,8 +3,6 @@
   "nameLocale": {
     "en": "Legistify AI"
   },
-  "w": 315,
-  "minW": 315,
   "description": "AI-powered features for contract analysis: Summary, Clauses, Obligations, AI Playbook, and Approval workflow",
   "descriptionLocale": {
     "en": "AI-powered features for contract analysis: Summary, Clauses, Obligations, AI Playbook, and Approval workflow"
@@ -35,9 +33,7 @@
       "type": "panel",
       "initDataType": "text",
       "initOnSelectionChanged": false,
-      "size": {
-        "width": 400
-      },
+      "size": [315, 600],
       "buttons": [
         {
           "text": "Ask AI",
