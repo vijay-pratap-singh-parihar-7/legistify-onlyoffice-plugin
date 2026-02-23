@@ -1761,10 +1761,12 @@ body {
 .loading-spinner-small {
     width: 12px;
     height: 12px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top: 2px solid #fff;
+    border: 2px solid rgba(37, 103, 255, 0.2);
+    border-top: 2px solid #2567ff;
+    border-right: 2px solid #2567ff;
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
+    display: inline-block;
 }
 
 .empty-state-text {

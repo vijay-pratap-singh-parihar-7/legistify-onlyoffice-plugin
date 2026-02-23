@@ -201,21 +201,70 @@
         listContainer.innerHTML = itemsHTML;
     }
 
-    // Handle playbook click
+    // Handle playbook click - opens in drawer
     window.handlePlaybookClick = function(playbookId) {
         const playbook = playbooks.find(pb => pb._id === playbookId);
         if (playbook) {
             selectedPlaybookForDetail = playbook;
             showDetailView = true;
-            // Render detail view (would need PlaybookDetail component equivalent)
+            // Open drawer and render detail view
+            openPlaybookDrawer();
             renderPlaybookDetail(playbook);
         }
     };
 
-    // Render playbook detail - matches MS Editor exactly
+    // Open playbook drawer - full screen like AI Copilot
+    function openPlaybookDrawer() {
+        const drawerOverlay = document.getElementById('drawer-overlay');
+        const drawer = document.getElementById('drawer');
+        const drawerTitle = document.getElementById('drawer-title');
+        const drawerContent = document.getElementById('drawer-content');
+        const drawerHeaderActions = document.getElementById('drawer-header-actions');
+        
+        if (!drawerOverlay || !drawer || !drawerContent) return;
+        
+        // Hide tabs when drawer is open
+        const tabListContainer = document.querySelector('.tab-list-container');
+        if (tabListContainer) {
+            tabListContainer.style.display = 'none';
+        }
+        
+        // Set drawer title
+        if (drawerTitle) {
+            drawerTitle.textContent = 'Playbook';
+        }
+        
+        // Hide header actions for playbook
+        if (drawerHeaderActions) {
+            drawerHeaderActions.style.display = 'none';
+        }
+        
+        // Show drawer and overlay
+        drawerOverlay.style.display = 'block';
+        drawer.style.display = 'flex';
+    }
+    
+    // Close playbook drawer
+    function closePlaybookDrawer() {
+        const drawerOverlay = document.getElementById('drawer-overlay');
+        const drawer = document.getElementById('drawer');
+        const drawerContent = document.getElementById('drawer-content');
+        
+        if (drawerOverlay) drawerOverlay.style.display = 'none';
+        if (drawer) drawer.style.display = 'none';
+        if (drawerContent) drawerContent.innerHTML = '';
+        
+        // Show tabs again
+        const tabListContainer = document.querySelector('.tab-list-container');
+        if (tabListContainer) {
+            tabListContainer.style.display = 'block';
+        }
+    }
+    
+    // Render playbook detail - matches MS Editor exactly, renders in drawer
     function renderPlaybookDetail(playbook) {
-        const playbookView = document.getElementById('playbook-view');
-        if (!playbookView) return;
+        const drawerContent = document.getElementById('drawer-content');
+        if (!drawerContent) return;
         
         const rules = playbook.rules || [];
         const isStandard = playbook.organizationId === null;
@@ -228,8 +277,8 @@
         const currentName = isEditing ? editedName : playbook.name;
         const validRulesCount = isEditing ? editedRules.filter(r => r && r.trim() !== '').length : rules.length;
         
-        playbookView.innerHTML = `
-            <div class="playbook-detail-root">
+        drawerContent.innerHTML = `
+            <div class="playbook-detail-root" style="height: 100%; overflow-y: auto;">
                 <div class="playbook-detail-header">
                     <div class="playbook-detail-header-left">
                         <svg class="back-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="handleBackFromDetail()" style="cursor: pointer; flex-shrink: 0;">
@@ -428,6 +477,8 @@
             editedRules = [...normalizedRules];
             isSaving = false;
             
+            // Ensure drawer is open
+            openPlaybookDrawer();
             renderPlaybookDetail(playbook);
         } catch (error) {
             console.error('Error entering edit mode:', error);
@@ -778,6 +829,10 @@
         isDeleting = false;
         showDetailView = false;
         selectedPlaybookForDetail = null;
+        
+        // Close drawer
+        closePlaybookDrawer();
+        
         renderPlaybookList();
         fetchPlaybooks();
     };
@@ -1203,34 +1258,26 @@
         };
     }
 
-    // Render results view - matches MS Editor/OnlyOffice exactly
+    // Render results view - matches MS Editor/OnlyOffice exactly, renders in drawer
     function renderResultsView() {
-        const playbookView = document.getElementById('playbook-view');
-        if (!playbookView) {
-            console.error('playbook-view element not found');
+        const drawerContent = document.getElementById('drawer-content');
+        if (!drawerContent) {
+            console.error('drawer-content element not found');
             return;
         }
         
-        // Ensure playbook view is visible
-        playbookView.style.display = 'block';
+        // Open drawer for results view
+        openPlaybookDrawer();
         
-        // Ensure Playbook tab is active
-        const playbookTab = document.querySelector('[data-tab="Playbook"]');
-        if (playbookTab && !playbookTab.classList.contains('active')) {
-            if (window.handleTabChange) {
-                window.handleTabChange('Playbook');
-            }
+        // Update drawer title
+        const drawerTitle = document.getElementById('drawer-title');
+        if (drawerTitle) {
+            const playbook = playbooks.find(pb => pb._id === runningPlaybook) || selectedPlaybook;
+            const playbookName = playbook?.name || 'Guide';
+            drawerTitle.textContent = playbookName;
         }
 
-        // Ensure activeContent is set to playbook
-        if (window.setActiveContent) {
-            window.setActiveContent('playbook');
-        }
-
-        const playbook = playbooks.find(pb => pb._id === runningPlaybook) || selectedPlaybook;
-        const playbookName = playbook?.name || 'Guide';
-
-        playbookView.innerHTML = `
+        drawerContent.innerHTML = `
             <div class="results-root">
                 <div class="results-header" style="display: flex; justify-content: space-between; align-items: center; position: relative;">
                     <div class="header-box" style="display: flex; align-items: center; gap: 4px; flex: 0 0 auto;">
@@ -1247,13 +1294,6 @@
 
         // Force update the view to show loading state
         updateResultsView();
-        
-        // Double-check visibility
-        setTimeout(() => {
-            if (playbookView) {
-                playbookView.style.display = 'block';
-            }
-        }, 100);
     }
 
     // Update results view
@@ -1471,6 +1511,10 @@
         streamHasEndMarker = false;
         lastStreamSnapshot = null;
         runningPlaybook = null;
+        
+        // Close drawer
+        closePlaybookDrawer();
+        
         renderPlaybookList();
         fetchPlaybooks();
     };
@@ -1535,35 +1579,55 @@
     window.closePlaybookDrawer = function() {
         const drawerOverlay = document.getElementById('drawer-overlay');
         const drawer = document.getElementById('drawer');
+        const drawerContent = document.getElementById('drawer-content');
+        
         if (drawerOverlay) drawerOverlay.style.display = 'none';
         if (drawer) drawer.style.display = 'none';
+        if (drawerContent) drawerContent.innerHTML = '';
+        
+        // Show tabs again
+        const tabListContainer = document.querySelector('.tab-list-container');
+        if (tabListContainer) {
+            tabListContainer.style.display = 'block';
+        }
+        
         isDrawerOpen = false;
         activeContentPlaybook = null;
+        
+        // Reset playbook states
+        showDetailView = false;
+        showCreatePage = false;
+        showCreateForm = false;
+        showResultsView = false;
+        window.showCreatePage = false;
+        window.showCreateForm = false;
     };
     
-    // Also handle closeDrawer from main.js
+    // Also handle closeDrawer from main.js - check if playbook drawer is open
     const originalCloseDrawer = window.closeDrawer;
     window.closeDrawer = function() {
-        if (isDrawerOpen && activeContentPlaybook) {
+        // Check if playbook drawer is open (detail view, create page, create form, or results view)
+        if (showDetailView || showCreatePage || showCreateForm || showResultsView || (isDrawerOpen && activeContentPlaybook)) {
             closePlaybookDrawer();
         } else if (originalCloseDrawer) {
             originalCloseDrawer();
         }
     };
 
-    // Handle new guide click
+    // Handle new guide click - opens in drawer
     window.handleNewGuideClick = function() {
         showCreatePage = true;
         window.showCreatePage = true;
+        openPlaybookDrawer();
         renderCreatePage();
     };
     
-    // Render create page - matches MS Editor CreateGuidePage
+    // Render create page - matches MS Editor CreateGuidePage, renders in drawer
     function renderCreatePage() {
-        const playbookView = document.getElementById('playbook-view');
-        if (!playbookView) return;
+        const drawerContent = document.getElementById('drawer-content');
+        if (!drawerContent) return;
         
-        playbookView.innerHTML = `
+        drawerContent.innerHTML = `
             <div class="create-page-root">
                 <div class="create-page-header">
                     <div class="create-page-header-left">
@@ -1916,10 +1980,10 @@
         manualFormCurrentRule = '';
     }
     
-    // Render create form - matches MS Editor CreateGuideForm exactly
+    // Render create form - matches MS Editor CreateGuideForm exactly, renders in drawer
     function renderCreateForm() {
-        const playbookView = document.getElementById('playbook-view');
-        if (!playbookView) return;
+        const drawerContent = document.getElementById('drawer-content');
+        if (!drawerContent) return;
         
         // Use default name if not yet initialized (fallback)
         if (!manualFormGuideName || manualFormGuideName === 'Manual Playbook') {
@@ -1937,8 +2001,8 @@
             </div>
         `).join('');
         
-        playbookView.innerHTML = `
-            <div class="create-form-root">
+        drawerContent.innerHTML = `
+            <div class="create-form-root" style="height: 100%; overflow-y: auto;">
                 <div class="create-form-header">
                     <div class="create-form-header-left">
                         <svg class="back-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="handleBackFromCreateForm()" style="cursor: pointer;">
@@ -2165,17 +2229,24 @@
         isGeneratingPlaybook = false;
         editingRuleIndex = null;
         editingRuleText = '';
+        
+        // Close drawer
+        closePlaybookDrawer();
+        
         renderPlaybookList();
         fetchPlaybooks();
     };
     
-    // Handle back from create form
+    // Handle back from create form - stays in drawer, goes back to create page
     window.handleBackFromCreateForm = function() {
         showCreateForm = false;
         window.showCreateForm = false;
         manualFormRules = [];
         manualFormCurrentRule = '';
         manualFormGuideName = 'Manual Playbook';
+        
+        // Ensure drawer is still open and render create page
+        openPlaybookDrawer();
         renderCreatePage();
     };
     

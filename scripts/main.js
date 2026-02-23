@@ -545,6 +545,12 @@
             }
         }
 
+        // Hide tabs when drawer is open
+        const tabListContainer = document.querySelector('.tab-list-container');
+        if (tabListContainer) {
+            tabListContainer.style.display = 'none';
+        }
+        
         // Show drawer and overlay
         if (drawer) drawer.style.display = 'block';
         if (drawerOverlay) drawerOverlay.style.display = 'block';
@@ -604,6 +610,12 @@
                 errorElements.forEach(el => el.remove());
             }
         });
+        
+        // Show tabs when drawer is closed
+        const tabListContainer = document.querySelector('.tab-list-container');
+        if (tabListContainer) {
+            tabListContainer.style.display = 'block';
+        }
         
         setActiveContent(null);
         
