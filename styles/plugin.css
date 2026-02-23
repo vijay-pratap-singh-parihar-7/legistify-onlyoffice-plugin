@@ -76,6 +76,24 @@ body {
     height: 16px;
 }
 
+/* Hide OnlyOffice Plugin Close Button */
+.asc-window-close,
+.asc-window-button-close,
+.plugin-close,
+.current-plugin-header button:last-child,
+.current-plugin-header .asc-window-close,
+.asc-window-header .asc-window-close,
+.asc-window-header button:last-child,
+button[aria-label*="close" i],
+button[title*="close" i],
+[aria-label*="close" i][role="button"],
+[title*="close" i][role="button"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
 /* Tab List - Matches MS Editor App.jsx tabList - Dynamic Resizing */
 .tab-list-container {
     display: flex;
