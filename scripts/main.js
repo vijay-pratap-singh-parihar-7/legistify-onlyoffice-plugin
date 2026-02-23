@@ -545,6 +545,12 @@
             }
         }
 
+        // Show drawer header for non-playbook views (AI Copilot, Summary, etc.)
+        const drawerHeader = document.querySelector('.drawer-header');
+        if (drawerHeader) {
+            drawerHeader.style.display = 'flex';
+        }
+        
         // Hide tabs when drawer is open
         const tabListContainer = document.querySelector('.tab-list-container');
         if (tabListContainer) {

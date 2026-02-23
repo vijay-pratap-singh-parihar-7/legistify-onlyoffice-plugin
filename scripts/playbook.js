@@ -220,6 +220,7 @@
         const drawerTitle = document.getElementById('drawer-title');
         const drawerContent = document.getElementById('drawer-content');
         const drawerHeaderActions = document.getElementById('drawer-header-actions');
+        const drawerHeader = document.querySelector('.drawer-header');
         
         if (!drawerOverlay || !drawer || !drawerContent) return;
         
@@ -229,9 +230,9 @@
             tabListContainer.style.display = 'none';
         }
         
-        // Set drawer title
-        if (drawerTitle) {
-            drawerTitle.textContent = 'Playbook';
+        // Hide drawer header for playbook views (no close button, no title)
+        if (drawerHeader) {
+            drawerHeader.style.display = 'none';
         }
         
         // Hide header actions for playbook
@@ -1580,10 +1581,16 @@
         const drawerOverlay = document.getElementById('drawer-overlay');
         const drawer = document.getElementById('drawer');
         const drawerContent = document.getElementById('drawer-content');
+        const drawerHeader = document.querySelector('.drawer-header');
         
         if (drawerOverlay) drawerOverlay.style.display = 'none';
         if (drawer) drawer.style.display = 'none';
         if (drawerContent) drawerContent.innerHTML = '';
+        
+        // Show drawer header again (for other views like AI Copilot, Summary, etc.)
+        if (drawerHeader) {
+            drawerHeader.style.display = 'flex';
+        }
         
         // Show tabs again
         const tabListContainer = document.querySelector('.tab-list-container');
