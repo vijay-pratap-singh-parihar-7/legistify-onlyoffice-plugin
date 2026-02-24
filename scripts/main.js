@@ -6,102 +6,6 @@
     console.log('Plugin main.js script loaded at:', new Date().toISOString());
     console.log('window.Asc at script load:', typeof window.Asc !== 'undefined' ? window.Asc : 'undefined');
     
-    // Set panel width to 360 in localStorage immediately on first load (before API is ready)
-    // This ensures the width is set before OnlyOffice reads it
-    (function() {
-        const DEFAULT_WIDTH = 360;
-        const STORAGE_KEY = 'de-mainmenu-width';
-        
-        try {
-            // Try to access localStorage from parent window (OnlyOffice's domain)
-            let storage = null;
-            let savedWidth = null;
-            
-            // First try parent window (OnlyOffice's localStorage)
-            if (window.parent && window.parent !== window) {
-                try {
-                    storage = window.parent.localStorage;
-                    savedWidth = storage.getItem(STORAGE_KEY);
-                } catch (e) {
-                    // Cross-origin restriction, try current window
-                    try {
-                        storage = localStorage;
-                        savedWidth = storage.getItem(STORAGE_KEY);
-                    } catch (e2) {
-                        console.warn('Cannot access localStorage:', e2);
-                    }
-                }
-            } else {
-                // No parent, use current window
-                try {
-                    storage = localStorage;
-                    savedWidth = storage.getItem(STORAGE_KEY);
-                } catch (e) {
-                    console.warn('Cannot access localStorage:', e);
-                }
-            }
-            
-            // If width is not set OR is set to default (300 or 315), initialize it to 360 immediately
-            const widthValue = savedWidth ? parseInt(savedWidth, 10) : null;
-            const isDefaultWidth = widthValue === 300 || widthValue === 315;
-            
-            if (storage && (!savedWidth || savedWidth === 'null' || savedWidth === '' || isDefaultWidth)) {
-                storage.setItem(STORAGE_KEY, DEFAULT_WIDTH.toString());
-                console.log('Panel width set to', DEFAULT_WIDTH, 'px in localStorage (immediate, first time or overriding default)');
-            }
-        } catch (error) {
-            console.warn('Error setting initial panel width:', error);
-        }
-    })();
-    
-    // Set zoom level to 80 in localStorage immediately on first load (before API is ready)
-    // This ensures the zoom is set before OnlyOffice reads it
-    (function() {
-        const DEFAULT_ZOOM = 80;
-        const STORAGE_KEY = 'de-last-zoom';
-        
-        try {
-            // Try to access localStorage from parent window (OnlyOffice's domain)
-            let storage = null;
-            let savedZoom = null;
-            
-            // First try parent window (OnlyOffice's localStorage)
-            if (window.parent && window.parent !== window) {
-                try {
-                    storage = window.parent.localStorage;
-                    savedZoom = storage.getItem(STORAGE_KEY);
-                } catch (e) {
-                    // Cross-origin restriction, try current window
-                    try {
-                        storage = localStorage;
-                        savedZoom = storage.getItem(STORAGE_KEY);
-                    } catch (e2) {
-                        console.warn('Cannot access localStorage for zoom:', e2);
-                    }
-                }
-            } else {
-                // No parent, use current window
-                try {
-                    storage = localStorage;
-                    savedZoom = storage.getItem(STORAGE_KEY);
-                } catch (e) {
-                    console.warn('Cannot access localStorage for zoom:', e);
-                }
-            }
-            
-            // If zoom is not set OR is set to default (100), initialize it to 80 immediately
-            const zoomValue = savedZoom ? parseInt(savedZoom, 10) : null;
-            const isDefaultZoom = zoomValue === 100;
-            
-            if (storage && (!savedZoom || savedZoom === 'null' || savedZoom === '' || isDefaultZoom)) {
-                storage.setItem(STORAGE_KEY, DEFAULT_ZOOM.toString());
-                console.log('Zoom level set to', DEFAULT_ZOOM, '% in localStorage (immediate, first time or overriding default)');
-            }
-        } catch (error) {
-            console.warn('Error setting initial zoom level:', error);
-        }
-    })();
-    
     // Store plugin data (contractId, accessToken, etc.) - will be populated from backend
     // These are empty defaults - actual values come from backend via initData
     window.pluginData = {
@@ -372,34 +276,14 @@
         // Initialize resize handle
         initResizeHandle();
         
-        // Remove OnlyOffice close button
-        removeCloseButton();
-        
         // Set up close button event listeners
         setupCloseButtonListeners();
         
-        // Initialize panel width to 360 and zoom to 80 if not already set (before opening panel)
-        // Wait for both to be set before opening panel to ensure correct initial values
-        Promise.all([
-            initPanelWidth(),
-            initZoomLevel()
-        ]).then(function() {
-            // Small delay to ensure width and zoom are applied before opening panel
-            setTimeout(function() {
-                // Open plugin panel on left side
-                openPluginPanel();
-                
-                // Initialize default view
-                handleTabChange('Playbook');
-            }, 100);
-        }).catch(function(error) {
-            console.warn('Error initializing panel width/zoom, opening panel anyway:', error);
-            // Open plugin panel even if initialization failed
-            openPluginPanel();
-            
-            // Initialize default view
-            handleTabChange('Playbook');
-        });
+        // Open plugin panel on left side
+        openPluginPanel();
+        
+        // Initialize default view
+        handleTabChange('Playbook');
         };
         
         // Plugin execution complete callback
@@ -938,191 +822,30 @@
         });
     }
 
-    // Remove OnlyOffice plugin close button
-    function removeCloseButton() {
-        const removeCloseButtonElements = function() {
-            // Selectors for close button elements
-            const selectors = [
-                '.plugin-close',
-                '.plugin-close.close',
-                '.plugin-close button',
-                '.plugin-close .btn',
-                '.plugin-close .btn-close',
-                '.asc-window-close',
-                '.asc-window-button-close',
-                'button[aria-label*="close" i]',
-                'button[title*="close" i]',
-                'button[id^="asc-gen"][aria-label*="close" i]',
-                '.current-plugin-header .plugin-close',
-                '.current-plugin-header button[aria-label*="close" i]',
-                '.asc-window-header .plugin-close',
-                '.asc-window-header button[aria-label*="close" i]'
-            ];
-            
-            let removed = false;
-            selectors.forEach(selector => {
-                try {
-                    const elements = document.querySelectorAll(selector);
-                    elements.forEach(el => {
-                        // Check if it's actually a close button
-                        const isCloseButton = el.getAttribute('aria-label')?.toLowerCase().includes('close') ||
-                                           el.getAttribute('title')?.toLowerCase().includes('close') ||
-                                           el.classList.contains('plugin-close') ||
-                                           el.classList.contains('close') ||
-                                           el.classList.contains('asc-window-close') ||
-                                           el.closest('.plugin-close');
-                        
-                        if (isCloseButton) {
-                            el.style.display = 'none';
-                            el.style.visibility = 'hidden';
-                            el.style.opacity = '0';
-                            el.style.pointerEvents = 'none';
-                            el.style.width = '0';
-                            el.style.height = '0';
-                            el.style.margin = '0';
-                            el.style.padding = '0';
-                            // Optionally remove from DOM
-                            if (el.parentNode) {
-                                el.parentNode.removeChild(el);
-                            }
-                            removed = true;
-                            console.log('Removed close button element:', selector);
-                        }
-                    });
-                } catch (e) {
-                    // Ignore errors
-                }
-            });
-            
-            // Also check parent document
-            try {
-                const parentDoc = window.parent?.document || window.top?.document;
-                if (parentDoc) {
-                    selectors.forEach(selector => {
-                        try {
-                            const elements = parentDoc.querySelectorAll(selector);
-                            elements.forEach(el => {
-                                const isCloseButton = el.getAttribute('aria-label')?.toLowerCase().includes('close') ||
-                                                   el.getAttribute('title')?.toLowerCase().includes('close') ||
-                                                   el.classList.contains('plugin-close') ||
-                                                   el.classList.contains('close') ||
-                                                   el.classList.contains('asc-window-close') ||
-                                                   el.closest('.plugin-close');
-                                
-                                if (isCloseButton) {
-                                    el.style.display = 'none';
-                                    el.style.visibility = 'hidden';
-                                    el.style.opacity = '0';
-                                    el.style.pointerEvents = 'none';
-                                    el.style.width = '0';
-                                    el.style.height = '0';
-                                    el.style.margin = '0';
-                                    el.style.padding = '0';
-                                    if (el.parentNode) {
-                                        el.parentNode.removeChild(el);
-                                    }
-                                    removed = true;
-                                    console.log('Removed close button element from parent:', selector);
-                                }
-                            });
-                        } catch (e) {
-                            // Ignore errors
-                        }
-                    });
-                }
-            } catch (e) {
-                // Cross-origin or other error, ignore
-            }
-            
-            return removed;
-        };
-        
-        // Try to remove immediately
-        removeCloseButtonElements();
-        
-        // Set up MutationObserver to watch for dynamically added close buttons
-        const observer = new MutationObserver(function(mutations) {
-            let shouldRemove = false;
-            mutations.forEach(function(mutation) {
-                mutation.addedNodes.forEach(function(node) {
-                    if (node.nodeType === 1) { // Element node
-                        const isCloseButton = node.matches && (
-                            node.matches('.plugin-close, .plugin-close.close, .asc-window-close, [aria-label*="close" i], [title*="close" i]') ||
-                            (node.querySelector && node.querySelector('.plugin-close, .asc-window-close, [aria-label*="close" i]'))
-                        );
-                        
-                        if (isCloseButton) {
-                            shouldRemove = true;
-                        }
-                    }
-                });
-            });
-            
-            if (shouldRemove) {
-                setTimeout(removeCloseButtonElements, 50);
-            }
-        });
-        
-        // Observe document body
-        if (document.body) {
-            observer.observe(document.body, {
-                childList: true,
-                subtree: true
-            });
-        }
-        
-        // Also observe parent document if accessible
-        try {
-            const parentDoc = window.parent?.document || window.top?.document;
-            if (parentDoc && parentDoc.body) {
-                const parentObserver = new MutationObserver(function(mutations) {
-                    let shouldRemove = false;
-                    mutations.forEach(function(mutation) {
-                        mutation.addedNodes.forEach(function(node) {
-                            if (node.nodeType === 1) {
-                                const isCloseButton = node.matches && (
-                                    node.matches('.plugin-close, .plugin-close.close, .asc-window-close, [aria-label*="close" i], [title*="close" i]') ||
-                                    (node.querySelector && node.querySelector('.plugin-close, .asc-window-close, [aria-label*="close" i]'))
-                                );
-                                
-                                if (isCloseButton) {
-                                    shouldRemove = true;
-                                }
-                            }
-                        });
-                    });
-                    
-                    if (shouldRemove) {
-                        setTimeout(removeCloseButtonElements, 50);
-                    }
-                });
-                
-                parentObserver.observe(parentDoc.body, {
-                    childList: true,
-                    subtree: true
-                });
-            }
-        } catch (e) {
-            // Cross-origin or other error, ignore
-        }
-        
-        // Retry removal periodically for the first few seconds
-        let attempts = 0;
-        const maxAttempts = 20; // 2 seconds
-        const interval = setInterval(function() {
-            attempts++;
-            if (removeCloseButtonElements() || attempts >= maxAttempts) {
-                clearInterval(interval);
-            }
-        }, 100);
-    }
-
     // Set up close button event listeners
     function setupCloseButtonListeners() {
         // Try multiple times to find the OnlyOffice close button (it may load later)
         let attempts = 0;
         const maxAttempts = 10;
         
+        // Function to hide close button elements
+        const hideCloseButton = function(element) {
+            if (element) {
+                element.style.display = 'none';
+                element.style.visibility = 'hidden';
+                element.style.opacity = '0';
+                element.style.pointerEvents = 'none';
+                element.style.width = '0';
+                element.style.height = '0';
+                element.style.margin = '0';
+                element.style.padding = '0';
+                // Also hide parent if it's a wrapper div
+                if (element.parentElement && element.parentElement.classList.contains('plugin-close')) {
+                    hideCloseButton(element.parentElement);
+                }
+            }
+        };
+
         const findAndSetupCloseButton = function() {
             attempts++;
             
@@ -1146,11 +869,23 @@
             
             let onlyOfficeCloseBtn = null;
             for (const selector of selectors) {
-                onlyOfficeCloseBtn = document.querySelector(selector);
-                if (onlyOfficeCloseBtn) {
-                    console.log('Found OnlyOffice close button with selector:', selector);
-                    break;
-                }
+                const elements = document.querySelectorAll(selector);
+                elements.forEach(el => {
+                    // Check if it's actually a close button
+                    const isCloseButton = el.getAttribute('aria-label')?.toLowerCase().includes('close') ||
+                                        el.getAttribute('title')?.toLowerCase().includes('close') ||
+                                        el.classList.contains('plugin-close') ||
+                                        el.classList.contains('asc-window-close') ||
+                                        el.classList.contains('close');
+                    if (isCloseButton) {
+                        hideCloseButton(el);
+                        if (!onlyOfficeCloseBtn) {
+                            onlyOfficeCloseBtn = el;
+                            console.log('Found and hiding OnlyOffice close button with selector:', selector);
+                        }
+                    }
+                });
+                if (onlyOfficeCloseBtn) break;
             }
             
             // Also check for close button within current-plugin-header specifically
@@ -1165,11 +900,17 @@
                                            btn.getAttribute('title')?.toLowerCase().includes('close') ||
                                            btn.classList.contains('close') ||
                                            btn.classList.contains('asc-window-close') ||
+                                           btn.classList.contains('plugin-close') ||
                                            (btn === buttons[buttons.length - 1] && buttons.length > 0);
                         
                         if (isCloseButton || buttons.length === 1) {
+                            hideCloseButton(btn);
+                            // Also hide parent wrapper if it exists
+                            if (btn.parentElement && btn.parentElement.classList.contains('plugin-close')) {
+                                hideCloseButton(btn.parentElement);
+                            }
                             onlyOfficeCloseBtn = btn;
-                            console.log('Found close button in current-plugin-header');
+                            console.log('Found and hiding close button in current-plugin-header');
                             break;
                         }
                     }
@@ -1182,11 +923,22 @@
                     const parentDoc = window.parent?.document || window.top?.document;
                     if (parentDoc) {
                         for (const selector of selectors) {
-                            onlyOfficeCloseBtn = parentDoc.querySelector(selector);
-                            if (onlyOfficeCloseBtn) {
-                                console.log('Found OnlyOffice close button in parent with selector:', selector);
-                                break;
-                            }
+                            const elements = parentDoc.querySelectorAll(selector);
+                            elements.forEach(el => {
+                                const isCloseButton = el.getAttribute('aria-label')?.toLowerCase().includes('close') ||
+                                                    el.getAttribute('title')?.toLowerCase().includes('close') ||
+                                                    el.classList.contains('plugin-close') ||
+                                                    el.classList.contains('asc-window-close') ||
+                                                    el.classList.contains('close');
+                                if (isCloseButton) {
+                                    hideCloseButton(el);
+                                    if (!onlyOfficeCloseBtn) {
+                                        onlyOfficeCloseBtn = el;
+                                        console.log('Found and hiding OnlyOffice close button in parent with selector:', selector);
+                                    }
+                                }
+                            });
+                            if (onlyOfficeCloseBtn) break;
                         }
                         
                         // Also check parent for current-plugin-header
@@ -1199,11 +951,17 @@
                                                        btn.getAttribute('title')?.toLowerCase().includes('close') ||
                                                        btn.classList.contains('close') ||
                                                        btn.classList.contains('asc-window-close') ||
+                                                       btn.classList.contains('plugin-close') ||
                                                        (btn === buttons[buttons.length - 1] && buttons.length > 0);
                                     
                                     if (isCloseButton || buttons.length === 1) {
+                                        hideCloseButton(btn);
+                                        // Also hide parent wrapper if it exists
+                                        if (btn.parentElement && btn.parentElement.classList.contains('plugin-close')) {
+                                            hideCloseButton(btn.parentElement);
+                                        }
                                         onlyOfficeCloseBtn = btn;
-                                        console.log('Found close button in parent current-plugin-header');
+                                        console.log('Found and hiding close button in parent current-plugin-header');
                                         break;
                                     }
                                 }
@@ -1215,25 +973,11 @@
                 }
             }
             
-            if (onlyOfficeCloseBtn) {
-                // Check if listener is already attached
-                if (onlyOfficeCloseBtn.hasAttribute('data-close-listener-attached')) {
-                    console.log('Close button listener already attached');
-                    return true;
-                }
-                
-                // Mark as having listener attached
-                onlyOfficeCloseBtn.setAttribute('data-close-listener-attached', 'true');
-                
-                onlyOfficeCloseBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('OnlyOffice close button clicked');
-                    closePluginPanel();
-                    return false;
-                });
-                
-                console.log('OnlyOffice close button listener attached');
+            // Close button is now hidden, but we keep the function for collapse functionality
+            // The collapse functionality is preserved via closePluginPanel() which uses HidePluginPanel
+            if (onlyOfficeCloseBtn || attempts >= 5) {
+                // Button found and hidden, or we've tried enough times
+                console.log('Close button hidden successfully');
                 return true;
             } else if (attempts < maxAttempts) {
                 // Retry after a delay
@@ -1246,7 +990,7 @@
         // Start looking for the close button
         setTimeout(findAndSetupCloseButton, 100);
         
-        // Set up mutation observer to watch for dynamically added close buttons
+        // Set up mutation observer to watch for dynamically added close buttons and hide them immediately
         const observer = new MutationObserver(function(mutations) {
             mutations.forEach(function(mutation) {
                 mutation.addedNodes.forEach(function(node) {
@@ -1259,7 +1003,17 @@
                         );
                         
                         if (isCloseButton) {
-                            console.log('Close button or header detected, re-running setup');
+                            // Immediately hide any close buttons found
+                            if (node.matches && (node.matches('.plugin-close, .asc-window-close') || 
+                                node.getAttribute('aria-label')?.toLowerCase().includes('close'))) {
+                                hideCloseButton(node);
+                            }
+                            // Also check for close buttons inside the node
+                            const closeButtons = node.querySelectorAll && node.querySelectorAll('.plugin-close, .asc-window-close, [aria-label*="close" i]');
+                            if (closeButtons) {
+                                closeButtons.forEach(btn => hideCloseButton(btn));
+                            }
+                            console.log('Close button or header detected, hiding immediately');
                             setTimeout(findAndSetupCloseButton, 100);
                         }
                     }
@@ -1288,7 +1042,17 @@
                                 );
                                 
                                 if (isCloseButton) {
-                                    console.log('Close button or header detected in parent, re-running setup');
+                                    // Immediately hide any close buttons found in parent
+                                    if (node.matches && (node.matches('.plugin-close, .asc-window-close') || 
+                                        node.getAttribute('aria-label')?.toLowerCase().includes('close'))) {
+                                        hideCloseButton(node);
+                                    }
+                                    // Also check for close buttons inside the node
+                                    const closeButtons = node.querySelectorAll && node.querySelectorAll('.plugin-close, .asc-window-close, [aria-label*="close" i]');
+                                    if (closeButtons) {
+                                        closeButtons.forEach(btn => hideCloseButton(btn));
+                                    }
+                                    console.log('Close button or header detected in parent, hiding immediately');
                                     setTimeout(findAndSetupCloseButton, 100);
                                 }
                             }
@@ -1351,127 +1115,13 @@
             if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
                 window.Asc.plugin.executeMethod("ShowPluginPanel", [], function() {
                     console.log('Plugin panel opened');
-                    // Enforce width and zoom after panel opens (with retries)
-                    enforceInitialValues();
                 }, function(error) {
                     console.warn('ShowPluginPanel not available:', error);
-                    // Still try to enforce values
-                    enforceInitialValues();
                 });
-            } else {
-                // API not ready, but still try to enforce values
-                enforceInitialValues();
             }
         } catch (error) {
             console.warn('Error opening plugin panel:', error);
-            enforceInitialValues();
         }
-    }
-    
-    // Enforce initial width (360) and zoom (80) values with retries
-    // This ensures values are set even if OnlyOffice overwrites them with defaults
-    function enforceInitialValues() {
-        const DEFAULT_WIDTH = 360;
-        const DEFAULT_ZOOM = 80;
-        const WIDTH_KEY = 'de-mainmenu-width';
-        const ZOOM_KEY = 'de-last-zoom';
-        let retryCount = 0;
-        const MAX_RETRIES = 5;
-        const RETRY_DELAY = 500; // 500ms between retries
-        
-        function enforceValues() {
-            try {
-                let storage = null;
-                
-                // Get storage (parent window or current window)
-                if (window.parent && window.parent !== window && window.parent.localStorage) {
-                    try {
-                        storage = window.parent.localStorage;
-                    } catch (e) {
-                        try {
-                            storage = localStorage;
-                        } catch (e2) {
-                            console.warn('Cannot access localStorage for enforcement:', e2);
-                            return;
-                        }
-                    }
-                } else {
-                    try {
-                        storage = localStorage;
-                    } catch (e) {
-                        console.warn('Cannot access localStorage for enforcement:', e);
-                        return;
-                    }
-                }
-                
-                if (!storage) return;
-                
-                // Check and enforce width
-                const currentWidth = storage.getItem(WIDTH_KEY);
-                const widthValue = currentWidth ? parseInt(currentWidth, 10) : null;
-                const isDefaultWidth = widthValue === 300 || widthValue === 315 || !currentWidth;
-                
-                if (isDefaultWidth) {
-                    storage.setItem(WIDTH_KEY, DEFAULT_WIDTH.toString());
-                    console.log('Enforcing panel width to', DEFAULT_WIDTH, 'px (was', currentWidth || 'unset', ')');
-                    
-                    // Also set via API
-                    if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
-                        try {
-                            window.Asc.plugin.executeMethod('SetPluginPanelWidth', [DEFAULT_WIDTH], function() {
-                                console.log('Panel width enforced to', DEFAULT_WIDTH, 'px via API');
-                            }, function(error) {
-                                // Ignore error, localStorage is set
-                            });
-                        } catch (e) {
-                            // Ignore error
-                        }
-                    }
-                }
-                
-                // Check and enforce zoom
-                const currentZoom = storage.getItem(ZOOM_KEY);
-                const zoomValue = currentZoom ? parseInt(currentZoom, 10) : null;
-                const isDefaultZoom = zoomValue === 100 || !currentZoom;
-                
-                if (isDefaultZoom) {
-                    storage.setItem(ZOOM_KEY, DEFAULT_ZOOM.toString());
-                    console.log('Enforcing zoom level to', DEFAULT_ZOOM, '% (was', currentZoom || 'unset', ')');
-                    
-                    // Also try to set via API
-                    if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
-                        try {
-                            window.Asc.plugin.executeMethod('SetZoom', [DEFAULT_ZOOM], function() {
-                                console.log('Zoom level enforced to', DEFAULT_ZOOM, '% via API');
-                            }, function(error) {
-                                // Ignore error, localStorage is set
-                            });
-                        } catch (e) {
-                            // Ignore error
-                        }
-                    }
-                }
-                
-                // Retry if values are still not correct and we haven't exceeded max retries
-                const finalWidth = storage.getItem(WIDTH_KEY);
-                const finalZoom = storage.getItem(ZOOM_KEY);
-                const widthOk = finalWidth && parseInt(finalWidth, 10) === DEFAULT_WIDTH;
-                const zoomOk = finalZoom && parseInt(finalZoom, 10) === DEFAULT_ZOOM;
-                
-                if ((!widthOk || !zoomOk) && retryCount < MAX_RETRIES) {
-                    retryCount++;
-                    console.log('Retrying to enforce values (attempt', retryCount, 'of', MAX_RETRIES, ')');
-                    setTimeout(enforceValues, RETRY_DELAY);
-                } else if (widthOk && zoomOk) {
-                    console.log('Initial values successfully enforced: width =', finalWidth, 'px, zoom =', finalZoom, '%');
-                }
-            } catch (error) {
-                console.warn('Error enforcing initial values:', error);
-            }
-        }
-        
-        // Start enforcement after a short delay to let panel initialize
-        setTimeout(enforceValues, 200);
     }
 
     // Initialize OnlyOffice API helpers
@@ -1532,6 +1182,9 @@
     }
 
     // Function to close/hide the plugin panel programmatically
+    // NOTE: This function uses HidePluginPanel which COLLAPSES the plugin (not permanently closes it)
+    // The collapse functionality is preserved - users can still collapse the plugin via other means
+    // The close button is hidden but collapse functionality remains intact
     window.closePluginPanel = function() {
         console.log('closePluginPanel called');
         
@@ -1543,7 +1196,7 @@
         // Try multiple methods to close the plugin panel
         try {
             if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
-                // Method 1: HidePluginPanel
+                // Method 1: HidePluginPanel - This COLLAPSES the plugin (preserves collapse functionality)
                 window.Asc.plugin.executeMethod("HidePluginPanel", [], function() {
                     console.log('Plugin panel closed via HidePluginPanel');
                 }, function(error) {
@@ -1655,178 +1308,6 @@
         return window.pluginData?.contractId || '';
     };
 
-    // Initialize panel width to 360 on first open if not already set
-    // Returns a promise that resolves when width is set (for waiting before opening panel)
-    function initPanelWidth() {
-        return new Promise(function(resolve) {
-            const DEFAULT_WIDTH = 360;
-            const STORAGE_KEY = 'de-mainmenu-width';
-            
-            try {
-                // Check if width is already set in localStorage
-                let savedWidth = null;
-                
-                // Try to access localStorage (may be in parent window or current window)
-                let storage = null;
-                if (window.parent && window.parent !== window && window.parent.localStorage) {
-                    try {
-                        storage = window.parent.localStorage;
-                        savedWidth = storage.getItem(STORAGE_KEY);
-                    } catch (e) {
-                        // Cross-origin restriction, try current window
-                        try {
-                            storage = localStorage;
-                            savedWidth = storage.getItem(STORAGE_KEY);
-                        } catch (e2) {
-                            console.warn('Cannot access localStorage:', e2);
-                        }
-                    }
-                } else {
-                    try {
-                        storage = localStorage;
-                        savedWidth = storage.getItem(STORAGE_KEY);
-                    } catch (e) {
-                        console.warn('Cannot access localStorage:', e);
-                    }
-                }
-                
-                // Check if width is not set OR if it's set to default value (300) - force set to 360
-                const widthValue = savedWidth ? parseInt(savedWidth, 10) : null;
-                const isDefaultWidth = widthValue === 300 || widthValue === 315; // 315 is config.json default
-                
-                if (!savedWidth || savedWidth === 'null' || savedWidth === '' || isDefaultWidth) {
-                    console.log('Initializing panel width to', DEFAULT_WIDTH, 'px (first time or overriding default)');
-                    
-                    // Force set in localStorage
-                    if (storage) {
-                        storage.setItem(STORAGE_KEY, DEFAULT_WIDTH.toString());
-                    }
-                    
-                    // Also set via OnlyOffice API to ensure it's applied
-                    if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
-                        try {
-                            window.Asc.plugin.executeMethod('SetPluginPanelWidth', [DEFAULT_WIDTH], function() {
-                                console.log('Panel width initialized to', DEFAULT_WIDTH, 'px via API');
-                                resolve();
-                            }, function(error) {
-                                console.warn('Could not set panel width via API, using localStorage only:', error);
-                                // Still resolve even if API call fails, localStorage is set
-                                resolve();
-                            });
-                        } catch (error) {
-                            console.warn('Error setting panel width via API:', error);
-                            resolve();
-                        }
-                    } else {
-                        // API not ready yet, but localStorage is set, so resolve
-                        console.log('OnlyOffice API not ready, but localStorage is set to', DEFAULT_WIDTH);
-                        resolve();
-                    }
-                } else {
-                    console.log('Panel width already set to', savedWidth, 'px (user preference)');
-                    // Width already set to non-default value, resolve immediately
-                    resolve();
-                }
-            } catch (error) {
-                console.warn('Error initializing panel width:', error);
-                // Fallback: try to set via API only
-                if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
-                    try {
-                        window.Asc.plugin.executeMethod('SetPluginPanelWidth', [DEFAULT_WIDTH], function() {
-                            console.log('Panel width set to', DEFAULT_WIDTH, 'px via API (fallback)');
-                            resolve();
-                        }, function(error) {
-                            console.warn('Could not set panel width:', error);
-                            resolve();
-                        });
-                    } catch (e) {
-                        console.warn('Error in fallback panel width setting:', e);
-                        resolve();
-                    }
-                } else {
-                    resolve();
-                }
-            }
-        });
-    }
-
-    // Initialize zoom level to 80 on first open if not already set
-    // Returns a promise that resolves when zoom is set
-    function initZoomLevel() {
-        return new Promise(function(resolve) {
-            const DEFAULT_ZOOM = 80;
-            const STORAGE_KEY = 'de-last-zoom';
-            
-            try {
-                // Check if zoom is already set in localStorage
-                let savedZoom = null;
-                
-                // Try to access localStorage (may be in parent window or current window)
-                let storage = null;
-                if (window.parent && window.parent !== window && window.parent.localStorage) {
-                    try {
-                        storage = window.parent.localStorage;
-                        savedZoom = storage.getItem(STORAGE_KEY);
-                    } catch (e) {
-                        // Cross-origin restriction, try current window
-                        try {
-                            storage = localStorage;
-                            savedZoom = storage.getItem(STORAGE_KEY);
-                        } catch (e2) {
-                            console.warn('Cannot access localStorage for zoom:', e2);
-                        }
-                    }
-                } else {
-                    try {
-                        storage = localStorage;
-                        savedZoom = storage.getItem(STORAGE_KEY);
-                    } catch (e) {
-                        console.warn('Cannot access localStorage for zoom:', e);
-                    }
-                }
-                
-                // Check if zoom is not set OR if it's set to default value (100) - force set to 80
-                const zoomValue = savedZoom ? parseInt(savedZoom, 10) : null;
-                const isDefaultZoom = zoomValue === 100;
-                
-                if (!savedZoom || savedZoom === 'null' || savedZoom === '' || isDefaultZoom) {
-                    console.log('Initializing zoom level to', DEFAULT_ZOOM, '% (first time or overriding default)');
-                    
-                    // Force set in localStorage
-                    if (storage) {
-                        storage.setItem(STORAGE_KEY, DEFAULT_ZOOM.toString());
-                    }
-                    
-                    // Also try to set via OnlyOffice API if available
-                    if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
-                        try {
-                            // Try SetZoom method
-                            window.Asc.plugin.executeMethod('SetZoom', [DEFAULT_ZOOM], function() {
-                                console.log('Zoom level initialized to', DEFAULT_ZOOM, '% via API');
-                            }, function(error) {
-                                // API method may not exist, which is fine - localStorage is the primary method
-                                console.log('Zoom set via localStorage (SetZoom API not available, which is normal)');
-                            });
-                        } catch (error) {
-                            // API method may not exist, which is fine - localStorage is the primary method
-                            console.log('Zoom set via localStorage (API method not available, which is normal)');
-                        }
-                    }
-                    
-                    // Resolve immediately since localStorage is the primary storage method
-                    resolve();
-                } else {
-                    console.log('Zoom level already set to', savedZoom, '% (user preference)');
-                    // Zoom already set to non-default value, resolve immediately
-                    resolve();
-                }
-            } catch (error) {
-                console.warn('Error initializing zoom level:', error);
-                resolve();
-            }
-        });
-    }
-
     // Initialize resize handle for panel resizing
     function initResizeHandle() {
         const resizeHandle = document.getElementById('resize-handle');
@@ -1859,11 +1340,7 @@
             if (!isResizing) return;
 
             const diff = startX - e.clientX;
-            // Minimum width is 360px - users cannot reduce below 360
-            // Maximum width is 800px - users can increase up to 800
-            const MIN_WIDTH = 360;
-            const MAX_WIDTH = 800;
-            const newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, startWidth + diff));
+            const newWidth = Math.max(250, Math.min(800, startWidth + diff));
 
             if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
                 try {
