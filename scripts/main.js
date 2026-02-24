@@ -276,6 +276,9 @@
         // Initialize resize handle
         initResizeHandle();
         
+        // Set initial panel width to 365px (minimum width)
+        setInitialPanelWidth(365);
+        
         // Set up close button event listeners
         setupCloseButtonListeners();
         
@@ -1278,7 +1281,7 @@
             if (!isResizing) return;
 
             const diff = startX - e.clientX;
-            const newWidth = Math.max(250, Math.min(800, startWidth + diff));
+            const newWidth = Math.max(365, Math.min(800, startWidth + diff));
 
             if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
                 try {
@@ -1296,12 +1299,16 @@
         }
 
         function resizeViaCSS(newWidth) {
+            const minWidth = 365; // Minimum width for the panel
+            const actualWidth = Math.max(minWidth, newWidth); // Ensure width is at least minimum
+            
             const iframe = window.frameElement;
             if (iframe) {
-                iframe.style.width = newWidth + 'px';
+                iframe.style.width = actualWidth + 'px';
+                iframe.style.minWidth = minWidth + 'px'; // Set minimum width on iframe
             }
-            document.body.style.minWidth = newWidth + 'px';
-            document.body.style.width = newWidth + 'px';
+            document.body.style.minWidth = minWidth + 'px'; // Ensure body has minimum width
+            document.body.style.width = actualWidth + 'px';
         }
 
         function handleMouseUp() {
@@ -1316,6 +1323,41 @@
         resizeHandle.addEventListener('selectstart', function(e) {
             e.preventDefault();
         });
+    }
+
+    // Set initial panel width (called on plugin initialization)
+    function setInitialPanelWidth(width) {
+        const minWidth = 365; // Minimum width for the panel
+        const targetWidth = Math.max(minWidth, width);
+        
+        // Try to set width via OnlyOffice API first
+        if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
+            try {
+                window.Asc.plugin.executeMethod('SetPluginPanelWidth', [targetWidth], function() {
+                    console.log('Initial panel width set to:', targetWidth);
+                }, function(error) {
+                    console.warn('Failed to set panel width via API, using CSS fallback:', error);
+                    setPanelWidthViaCSS(targetWidth);
+                });
+            } catch (error) {
+                console.warn('Error setting panel width via API, using CSS fallback:', error);
+                setPanelWidthViaCSS(targetWidth);
+            }
+        } else {
+            // Fallback to CSS if API is not available
+            setPanelWidthViaCSS(targetWidth);
+        }
+    }
+
+    // Helper function to set panel width via CSS
+    function setPanelWidthViaCSS(width) {
+        const iframe = window.frameElement;
+        if (iframe) {
+            iframe.style.width = width + 'px';
+            iframe.style.minWidth = '365px'; // Ensure minimum width
+        }
+        document.body.style.minWidth = '365px'; // Ensure body has minimum width
+        document.body.style.width = width + 'px';
     }
 
     // Expose activeContentData for use by feature modules
