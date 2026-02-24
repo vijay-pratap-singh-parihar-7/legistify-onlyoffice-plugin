@@ -210,6 +210,21 @@
         console.log('AI Contract Assistant Plugin initialized');
         console.log('Init function received data parameter:', data);
         
+        // Force panel width to 360px on initialization (with timeout to ensure editor layout is ready)
+        // This ensures the panel opens at the correct width even in fresh browser sessions
+        setTimeout(function() {
+            try {
+                if (window.Asc && window.Asc.plugin && window.Asc.plugin.resizeWindow) {
+                    window.Asc.plugin.resizeWindow(360, window.innerHeight);
+                    console.log('Panel width forced to 360px via resizeWindow');
+                } else {
+                    console.warn('resizeWindow method not available');
+                }
+            } catch (error) {
+                console.warn('Error calling resizeWindow:', error);
+            }
+        }, 100);
+        
         // Get plugin initialization data (passed from backend)
         // OnlyOffice may pass initData in different formats depending on pluginsData structure
         let initData = null;
@@ -389,16 +404,20 @@
                 // Open plugin panel on left side
                 openPluginPanel();
                 
-                // Initialize default view
-                handleTabChange('Playbook');
+                // Restore previously saved view or default to Playbook
+                restoreActiveView(function(savedView) {
+                    handleTabChange(savedView);
+                });
             }, 100);
         }).catch(function(error) {
             console.warn('Error initializing panel width/zoom, opening panel anyway:', error);
             // Open plugin panel even if initialization failed
             openPluginPanel();
             
-            // Initialize default view
-            handleTabChange('Playbook');
+            // Restore previously saved view or default to Playbook
+            restoreActiveView(function(savedView) {
+                handleTabChange(savedView);
+            });
         });
         };
         
@@ -452,6 +471,58 @@
         updateTabUI();
     }
 
+    // Save active view state to OnlyOffice plugin storage
+    function saveActiveView(viewName) {
+        try {
+            if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
+                window.Asc.plugin.executeMethod("SetPluginData", ["activeView", viewName], function() {
+                    console.log('Active view saved:', viewName);
+                }, function(error) {
+                    console.warn('Failed to save active view:', error);
+                });
+            }
+        } catch (error) {
+            console.warn('Error saving active view:', error);
+        }
+    }
+
+    // Restore active view state from OnlyOffice plugin storage
+    function restoreActiveView(callback) {
+        try {
+            if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
+                window.Asc.plugin.executeMethod(
+                    "GetPluginData",
+                    ["activeView"],
+                    function(result) {
+                        // Validate that the saved view is one of the valid tabs
+                        const validViews = ['Playbook', 'ReviewHub', 'Assistant'];
+                        const savedView = result && validViews.includes(result) ? result : "Playbook";
+                        console.log('Restoring active view:', savedView, result ? '(saved: ' + result + ')' : '(no saved state)');
+                        if (callback) {
+                            callback(savedView);
+                        }
+                    },
+                    function(error) {
+                        console.warn('Failed to get active view, using default:', error);
+                        if (callback) {
+                            callback("Playbook"); // Default to "Playbook" (home) on error
+                        }
+                    }
+                );
+            } else {
+                // API not ready, use default
+                if (callback) {
+                    callback("Playbook"); // Default to "Playbook" (home)
+                }
+            }
+        } catch (error) {
+            console.warn('Error restoring active view:', error);
+            if (callback) {
+                callback("Playbook"); // Default to "Playbook" (home) on error
+            }
+        }
+    }
+
     // Handle tab change - matches MS Editor App.jsx onTabChange
     window.handleTabChange = function(tabName) {
         // Store previous tab before switching (only if not already Assistant)
@@ -461,6 +532,9 @@
         
         selectedTab = tabName;
         updateTabUI();
+        
+        // Save active view state whenever user switches tabs
+        saveActiveView(tabName);
         
         // Hide review hub immediately when switching tabs
         const reviewHubView = document.getElementById('review-hub-view');
@@ -941,7 +1015,7 @@
     // Remove OnlyOffice plugin close button
     function removeCloseButton() {
         const removeCloseButtonElements = function() {
-            // Selectors for close button elements - be specific to avoid removing collapse button
+            // Selectors for close button elements
             const selectors = [
                 '.plugin-close',
                 '.plugin-close.close',
@@ -950,50 +1024,29 @@
                 '.plugin-close .btn-close',
                 '.asc-window-close',
                 '.asc-window-button-close',
+                'button[aria-label*="close" i]',
+                'button[title*="close" i]',
+                'button[id^="asc-gen"][aria-label*="close" i]',
                 '.current-plugin-header .plugin-close',
-                '.asc-window-header .plugin-close'
+                '.current-plugin-header button[aria-label*="close" i]',
+                '.asc-window-header .plugin-close',
+                '.asc-window-header button[aria-label*="close" i]'
             ];
-            
-            // Helper function to check if element is actually a close button (not collapse)
-            const isCloseButton = function(el) {
-                // Must have one of these specific classes
-                if (el.classList.contains('plugin-close') || 
-                    el.classList.contains('asc-window-close') ||
-                    el.classList.contains('asc-window-button-close') ||
-                    el.closest('.plugin-close')) {
-                    return true;
-                }
-                
-                // Check aria-label - must be specifically "close plugin" or just "close" (not "collapse")
-                const ariaLabel = el.getAttribute('aria-label')?.toLowerCase() || '';
-                const title = el.getAttribute('title')?.toLowerCase() || '';
-                
-                // Exclude collapse/minimize buttons
-                if (ariaLabel.includes('collapse') || ariaLabel.includes('minimize') || 
-                    title.includes('collapse') || title.includes('minimize')) {
-                    return false;
-                }
-                
-                // Only match if aria-label is exactly "close plugin" or starts with "close"
-                if (ariaLabel === 'close plugin' || ariaLabel.startsWith('close plugin') ||
-                    (ariaLabel === 'close' && !ariaLabel.includes('collapse'))) {
-                    return true;
-                }
-                
-                // Check if it's inside .plugin-close container
-                if (el.closest('.plugin-close')) {
-                    return true;
-                }
-                
-                return false;
-            };
             
             let removed = false;
             selectors.forEach(selector => {
                 try {
                     const elements = document.querySelectorAll(selector);
                     elements.forEach(el => {
-                        if (isCloseButton(el)) {
+                        // Check if it's actually a close button
+                        const isCloseButton = el.getAttribute('aria-label')?.toLowerCase().includes('close') ||
+                                           el.getAttribute('title')?.toLowerCase().includes('close') ||
+                                           el.classList.contains('plugin-close') ||
+                                           el.classList.contains('close') ||
+                                           el.classList.contains('asc-window-close') ||
+                                           el.closest('.plugin-close');
+                        
+                        if (isCloseButton) {
                             el.style.display = 'none';
                             el.style.visibility = 'hidden';
                             el.style.opacity = '0';
@@ -1019,41 +1072,18 @@
             try {
                 const parentDoc = window.parent?.document || window.top?.document;
                 if (parentDoc) {
-                    // Helper function for parent document check
-                    const isCloseButtonParent = function(el) {
-                        if (el.classList.contains('plugin-close') || 
-                            el.classList.contains('asc-window-close') ||
-                            el.classList.contains('asc-window-button-close') ||
-                            el.closest('.plugin-close')) {
-                            return true;
-                        }
-                        
-                        const ariaLabel = el.getAttribute('aria-label')?.toLowerCase() || '';
-                        const title = el.getAttribute('title')?.toLowerCase() || '';
-                        
-                        // Exclude collapse/minimize buttons
-                        if (ariaLabel.includes('collapse') || ariaLabel.includes('minimize') || 
-                            title.includes('collapse') || title.includes('minimize')) {
-                            return false;
-                        }
-                        
-                        if (ariaLabel === 'close plugin' || ariaLabel.startsWith('close plugin') ||
-                            (ariaLabel === 'close' && !ariaLabel.includes('collapse'))) {
-                            return true;
-                        }
-                        
-                        if (el.closest('.plugin-close')) {
-                            return true;
-                        }
-                        
-                        return false;
-                    };
-                    
                     selectors.forEach(selector => {
                         try {
                             const elements = parentDoc.querySelectorAll(selector);
                             elements.forEach(el => {
-                                if (isCloseButtonParent(el)) {
+                                const isCloseButton = el.getAttribute('aria-label')?.toLowerCase().includes('close') ||
+                                                   el.getAttribute('title')?.toLowerCase().includes('close') ||
+                                                   el.classList.contains('plugin-close') ||
+                                                   el.classList.contains('close') ||
+                                                   el.classList.contains('asc-window-close') ||
+                                                   el.closest('.plugin-close');
+                                
+                                if (isCloseButton) {
                                     el.style.display = 'none';
                                     el.style.visibility = 'hidden';
                                     el.style.opacity = '0';
@@ -1090,21 +1120,10 @@
             mutations.forEach(function(mutation) {
                 mutation.addedNodes.forEach(function(node) {
                     if (node.nodeType === 1) { // Element node
-                        // Only check for specific close button selectors, not generic "close" text
                         const isCloseButton = node.matches && (
-                            node.matches('.plugin-close, .plugin-close.close, .asc-window-close, .asc-window-button-close') ||
-                            (node.querySelector && node.querySelector('.plugin-close, .asc-window-close, .asc-window-button-close'))
+                            node.matches('.plugin-close, .plugin-close.close, .asc-window-close, [aria-label*="close" i], [title*="close" i]') ||
+                            (node.querySelector && node.querySelector('.plugin-close, .asc-window-close, [aria-label*="close" i]'))
                         );
-                        
-                        // Also check aria-label but exclude collapse buttons
-                        if (!isCloseButton && node.matches && node.matches('[aria-label], [title]')) {
-                            const ariaLabel = node.getAttribute('aria-label')?.toLowerCase() || '';
-                            const title = node.getAttribute('title')?.toLowerCase() || '';
-                            if ((ariaLabel === 'close plugin' || ariaLabel.startsWith('close plugin')) &&
-                                !ariaLabel.includes('collapse') && !title.includes('collapse')) {
-                                shouldRemove = true;
-                            }
-                        }
                         
                         if (isCloseButton) {
                             shouldRemove = true;
@@ -1135,21 +1154,10 @@
                     mutations.forEach(function(mutation) {
                         mutation.addedNodes.forEach(function(node) {
                             if (node.nodeType === 1) {
-                                // Only check for specific close button selectors
                                 const isCloseButton = node.matches && (
-                                    node.matches('.plugin-close, .plugin-close.close, .asc-window-close, .asc-window-button-close') ||
-                                    (node.querySelector && node.querySelector('.plugin-close, .asc-window-close, .asc-window-button-close'))
+                                    node.matches('.plugin-close, .plugin-close.close, .asc-window-close, [aria-label*="close" i], [title*="close" i]') ||
+                                    (node.querySelector && node.querySelector('.plugin-close, .asc-window-close, [aria-label*="close" i]'))
                                 );
-                                
-                                // Also check aria-label but exclude collapse buttons
-                                if (!isCloseButton && node.matches && node.matches('[aria-label], [title]')) {
-                                    const ariaLabel = node.getAttribute('aria-label')?.toLowerCase() || '';
-                                    const title = node.getAttribute('title')?.toLowerCase() || '';
-                                    if ((ariaLabel === 'close plugin' || ariaLabel.startsWith('close plugin')) &&
-                                        !ariaLabel.includes('collapse') && !title.includes('collapse')) {
-                                        shouldRemove = true;
-                                    }
-                                }
                                 
                                 if (isCloseButton) {
                                     shouldRemove = true;

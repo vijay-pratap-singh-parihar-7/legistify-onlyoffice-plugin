@@ -76,7 +76,7 @@ body {
     height: 16px;
 }
 
-/* Hide OnlyOffice Plugin Close Button - Be specific to avoid hiding collapse button */
+/* Hide OnlyOffice Plugin Close Button */
 .asc-window-close,
 .asc-window-button-close,
 .plugin-close,
@@ -84,22 +84,19 @@ body {
 .plugin-close button,
 .plugin-close .btn,
 .plugin-close .btn-close,
+.current-plugin-header button:last-child,
 .current-plugin-header .asc-window-close,
 .current-plugin-header .plugin-close,
 .asc-window-header .asc-window-close,
+.asc-window-header button:last-child,
 .asc-window-header .plugin-close,
-/* Only match buttons with specific "close plugin" aria-label, not generic "close" */
-button[aria-label="Close plugin" i],
-button[aria-label^="Close plugin" i],
-button[title="Close plugin" i],
-button[title^="Close plugin" i],
-button[id^="asc-gen"][aria-label="Close plugin" i],
-button[id^="asc-gen"][aria-label^="Close plugin" i],
-[id^="asc-gen"][aria-label="Close plugin" i][role="button"],
-[id^="asc-gen"][aria-label^="Close plugin" i][role="button"],
-/* Exclude collapse/minimize buttons */
-button.btn-toolbar[aria-label="Close plugin" i],
-button.btn-toolbar[aria-label^="Close plugin" i] {
+button[aria-label*="close" i],
+button[title*="close" i],
+button[id^="asc-gen"][aria-label*="close" i],
+[id^="asc-gen"][aria-label*="close" i][role="button"],
+[aria-label*="close" i][role="button"],
+[title*="close" i][role="button"],
+button.btn-toolbar[aria-label*="close" i] {
     display: none !important;
     visibility: hidden !important;
     opacity: 0 !important;
