@@ -282,6 +282,9 @@
         // Set up close button event listeners
         setupCloseButtonListeners();
         
+        // Initialize panel width to 360 if not already set (before opening panel)
+        initPanelWidth();
+        
         // Open plugin panel on left side
         openPluginPanel();
         
@@ -1427,6 +1430,72 @@
     window.getContractId = function() {
         return window.pluginData?.contractId || '';
     };
+
+    // Initialize panel width to 360 on first open if not already set
+    function initPanelWidth() {
+        const DEFAULT_WIDTH = 360;
+        const STORAGE_KEY = 'de-mainmenu-width';
+        
+        try {
+            // Check if width is already set in localStorage
+            let savedWidth = null;
+            
+            // Try to access localStorage (may be in parent window or current window)
+            let storage = null;
+            if (window.parent && window.parent.localStorage) {
+                try {
+                    storage = window.parent.localStorage;
+                    savedWidth = storage.getItem(STORAGE_KEY);
+                } catch (e) {
+                    // Cross-origin restriction, try current window
+                    storage = localStorage;
+                    savedWidth = storage.getItem(STORAGE_KEY);
+                }
+            } else {
+                storage = localStorage;
+                savedWidth = storage.getItem(STORAGE_KEY);
+            }
+            
+            // If width is not set, initialize it to 360
+            if (!savedWidth || savedWidth === 'null' || savedWidth === '') {
+                console.log('Initializing panel width to', DEFAULT_WIDTH, 'px (first time)');
+                
+                // Set in localStorage
+                if (storage) {
+                    storage.setItem(STORAGE_KEY, DEFAULT_WIDTH.toString());
+                }
+                
+                // Also set via OnlyOffice API to ensure it's applied
+                if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
+                    try {
+                        window.Asc.plugin.executeMethod('SetPluginPanelWidth', [DEFAULT_WIDTH], function() {
+                            console.log('Panel width initialized to', DEFAULT_WIDTH, 'px via API');
+                        }, function(error) {
+                            console.warn('Could not set panel width via API, using localStorage only:', error);
+                        });
+                    } catch (error) {
+                        console.warn('Error setting panel width via API:', error);
+                    }
+                }
+            } else {
+                console.log('Panel width already set to', savedWidth, 'px');
+            }
+        } catch (error) {
+            console.warn('Error initializing panel width:', error);
+            // Fallback: try to set via API only
+            if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
+                try {
+                    window.Asc.plugin.executeMethod('SetPluginPanelWidth', [DEFAULT_WIDTH], function() {
+                        console.log('Panel width set to', DEFAULT_WIDTH, 'px via API (fallback)');
+                    }, function(error) {
+                        console.warn('Could not set panel width:', error);
+                    });
+                } catch (e) {
+                    console.warn('Error in fallback panel width setting:', e);
+                }
+            }
+        }
+    }
 
     // Initialize resize handle for panel resizing
     function initResizeHandle() {
