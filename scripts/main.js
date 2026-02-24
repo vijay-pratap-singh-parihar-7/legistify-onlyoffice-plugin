@@ -210,25 +210,6 @@
         console.log('AI Contract Assistant Plugin initialized');
         console.log('Init function received data parameter:', data);
         
-        // Force panel width to 360px on initialization (with timeout to ensure editor layout is ready)
-        // For docked panel plugins, we must use executeMethod("ResizeWindow", ...) instead of resizeWindow()
-        // This ensures the panel opens at the correct width even in fresh browser sessions
-        setTimeout(function() {
-            try {
-                if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
-                    window.Asc.plugin.executeMethod("ResizeWindow", [360, 0], function() {
-                        console.log('Panel width forced to 360px via executeMethod("ResizeWindow")');
-                    }, function(error) {
-                        console.warn('ResizeWindow failed:', error);
-                    });
-                } else {
-                    console.warn('executeMethod not available');
-                }
-            } catch (error) {
-                console.warn('Error calling ResizeWindow:', error);
-            }
-        }, 150);
-        
         // Get plugin initialization data (passed from backend)
         // OnlyOffice may pass initData in different formats depending on pluginsData structure
         let initData = null;
@@ -397,68 +378,28 @@
         // Set up close button event listeners
         setupCloseButtonListeners();
         
-        // Set default view immediately (synchronously) - don't block init
-        handleTabChange("Playbook");
-        
-        // Initialize panel width to 360 and zoom to 80 if not already set
-        // Wait for both to be set before potentially opening panel
+        // Initialize panel width to 360 and zoom to 80 if not already set (before opening panel)
+        // Wait for both to be set before opening panel to ensure correct initial values
         Promise.all([
             initPanelWidth(),
             initZoomLevel()
         ]).then(function() {
-            // Only auto-open panel once per browser session to avoid interfering with collapse button
-            // Check if we've already auto-opened in this session
-            const SESSION_KEY = 'onlyoffice-plugin-auto-opened';
-            const hasAutoOpened = sessionStorage.getItem(SESSION_KEY);
-            
-            if (!hasAutoOpened) {
-                // Small delay to ensure width and zoom are applied before opening panel
-                setTimeout(function() {
-                    // Open plugin panel on left side (only once per session)
-                    openPluginPanel();
-                    // Mark that we've auto-opened in this session
-                    try {
-                        sessionStorage.setItem(SESSION_KEY, 'true');
-                    } catch (e) {
-                        // sessionStorage may not be available, ignore
-                    }
-                }, 100);
-            } else {
-                console.log('Panel already auto-opened in this session, skipping auto-open');
-            }
+            // Small delay to ensure width and zoom are applied before opening panel
+            setTimeout(function() {
+                // Open plugin panel on left side
+                openPluginPanel();
+                
+                // Initialize default view
+                handleTabChange('Playbook');
+            }, 100);
         }).catch(function(error) {
-            console.warn('Error initializing panel width/zoom:', error);
-            // Don't auto-open on error - let OnlyOffice handle panel state
+            console.warn('Error initializing panel width/zoom, opening panel anyway:', error);
+            // Open plugin panel even if initialization failed
+            openPluginPanel();
+            
+            // Initialize default view
+            handleTabChange('Playbook');
         });
-        
-        // Restore saved view state safely after editor lifecycle is stable
-        // This must be delayed to avoid interfering with OnlyOffice's collapse button
-        setTimeout(function() {
-            try {
-                if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
-                    window.Asc.plugin.executeMethod(
-                        "GetPluginData",
-                        ["activeView"],
-                        function(result) {
-                            // Validate that the saved view is one of the valid tabs
-                            const validViews = ["Playbook", "ReviewHub", "Assistant"];
-                            const savedView = result && validViews.includes(result) ? result : "Playbook";
-                            if (savedView !== "Playbook") {
-                                // Only restore if different from default to avoid unnecessary tab change
-                                handleTabChange(savedView);
-                            }
-                        },
-                        function(error) {
-                            // Silently fail - default view already set
-                            console.log('No saved view found, using default');
-                        }
-                    );
-                }
-            } catch (error) {
-                // Silently fail - default view already set
-                console.log('Error restoring view, using default');
-            }
-        }, 150);
         };
         
         // Plugin execution complete callback
@@ -511,58 +452,6 @@
         updateTabUI();
     }
 
-    // Save active view state to OnlyOffice plugin storage
-    function saveActiveView(viewName) {
-        try {
-            if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
-                window.Asc.plugin.executeMethod("SetPluginData", ["activeView", viewName], function() {
-                    console.log('Active view saved:', viewName);
-                }, function(error) {
-                    console.warn('Failed to save active view:', error);
-                });
-            }
-        } catch (error) {
-            console.warn('Error saving active view:', error);
-        }
-    }
-
-    // Restore active view state from OnlyOffice plugin storage
-    function restoreActiveView(callback) {
-        try {
-            if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
-                window.Asc.plugin.executeMethod(
-                    "GetPluginData",
-                    ["activeView"],
-                    function(result) {
-                        // Validate that the saved view is one of the valid tabs
-                        const validViews = ['Playbook', 'ReviewHub', 'Assistant'];
-                        const savedView = result && validViews.includes(result) ? result : "Playbook";
-                        console.log('Restoring active view:', savedView, result ? '(saved: ' + result + ')' : '(no saved state)');
-                        if (callback) {
-                            callback(savedView);
-                        }
-                    },
-                    function(error) {
-                        console.warn('Failed to get active view, using default:', error);
-                        if (callback) {
-                            callback("Playbook"); // Default to "Playbook" (home) on error
-                        }
-                    }
-                );
-            } else {
-                // API not ready, use default
-                if (callback) {
-                    callback("Playbook"); // Default to "Playbook" (home)
-                }
-            }
-        } catch (error) {
-            console.warn('Error restoring active view:', error);
-            if (callback) {
-                callback("Playbook"); // Default to "Playbook" (home) on error
-            }
-        }
-    }
-
     // Handle tab change - matches MS Editor App.jsx onTabChange
     window.handleTabChange = function(tabName) {
         // Store previous tab before switching (only if not already Assistant)
@@ -572,9 +461,6 @@
         
         selectedTab = tabName;
         updateTabUI();
-        
-        // Save active view state whenever user switches tabs
-        saveActiveView(tabName);
         
         // Hide review hub immediately when switching tabs
         const reviewHubView = document.getElementById('review-hub-view');
