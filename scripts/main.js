@@ -276,6 +276,9 @@
         // Initialize resize handle
         initResizeHandle();
         
+        // Remove OnlyOffice close button
+        removeCloseButton();
+        
         // Set up close button event listeners
         setupCloseButtonListeners();
         
@@ -820,6 +823,185 @@
                 }
             }
         });
+    }
+
+    // Remove OnlyOffice plugin close button
+    function removeCloseButton() {
+        const removeCloseButtonElements = function() {
+            // Selectors for close button elements
+            const selectors = [
+                '.plugin-close',
+                '.plugin-close.close',
+                '.plugin-close button',
+                '.plugin-close .btn',
+                '.plugin-close .btn-close',
+                '.asc-window-close',
+                '.asc-window-button-close',
+                'button[aria-label*="close" i]',
+                'button[title*="close" i]',
+                'button[id^="asc-gen"][aria-label*="close" i]',
+                '.current-plugin-header .plugin-close',
+                '.current-plugin-header button[aria-label*="close" i]',
+                '.asc-window-header .plugin-close',
+                '.asc-window-header button[aria-label*="close" i]'
+            ];
+            
+            let removed = false;
+            selectors.forEach(selector => {
+                try {
+                    const elements = document.querySelectorAll(selector);
+                    elements.forEach(el => {
+                        // Check if it's actually a close button
+                        const isCloseButton = el.getAttribute('aria-label')?.toLowerCase().includes('close') ||
+                                           el.getAttribute('title')?.toLowerCase().includes('close') ||
+                                           el.classList.contains('plugin-close') ||
+                                           el.classList.contains('close') ||
+                                           el.classList.contains('asc-window-close') ||
+                                           el.closest('.plugin-close');
+                        
+                        if (isCloseButton) {
+                            el.style.display = 'none';
+                            el.style.visibility = 'hidden';
+                            el.style.opacity = '0';
+                            el.style.pointerEvents = 'none';
+                            el.style.width = '0';
+                            el.style.height = '0';
+                            el.style.margin = '0';
+                            el.style.padding = '0';
+                            // Optionally remove from DOM
+                            if (el.parentNode) {
+                                el.parentNode.removeChild(el);
+                            }
+                            removed = true;
+                            console.log('Removed close button element:', selector);
+                        }
+                    });
+                } catch (e) {
+                    // Ignore errors
+                }
+            });
+            
+            // Also check parent document
+            try {
+                const parentDoc = window.parent?.document || window.top?.document;
+                if (parentDoc) {
+                    selectors.forEach(selector => {
+                        try {
+                            const elements = parentDoc.querySelectorAll(selector);
+                            elements.forEach(el => {
+                                const isCloseButton = el.getAttribute('aria-label')?.toLowerCase().includes('close') ||
+                                                   el.getAttribute('title')?.toLowerCase().includes('close') ||
+                                                   el.classList.contains('plugin-close') ||
+                                                   el.classList.contains('close') ||
+                                                   el.classList.contains('asc-window-close') ||
+                                                   el.closest('.plugin-close');
+                                
+                                if (isCloseButton) {
+                                    el.style.display = 'none';
+                                    el.style.visibility = 'hidden';
+                                    el.style.opacity = '0';
+                                    el.style.pointerEvents = 'none';
+                                    el.style.width = '0';
+                                    el.style.height = '0';
+                                    el.style.margin = '0';
+                                    el.style.padding = '0';
+                                    if (el.parentNode) {
+                                        el.parentNode.removeChild(el);
+                                    }
+                                    removed = true;
+                                    console.log('Removed close button element from parent:', selector);
+                                }
+                            });
+                        } catch (e) {
+                            // Ignore errors
+                        }
+                    });
+                }
+            } catch (e) {
+                // Cross-origin or other error, ignore
+            }
+            
+            return removed;
+        };
+        
+        // Try to remove immediately
+        removeCloseButtonElements();
+        
+        // Set up MutationObserver to watch for dynamically added close buttons
+        const observer = new MutationObserver(function(mutations) {
+            let shouldRemove = false;
+            mutations.forEach(function(mutation) {
+                mutation.addedNodes.forEach(function(node) {
+                    if (node.nodeType === 1) { // Element node
+                        const isCloseButton = node.matches && (
+                            node.matches('.plugin-close, .plugin-close.close, .asc-window-close, [aria-label*="close" i], [title*="close" i]') ||
+                            (node.querySelector && node.querySelector('.plugin-close, .asc-window-close, [aria-label*="close" i]'))
+                        );
+                        
+                        if (isCloseButton) {
+                            shouldRemove = true;
+                        }
+                    }
+                });
+            });
+            
+            if (shouldRemove) {
+                setTimeout(removeCloseButtonElements, 50);
+            }
+        });
+        
+        // Observe document body
+        if (document.body) {
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+        }
+        
+        // Also observe parent document if accessible
+        try {
+            const parentDoc = window.parent?.document || window.top?.document;
+            if (parentDoc && parentDoc.body) {
+                const parentObserver = new MutationObserver(function(mutations) {
+                    let shouldRemove = false;
+                    mutations.forEach(function(mutation) {
+                        mutation.addedNodes.forEach(function(node) {
+                            if (node.nodeType === 1) {
+                                const isCloseButton = node.matches && (
+                                    node.matches('.plugin-close, .plugin-close.close, .asc-window-close, [aria-label*="close" i], [title*="close" i]') ||
+                                    (node.querySelector && node.querySelector('.plugin-close, .asc-window-close, [aria-label*="close" i]'))
+                                );
+                                
+                                if (isCloseButton) {
+                                    shouldRemove = true;
+                                }
+                            }
+                        });
+                    });
+                    
+                    if (shouldRemove) {
+                        setTimeout(removeCloseButtonElements, 50);
+                    }
+                });
+                
+                parentObserver.observe(parentDoc.body, {
+                    childList: true,
+                    subtree: true
+                });
+            }
+        } catch (e) {
+            // Cross-origin or other error, ignore
+        }
+        
+        // Retry removal periodically for the first few seconds
+        let attempts = 0;
+        const maxAttempts = 20; // 2 seconds
+        const interval = setInterval(function() {
+            attempts++;
+            if (removeCloseButtonElements() || attempts >= maxAttempts) {
+                clearInterval(interval);
+            }
+        }, 100);
     }
 
     // Set up close button event listeners

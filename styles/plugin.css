@@ -80,18 +80,31 @@ body {
 .asc-window-close,
 .asc-window-button-close,
 .plugin-close,
+.plugin-close.close,
+.plugin-close button,
+.plugin-close .btn,
+.plugin-close .btn-close,
 .current-plugin-header button:last-child,
 .current-plugin-header .asc-window-close,
+.current-plugin-header .plugin-close,
 .asc-window-header .asc-window-close,
 .asc-window-header button:last-child,
+.asc-window-header .plugin-close,
 button[aria-label*="close" i],
 button[title*="close" i],
+button[id^="asc-gen"][aria-label*="close" i],
+[id^="asc-gen"][aria-label*="close" i][role="button"],
 [aria-label*="close" i][role="button"],
-[title*="close" i][role="button"] {
+[title*="close" i][role="button"],
+button.btn-toolbar[aria-label*="close" i] {
     display: none !important;
     visibility: hidden !important;
     opacity: 0 !important;
     pointer-events: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 /* Tab List - Matches MS Editor App.jsx tabList - Dynamic Resizing */
