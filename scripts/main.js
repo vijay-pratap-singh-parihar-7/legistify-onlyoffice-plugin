@@ -941,7 +941,7 @@
     // Remove OnlyOffice plugin close button
     function removeCloseButton() {
         const removeCloseButtonElements = function() {
-            // Selectors for close button elements
+            // Selectors for close button elements - be specific to avoid removing collapse button
             const selectors = [
                 '.plugin-close',
                 '.plugin-close.close',
@@ -950,29 +950,50 @@
                 '.plugin-close .btn-close',
                 '.asc-window-close',
                 '.asc-window-button-close',
-                'button[aria-label*="close" i]',
-                'button[title*="close" i]',
-                'button[id^="asc-gen"][aria-label*="close" i]',
                 '.current-plugin-header .plugin-close',
-                '.current-plugin-header button[aria-label*="close" i]',
-                '.asc-window-header .plugin-close',
-                '.asc-window-header button[aria-label*="close" i]'
+                '.asc-window-header .plugin-close'
             ];
+            
+            // Helper function to check if element is actually a close button (not collapse)
+            const isCloseButton = function(el) {
+                // Must have one of these specific classes
+                if (el.classList.contains('plugin-close') || 
+                    el.classList.contains('asc-window-close') ||
+                    el.classList.contains('asc-window-button-close') ||
+                    el.closest('.plugin-close')) {
+                    return true;
+                }
+                
+                // Check aria-label - must be specifically "close plugin" or just "close" (not "collapse")
+                const ariaLabel = el.getAttribute('aria-label')?.toLowerCase() || '';
+                const title = el.getAttribute('title')?.toLowerCase() || '';
+                
+                // Exclude collapse/minimize buttons
+                if (ariaLabel.includes('collapse') || ariaLabel.includes('minimize') || 
+                    title.includes('collapse') || title.includes('minimize')) {
+                    return false;
+                }
+                
+                // Only match if aria-label is exactly "close plugin" or starts with "close"
+                if (ariaLabel === 'close plugin' || ariaLabel.startsWith('close plugin') ||
+                    (ariaLabel === 'close' && !ariaLabel.includes('collapse'))) {
+                    return true;
+                }
+                
+                // Check if it's inside .plugin-close container
+                if (el.closest('.plugin-close')) {
+                    return true;
+                }
+                
+                return false;
+            };
             
             let removed = false;
             selectors.forEach(selector => {
                 try {
                     const elements = document.querySelectorAll(selector);
                     elements.forEach(el => {
-                        // Check if it's actually a close button
-                        const isCloseButton = el.getAttribute('aria-label')?.toLowerCase().includes('close') ||
-                                           el.getAttribute('title')?.toLowerCase().includes('close') ||
-                                           el.classList.contains('plugin-close') ||
-                                           el.classList.contains('close') ||
-                                           el.classList.contains('asc-window-close') ||
-                                           el.closest('.plugin-close');
-                        
-                        if (isCloseButton) {
+                        if (isCloseButton(el)) {
                             el.style.display = 'none';
                             el.style.visibility = 'hidden';
                             el.style.opacity = '0';
@@ -998,18 +1019,41 @@
             try {
                 const parentDoc = window.parent?.document || window.top?.document;
                 if (parentDoc) {
+                    // Helper function for parent document check
+                    const isCloseButtonParent = function(el) {
+                        if (el.classList.contains('plugin-close') || 
+                            el.classList.contains('asc-window-close') ||
+                            el.classList.contains('asc-window-button-close') ||
+                            el.closest('.plugin-close')) {
+                            return true;
+                        }
+                        
+                        const ariaLabel = el.getAttribute('aria-label')?.toLowerCase() || '';
+                        const title = el.getAttribute('title')?.toLowerCase() || '';
+                        
+                        // Exclude collapse/minimize buttons
+                        if (ariaLabel.includes('collapse') || ariaLabel.includes('minimize') || 
+                            title.includes('collapse') || title.includes('minimize')) {
+                            return false;
+                        }
+                        
+                        if (ariaLabel === 'close plugin' || ariaLabel.startsWith('close plugin') ||
+                            (ariaLabel === 'close' && !ariaLabel.includes('collapse'))) {
+                            return true;
+                        }
+                        
+                        if (el.closest('.plugin-close')) {
+                            return true;
+                        }
+                        
+                        return false;
+                    };
+                    
                     selectors.forEach(selector => {
                         try {
                             const elements = parentDoc.querySelectorAll(selector);
                             elements.forEach(el => {
-                                const isCloseButton = el.getAttribute('aria-label')?.toLowerCase().includes('close') ||
-                                                   el.getAttribute('title')?.toLowerCase().includes('close') ||
-                                                   el.classList.contains('plugin-close') ||
-                                                   el.classList.contains('close') ||
-                                                   el.classList.contains('asc-window-close') ||
-                                                   el.closest('.plugin-close');
-                                
-                                if (isCloseButton) {
+                                if (isCloseButtonParent(el)) {
                                     el.style.display = 'none';
                                     el.style.visibility = 'hidden';
                                     el.style.opacity = '0';
@@ -1046,10 +1090,21 @@
             mutations.forEach(function(mutation) {
                 mutation.addedNodes.forEach(function(node) {
                     if (node.nodeType === 1) { // Element node
+                        // Only check for specific close button selectors, not generic "close" text
                         const isCloseButton = node.matches && (
-                            node.matches('.plugin-close, .plugin-close.close, .asc-window-close, [aria-label*="close" i], [title*="close" i]') ||
-                            (node.querySelector && node.querySelector('.plugin-close, .asc-window-close, [aria-label*="close" i]'))
+                            node.matches('.plugin-close, .plugin-close.close, .asc-window-close, .asc-window-button-close') ||
+                            (node.querySelector && node.querySelector('.plugin-close, .asc-window-close, .asc-window-button-close'))
                         );
+                        
+                        // Also check aria-label but exclude collapse buttons
+                        if (!isCloseButton && node.matches && node.matches('[aria-label], [title]')) {
+                            const ariaLabel = node.getAttribute('aria-label')?.toLowerCase() || '';
+                            const title = node.getAttribute('title')?.toLowerCase() || '';
+                            if ((ariaLabel === 'close plugin' || ariaLabel.startsWith('close plugin')) &&
+                                !ariaLabel.includes('collapse') && !title.includes('collapse')) {
+                                shouldRemove = true;
+                            }
+                        }
                         
                         if (isCloseButton) {
                             shouldRemove = true;
@@ -1080,10 +1135,21 @@
                     mutations.forEach(function(mutation) {
                         mutation.addedNodes.forEach(function(node) {
                             if (node.nodeType === 1) {
+                                // Only check for specific close button selectors
                                 const isCloseButton = node.matches && (
-                                    node.matches('.plugin-close, .plugin-close.close, .asc-window-close, [aria-label*="close" i], [title*="close" i]') ||
-                                    (node.querySelector && node.querySelector('.plugin-close, .asc-window-close, [aria-label*="close" i]'))
+                                    node.matches('.plugin-close, .plugin-close.close, .asc-window-close, .asc-window-button-close') ||
+                                    (node.querySelector && node.querySelector('.plugin-close, .asc-window-close, .asc-window-button-close'))
                                 );
+                                
+                                // Also check aria-label but exclude collapse buttons
+                                if (!isCloseButton && node.matches && node.matches('[aria-label], [title]')) {
+                                    const ariaLabel = node.getAttribute('aria-label')?.toLowerCase() || '';
+                                    const title = node.getAttribute('title')?.toLowerCase() || '';
+                                    if ((ariaLabel === 'close plugin' || ariaLabel.startsWith('close plugin')) &&
+                                        !ariaLabel.includes('collapse') && !title.includes('collapse')) {
+                                        shouldRemove = true;
+                                    }
+                                }
                                 
                                 if (isCloseButton) {
                                     shouldRemove = true;
