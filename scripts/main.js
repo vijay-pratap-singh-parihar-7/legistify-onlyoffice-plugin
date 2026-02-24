@@ -41,10 +41,13 @@
                 }
             }
             
-            // If width is not set, initialize it to 360 immediately
-            if (storage && (!savedWidth || savedWidth === 'null' || savedWidth === '')) {
+            // If width is not set OR is set to default (300 or 315), initialize it to 360 immediately
+            const widthValue = savedWidth ? parseInt(savedWidth, 10) : null;
+            const isDefaultWidth = widthValue === 300 || widthValue === 315;
+            
+            if (storage && (!savedWidth || savedWidth === 'null' || savedWidth === '' || isDefaultWidth)) {
                 storage.setItem(STORAGE_KEY, DEFAULT_WIDTH.toString());
-                console.log('Panel width set to', DEFAULT_WIDTH, 'px in localStorage (immediate, first time)');
+                console.log('Panel width set to', DEFAULT_WIDTH, 'px in localStorage (immediate, first time or overriding default)');
             }
         } catch (error) {
             console.warn('Error setting initial panel width:', error);
@@ -86,10 +89,13 @@
                 }
             }
             
-            // If zoom is not set, initialize it to 80 immediately
-            if (storage && (!savedZoom || savedZoom === 'null' || savedZoom === '')) {
+            // If zoom is not set OR is set to default (100), initialize it to 80 immediately
+            const zoomValue = savedZoom ? parseInt(savedZoom, 10) : null;
+            const isDefaultZoom = zoomValue === 100;
+            
+            if (storage && (!savedZoom || savedZoom === 'null' || savedZoom === '' || isDefaultZoom)) {
                 storage.setItem(STORAGE_KEY, DEFAULT_ZOOM.toString());
-                console.log('Zoom level set to', DEFAULT_ZOOM, '% in localStorage (immediate, first time)');
+                console.log('Zoom level set to', DEFAULT_ZOOM, '% in localStorage (immediate, first time or overriding default)');
             }
         } catch (error) {
             console.warn('Error setting initial zoom level:', error);
@@ -1345,13 +1351,127 @@
             if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
                 window.Asc.plugin.executeMethod("ShowPluginPanel", [], function() {
                     console.log('Plugin panel opened');
+                    // Enforce width and zoom after panel opens (with retries)
+                    enforceInitialValues();
                 }, function(error) {
                     console.warn('ShowPluginPanel not available:', error);
+                    // Still try to enforce values
+                    enforceInitialValues();
                 });
+            } else {
+                // API not ready, but still try to enforce values
+                enforceInitialValues();
             }
         } catch (error) {
             console.warn('Error opening plugin panel:', error);
+            enforceInitialValues();
         }
+    }
+    
+    // Enforce initial width (360) and zoom (80) values with retries
+    // This ensures values are set even if OnlyOffice overwrites them with defaults
+    function enforceInitialValues() {
+        const DEFAULT_WIDTH = 360;
+        const DEFAULT_ZOOM = 80;
+        const WIDTH_KEY = 'de-mainmenu-width';
+        const ZOOM_KEY = 'de-last-zoom';
+        let retryCount = 0;
+        const MAX_RETRIES = 5;
+        const RETRY_DELAY = 500; // 500ms between retries
+        
+        function enforceValues() {
+            try {
+                let storage = null;
+                
+                // Get storage (parent window or current window)
+                if (window.parent && window.parent !== window && window.parent.localStorage) {
+                    try {
+                        storage = window.parent.localStorage;
+                    } catch (e) {
+                        try {
+                            storage = localStorage;
+                        } catch (e2) {
+                            console.warn('Cannot access localStorage for enforcement:', e2);
+                            return;
+                        }
+                    }
+                } else {
+                    try {
+                        storage = localStorage;
+                    } catch (e) {
+                        console.warn('Cannot access localStorage for enforcement:', e);
+                        return;
+                    }
+                }
+                
+                if (!storage) return;
+                
+                // Check and enforce width
+                const currentWidth = storage.getItem(WIDTH_KEY);
+                const widthValue = currentWidth ? parseInt(currentWidth, 10) : null;
+                const isDefaultWidth = widthValue === 300 || widthValue === 315 || !currentWidth;
+                
+                if (isDefaultWidth) {
+                    storage.setItem(WIDTH_KEY, DEFAULT_WIDTH.toString());
+                    console.log('Enforcing panel width to', DEFAULT_WIDTH, 'px (was', currentWidth || 'unset', ')');
+                    
+                    // Also set via API
+                    if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
+                        try {
+                            window.Asc.plugin.executeMethod('SetPluginPanelWidth', [DEFAULT_WIDTH], function() {
+                                console.log('Panel width enforced to', DEFAULT_WIDTH, 'px via API');
+                            }, function(error) {
+                                // Ignore error, localStorage is set
+                            });
+                        } catch (e) {
+                            // Ignore error
+                        }
+                    }
+                }
+                
+                // Check and enforce zoom
+                const currentZoom = storage.getItem(ZOOM_KEY);
+                const zoomValue = currentZoom ? parseInt(currentZoom, 10) : null;
+                const isDefaultZoom = zoomValue === 100 || !currentZoom;
+                
+                if (isDefaultZoom) {
+                    storage.setItem(ZOOM_KEY, DEFAULT_ZOOM.toString());
+                    console.log('Enforcing zoom level to', DEFAULT_ZOOM, '% (was', currentZoom || 'unset', ')');
+                    
+                    // Also try to set via API
+                    if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
+                        try {
+                            window.Asc.plugin.executeMethod('SetZoom', [DEFAULT_ZOOM], function() {
+                                console.log('Zoom level enforced to', DEFAULT_ZOOM, '% via API');
+                            }, function(error) {
+                                // Ignore error, localStorage is set
+                            });
+                        } catch (e) {
+                            // Ignore error
+                        }
+                    }
+                }
+                
+                // Retry if values are still not correct and we haven't exceeded max retries
+                const finalWidth = storage.getItem(WIDTH_KEY);
+                const finalZoom = storage.getItem(ZOOM_KEY);
+                const widthOk = finalWidth && parseInt(finalWidth, 10) === DEFAULT_WIDTH;
+                const zoomOk = finalZoom && parseInt(finalZoom, 10) === DEFAULT_ZOOM;
+                
+                if ((!widthOk || !zoomOk) && retryCount < MAX_RETRIES) {
+                    retryCount++;
+                    console.log('Retrying to enforce values (attempt', retryCount, 'of', MAX_RETRIES, ')');
+                    setTimeout(enforceValues, RETRY_DELAY);
+                } else if (widthOk && zoomOk) {
+                    console.log('Initial values successfully enforced: width =', finalWidth, 'px, zoom =', finalZoom, '%');
+                }
+            } catch (error) {
+                console.warn('Error enforcing initial values:', error);
+            }
+        }
+        
+        // Start enforcement after a short delay to let panel initialize
+        setTimeout(enforceValues, 200);
     }
 
     // Initialize OnlyOffice API helpers
@@ -1570,11 +1690,14 @@
                     }
                 }
                 
-                // If width is not set, initialize it to 360
-                if (!savedWidth || savedWidth === 'null' || savedWidth === '') {
-                    console.log('Initializing panel width to', DEFAULT_WIDTH, 'px (first time)');
+                // Check if width is not set OR if it's set to default value (300) - force set to 360
+                const widthValue = savedWidth ? parseInt(savedWidth, 10) : null;
+                const isDefaultWidth = widthValue === 300 || widthValue === 315; // 315 is config.json default
+                
+                if (!savedWidth || savedWidth === 'null' || savedWidth === '' || isDefaultWidth) {
+                    console.log('Initializing panel width to', DEFAULT_WIDTH, 'px (first time or overriding default)');
                     
-                    // Set in localStorage (already done at script load, but ensure it's set)
+                    // Force set in localStorage
                     if (storage) {
                         storage.setItem(STORAGE_KEY, DEFAULT_WIDTH.toString());
                     }
@@ -1600,8 +1723,8 @@
                         resolve();
                     }
                 } else {
-                    console.log('Panel width already set to', savedWidth, 'px');
-                    // Width already set, resolve immediately
+                    console.log('Panel width already set to', savedWidth, 'px (user preference)');
+                    // Width already set to non-default value, resolve immediately
                     resolve();
                 }
             } catch (error) {
@@ -1662,25 +1785,28 @@
                     }
                 }
                 
-                // If zoom is not set, initialize it to 80
-                if (!savedZoom || savedZoom === 'null' || savedZoom === '') {
-                    console.log('Initializing zoom level to', DEFAULT_ZOOM, '% (first time)');
+                // Check if zoom is not set OR if it's set to default value (100) - force set to 80
+                const zoomValue = savedZoom ? parseInt(savedZoom, 10) : null;
+                const isDefaultZoom = zoomValue === 100;
+                
+                if (!savedZoom || savedZoom === 'null' || savedZoom === '' || isDefaultZoom) {
+                    console.log('Initializing zoom level to', DEFAULT_ZOOM, '% (first time or overriding default)');
                     
-                    // Set in localStorage (already done at script load, but ensure it's set)
+                    // Force set in localStorage
                     if (storage) {
                         storage.setItem(STORAGE_KEY, DEFAULT_ZOOM.toString());
                     }
                     
-                    // Also set via OnlyOffice API if available
-                    // Note: OnlyOffice may not have a direct SetZoom method, but localStorage is the primary storage
-                    // OnlyOffice reads zoom from localStorage automatically
+                    // Also try to set via OnlyOffice API if available
                     if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
                         try {
-                            // Try to set zoom via API if method exists
-                            // OnlyOffice typically uses localStorage for zoom, but we try API as fallback
-                            if (window.Asc.plugin.executeMethod('SetZoom', [DEFAULT_ZOOM])) {
+                            // Try SetZoom method
+                            window.Asc.plugin.executeMethod('SetZoom', [DEFAULT_ZOOM], function() {
                                 console.log('Zoom level initialized to', DEFAULT_ZOOM, '% via API');
-                            }
+                            }, function(error) {
+                                // API method may not exist, which is fine - localStorage is the primary method
+                                console.log('Zoom set via localStorage (SetZoom API not available, which is normal)');
+                            });
                         } catch (error) {
                             // API method may not exist, which is fine - localStorage is the primary method
                             console.log('Zoom set via localStorage (API method not available, which is normal)');
@@ -1690,8 +1816,8 @@
                     // Resolve immediately since localStorage is the primary storage method
                     resolve();
                 } else {
-                    console.log('Zoom level already set to', savedZoom, '%');
-                    // Zoom already set, resolve immediately
+                    console.log('Zoom level already set to', savedZoom, '% (user preference)');
+                    // Zoom already set to non-default value, resolve immediately
                     resolve();
                 }
             } catch (error) {
