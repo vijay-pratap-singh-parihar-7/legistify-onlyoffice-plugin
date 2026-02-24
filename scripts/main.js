@@ -6,6 +6,96 @@
     console.log('Plugin main.js script loaded at:', new Date().toISOString());
     console.log('window.Asc at script load:', typeof window.Asc !== 'undefined' ? window.Asc : 'undefined');
     
+    // Set panel width to 360 in localStorage immediately on first load (before API is ready)
+    // This ensures the width is set before OnlyOffice reads it
+    (function() {
+        const DEFAULT_WIDTH = 360;
+        const STORAGE_KEY = 'de-mainmenu-width';
+        
+        try {
+            // Try to access localStorage from parent window (OnlyOffice's domain)
+            let storage = null;
+            let savedWidth = null;
+            
+            // First try parent window (OnlyOffice's localStorage)
+            if (window.parent && window.parent !== window) {
+                try {
+                    storage = window.parent.localStorage;
+                    savedWidth = storage.getItem(STORAGE_KEY);
+                } catch (e) {
+                    // Cross-origin restriction, try current window
+                    try {
+                        storage = localStorage;
+                        savedWidth = storage.getItem(STORAGE_KEY);
+                    } catch (e2) {
+                        console.warn('Cannot access localStorage:', e2);
+                    }
+                }
+            } else {
+                // No parent, use current window
+                try {
+                    storage = localStorage;
+                    savedWidth = storage.getItem(STORAGE_KEY);
+                } catch (e) {
+                    console.warn('Cannot access localStorage:', e);
+                }
+            }
+            
+            // If width is not set, initialize it to 360 immediately
+            if (storage && (!savedWidth || savedWidth === 'null' || savedWidth === '')) {
+                storage.setItem(STORAGE_KEY, DEFAULT_WIDTH.toString());
+                console.log('Panel width set to', DEFAULT_WIDTH, 'px in localStorage (immediate, first time)');
+            }
+        } catch (error) {
+            console.warn('Error setting initial panel width:', error);
+        }
+    })();
+    
+    // Set zoom level to 80 in localStorage immediately on first load (before API is ready)
+    // This ensures the zoom is set before OnlyOffice reads it
+    (function() {
+        const DEFAULT_ZOOM = 80;
+        const STORAGE_KEY = 'de-last-zoom';
+        
+        try {
+            // Try to access localStorage from parent window (OnlyOffice's domain)
+            let storage = null;
+            let savedZoom = null;
+            
+            // First try parent window (OnlyOffice's localStorage)
+            if (window.parent && window.parent !== window) {
+                try {
+                    storage = window.parent.localStorage;
+                    savedZoom = storage.getItem(STORAGE_KEY);
+                } catch (e) {
+                    // Cross-origin restriction, try current window
+                    try {
+                        storage = localStorage;
+                        savedZoom = storage.getItem(STORAGE_KEY);
+                    } catch (e2) {
+                        console.warn('Cannot access localStorage for zoom:', e2);
+                    }
+                }
+            } else {
+                // No parent, use current window
+                try {
+                    storage = localStorage;
+                    savedZoom = storage.getItem(STORAGE_KEY);
+                } catch (e) {
+                    console.warn('Cannot access localStorage for zoom:', e);
+                }
+            }
+            
+            // If zoom is not set, initialize it to 80 immediately
+            if (storage && (!savedZoom || savedZoom === 'null' || savedZoom === '')) {
+                storage.setItem(STORAGE_KEY, DEFAULT_ZOOM.toString());
+                console.log('Zoom level set to', DEFAULT_ZOOM, '% in localStorage (immediate, first time)');
+            }
+        } catch (error) {
+            console.warn('Error setting initial zoom level:', error);
+        }
+    })();
+    
     // Store plugin data (contractId, accessToken, etc.) - will be populated from backend
     // These are empty defaults - actual values come from backend via initData
     window.pluginData = {
@@ -282,14 +372,28 @@
         // Set up close button event listeners
         setupCloseButtonListeners();
         
-        // Initialize panel width to 360 if not already set (before opening panel)
-        initPanelWidth();
-        
-        // Open plugin panel on left side
-        openPluginPanel();
-        
-        // Initialize default view
-        handleTabChange('Playbook');
+        // Initialize panel width to 360 and zoom to 80 if not already set (before opening panel)
+        // Wait for both to be set before opening panel to ensure correct initial values
+        Promise.all([
+            initPanelWidth(),
+            initZoomLevel()
+        ]).then(function() {
+            // Small delay to ensure width and zoom are applied before opening panel
+            setTimeout(function() {
+                // Open plugin panel on left side
+                openPluginPanel();
+                
+                // Initialize default view
+                handleTabChange('Playbook');
+            }, 100);
+        }).catch(function(error) {
+            console.warn('Error initializing panel width/zoom, opening panel anyway:', error);
+            // Open plugin panel even if initialization failed
+            openPluginPanel();
+            
+            // Initialize default view
+            handleTabChange('Playbook');
+        });
         };
         
         // Plugin execution complete callback
@@ -1432,69 +1536,169 @@
     };
 
     // Initialize panel width to 360 on first open if not already set
+    // Returns a promise that resolves when width is set (for waiting before opening panel)
     function initPanelWidth() {
-        const DEFAULT_WIDTH = 360;
-        const STORAGE_KEY = 'de-mainmenu-width';
-        
-        try {
-            // Check if width is already set in localStorage
-            let savedWidth = null;
+        return new Promise(function(resolve) {
+            const DEFAULT_WIDTH = 360;
+            const STORAGE_KEY = 'de-mainmenu-width';
             
-            // Try to access localStorage (may be in parent window or current window)
-            let storage = null;
-            if (window.parent && window.parent.localStorage) {
-                try {
-                    storage = window.parent.localStorage;
-                    savedWidth = storage.getItem(STORAGE_KEY);
-                } catch (e) {
-                    // Cross-origin restriction, try current window
-                    storage = localStorage;
-                    savedWidth = storage.getItem(STORAGE_KEY);
-                }
-            } else {
-                storage = localStorage;
-                savedWidth = storage.getItem(STORAGE_KEY);
-            }
-            
-            // If width is not set, initialize it to 360
-            if (!savedWidth || savedWidth === 'null' || savedWidth === '') {
-                console.log('Initializing panel width to', DEFAULT_WIDTH, 'px (first time)');
+            try {
+                // Check if width is already set in localStorage
+                let savedWidth = null;
                 
-                // Set in localStorage
-                if (storage) {
-                    storage.setItem(STORAGE_KEY, DEFAULT_WIDTH.toString());
+                // Try to access localStorage (may be in parent window or current window)
+                let storage = null;
+                if (window.parent && window.parent !== window && window.parent.localStorage) {
+                    try {
+                        storage = window.parent.localStorage;
+                        savedWidth = storage.getItem(STORAGE_KEY);
+                    } catch (e) {
+                        // Cross-origin restriction, try current window
+                        try {
+                            storage = localStorage;
+                            savedWidth = storage.getItem(STORAGE_KEY);
+                        } catch (e2) {
+                            console.warn('Cannot access localStorage:', e2);
+                        }
+                    }
+                } else {
+                    try {
+                        storage = localStorage;
+                        savedWidth = storage.getItem(STORAGE_KEY);
+                    } catch (e) {
+                        console.warn('Cannot access localStorage:', e);
+                    }
                 }
                 
-                // Also set via OnlyOffice API to ensure it's applied
+                // If width is not set, initialize it to 360
+                if (!savedWidth || savedWidth === 'null' || savedWidth === '') {
+                    console.log('Initializing panel width to', DEFAULT_WIDTH, 'px (first time)');
+                    
+                    // Set in localStorage (already done at script load, but ensure it's set)
+                    if (storage) {
+                        storage.setItem(STORAGE_KEY, DEFAULT_WIDTH.toString());
+                    }
+                    
+                    // Also set via OnlyOffice API to ensure it's applied
+                    if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
+                        try {
+                            window.Asc.plugin.executeMethod('SetPluginPanelWidth', [DEFAULT_WIDTH], function() {
+                                console.log('Panel width initialized to', DEFAULT_WIDTH, 'px via API');
+                                resolve();
+                            }, function(error) {
+                                console.warn('Could not set panel width via API, using localStorage only:', error);
+                                // Still resolve even if API call fails, localStorage is set
+                                resolve();
+                            });
+                        } catch (error) {
+                            console.warn('Error setting panel width via API:', error);
+                            resolve();
+                        }
+                    } else {
+                        // API not ready yet, but localStorage is set, so resolve
+                        console.log('OnlyOffice API not ready, but localStorage is set to', DEFAULT_WIDTH);
+                        resolve();
+                    }
+                } else {
+                    console.log('Panel width already set to', savedWidth, 'px');
+                    // Width already set, resolve immediately
+                    resolve();
+                }
+            } catch (error) {
+                console.warn('Error initializing panel width:', error);
+                // Fallback: try to set via API only
                 if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
                     try {
                         window.Asc.plugin.executeMethod('SetPluginPanelWidth', [DEFAULT_WIDTH], function() {
-                            console.log('Panel width initialized to', DEFAULT_WIDTH, 'px via API');
+                            console.log('Panel width set to', DEFAULT_WIDTH, 'px via API (fallback)');
+                            resolve();
                         }, function(error) {
-                            console.warn('Could not set panel width via API, using localStorage only:', error);
+                            console.warn('Could not set panel width:', error);
+                            resolve();
                         });
-                    } catch (error) {
-                        console.warn('Error setting panel width via API:', error);
+                    } catch (e) {
+                        console.warn('Error in fallback panel width setting:', e);
+                        resolve();
+                    }
+                } else {
+                    resolve();
+                }
+            }
+        });
+    }
+
+    // Initialize zoom level to 80 on first open if not already set
+    // Returns a promise that resolves when zoom is set
+    function initZoomLevel() {
+        return new Promise(function(resolve) {
+            const DEFAULT_ZOOM = 80;
+            const STORAGE_KEY = 'de-last-zoom';
+            
+            try {
+                // Check if zoom is already set in localStorage
+                let savedZoom = null;
+                
+                // Try to access localStorage (may be in parent window or current window)
+                let storage = null;
+                if (window.parent && window.parent !== window && window.parent.localStorage) {
+                    try {
+                        storage = window.parent.localStorage;
+                        savedZoom = storage.getItem(STORAGE_KEY);
+                    } catch (e) {
+                        // Cross-origin restriction, try current window
+                        try {
+                            storage = localStorage;
+                            savedZoom = storage.getItem(STORAGE_KEY);
+                        } catch (e2) {
+                            console.warn('Cannot access localStorage for zoom:', e2);
+                        }
+                    }
+                } else {
+                    try {
+                        storage = localStorage;
+                        savedZoom = storage.getItem(STORAGE_KEY);
+                    } catch (e) {
+                        console.warn('Cannot access localStorage for zoom:', e);
                     }
                 }
-            } else {
-                console.log('Panel width already set to', savedWidth, 'px');
-            }
-        } catch (error) {
-            console.warn('Error initializing panel width:', error);
-            // Fallback: try to set via API only
-            if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
-                try {
-                    window.Asc.plugin.executeMethod('SetPluginPanelWidth', [DEFAULT_WIDTH], function() {
-                        console.log('Panel width set to', DEFAULT_WIDTH, 'px via API (fallback)');
-                    }, function(error) {
-                        console.warn('Could not set panel width:', error);
-                    });
-                } catch (e) {
-                    console.warn('Error in fallback panel width setting:', e);
+                
+                // If zoom is not set, initialize it to 80
+                if (!savedZoom || savedZoom === 'null' || savedZoom === '') {
+                    console.log('Initializing zoom level to', DEFAULT_ZOOM, '% (first time)');
+                    
+                    // Set in localStorage (already done at script load, but ensure it's set)
+                    if (storage) {
+                        storage.setItem(STORAGE_KEY, DEFAULT_ZOOM.toString());
+                    }
+                    
+                    // Also set via OnlyOffice API if available
+                    // Note: OnlyOffice may not have a direct SetZoom method, but localStorage is the primary storage
+                    // OnlyOffice reads zoom from localStorage automatically
+                    if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
+                        try {
+                            // Try to set zoom via API if method exists
+                            // OnlyOffice typically uses localStorage for zoom, but we try API as fallback
+                            if (window.Asc.plugin.executeMethod('SetZoom', [DEFAULT_ZOOM])) {
+                                console.log('Zoom level initialized to', DEFAULT_ZOOM, '% via API');
+                            }
+                        } catch (error) {
+                            // API method may not exist, which is fine - localStorage is the primary method
+                            console.log('Zoom set via localStorage (API method not available, which is normal)');
+                        }
+                    }
+                    
+                    // Resolve immediately since localStorage is the primary storage method
+                    resolve();
+                } else {
+                    console.log('Zoom level already set to', savedZoom, '%');
+                    // Zoom already set, resolve immediately
+                    resolve();
                 }
+            } catch (error) {
+                console.warn('Error initializing zoom level:', error);
+                resolve();
             }
-        }
+        });
     }
 
     // Initialize resize handle for panel resizing
@@ -1529,7 +1733,11 @@
             if (!isResizing) return;
 
             const diff = startX - e.clientX;
-            const newWidth = Math.max(250, Math.min(800, startWidth + diff));
+            // Minimum width is 360px - users cannot reduce below 360
+            // Maximum width is 800px - users can increase up to 800
+            const MIN_WIDTH = 360;
+            const MAX_WIDTH = 800;
+            const newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, startWidth + diff));
 
             if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
                 try {
