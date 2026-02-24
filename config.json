@@ -33,6 +33,7 @@
       "type": "panel",
       "initDataType": "text",
       "initOnSelectionChanged": false,
+      "size": [315, 600],
       "buttons": [
         {
           "text": "Ask AI",

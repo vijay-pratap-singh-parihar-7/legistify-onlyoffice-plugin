@@ -1054,22 +1054,6 @@
     function openPluginPanel() {
         try {
             if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
-                // Set default panel width to 365px
-                const defaultWidth = 365;
-                window.Asc.plugin.executeMethod("SetPluginPanelWidth", [defaultWidth], function() {
-                    console.log('Panel width set to default:', defaultWidth);
-                }, function(error) {
-                    console.warn('SetPluginPanelWidth not available, using CSS fallback:', error);
-                    // Fallback: set width via CSS
-                    const iframe = window.frameElement;
-                    if (iframe) {
-                        iframe.style.width = defaultWidth + 'px';
-                        iframe.style.minWidth = defaultWidth + 'px';
-                    }
-                    document.body.style.minWidth = defaultWidth + 'px';
-                    document.body.style.width = defaultWidth + 'px';
-                });
-                
                 window.Asc.plugin.executeMethod("ShowPluginPanel", [], function() {
                     console.log('Plugin panel opened');
                 }, function(error) {
@@ -1294,7 +1278,7 @@
             if (!isResizing) return;
 
             const diff = startX - e.clientX;
-            const newWidth = Math.max(365, Math.min(800, startWidth + diff));
+            const newWidth = Math.max(250, Math.min(800, startWidth + diff));
 
             if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
                 try {
@@ -1315,7 +1299,6 @@
             const iframe = window.frameElement;
             if (iframe) {
                 iframe.style.width = newWidth + 'px';
-                iframe.style.minWidth = newWidth + 'px';
             }
             document.body.style.minWidth = newWidth + 'px';
             document.body.style.width = newWidth + 'px';

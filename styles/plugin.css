@@ -7,8 +7,6 @@ body {
     position: relative;
     height: 100vh;
     max-height: 100vh;
-    min-width: 365px;
-    width: 365px;
 }
 
 .plugin-root {
@@ -18,8 +16,6 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     background: #ffffff;
     position: relative;
-    min-width: 365px;
-    width: 365px;
 }
 
 #plugin-container {
