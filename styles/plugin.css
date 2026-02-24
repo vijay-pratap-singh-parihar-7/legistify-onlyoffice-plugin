@@ -2332,7 +2332,7 @@ button[title*="close" i],
     padding: 12px;
     padding-bottom: 12px;
     width: fit-content;
-    max-width: calc(100% - 50px);
+    max-width: calc(100% - 15px);
     box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
     font-size: 12px;
     word-wrap: break-word;
