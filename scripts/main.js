@@ -318,6 +318,24 @@
         
         // Initialize default view
         handleTabChange('Playbook');
+        
+        // Force Width on First Load (IMPORTANT)
+        // ONLYOFFICE remembers last width in local storage.
+        // On a fresh browser session, it may open small unless you force resize after init.
+        // Delay ensures editor layout is ready
+        setTimeout(function() {
+            try {
+                if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
+                    window.Asc.plugin.executeMethod("ResizeWindow", [360, 0], function() {
+                        console.log('Forced window resize to 360px width');
+                    }, function(error) {
+                        console.warn('ResizeWindow not available:', error);
+                    });
+                }
+            } catch (e) {
+                console.warn('Resize failed:', e);
+            }
+        }, 300);
         };
         
         // Plugin execution complete callback
@@ -1199,6 +1217,21 @@
                     console.log('Plugin panel opened');
                     // Ensure width is set after panel opens
                     ensureMainMenuWidth();
+                    
+                    // Force resize window to 360px after panel opens
+                    setTimeout(function() {
+                        try {
+                            if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
+                                window.Asc.plugin.executeMethod("ResizeWindow", [360, 0], function() {
+                                    console.log('Forced window resize to 360px after panel open');
+                                }, function(error) {
+                                    console.warn('ResizeWindow not available after panel open:', error);
+                                });
+                            }
+                        } catch (e) {
+                            console.warn('Resize failed after panel open:', e);
+                        }
+                    }, 300);
                 }, function(error) {
                     console.warn('ShowPluginPanel not available:', error);
                     // Even if panel open fails, ensure width is set
