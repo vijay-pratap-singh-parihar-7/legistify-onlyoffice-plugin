@@ -12,7 +12,7 @@
         try {
             const mainMenuWidthKey = 'de-mainmenu-width';
             const defaultWidth = '360';
-            
+
             // Set in current window's localStorage
             localStorage.setItem(mainMenuWidthKey, defaultWidth);
             
@@ -301,11 +301,36 @@
         // Use ensureMainMenuWidth() which repeatedly sets it for a short period
         ensureMainMenuWidth();
         
-        // Force width to 360px on first load using ResizeWindow API
-        // Delay ensures editor layout is ready before resizing
-        setTimeout(function() {
-            forceResizeWindow();
-        }, 300);
+        // Force width to 360px on first load only (fresh browser session)
+        // Check if this is the first load using localStorage
+        const firstLoadKey = 'legistify-plugin-first-load';
+        const isFirstLoad = !localStorage.getItem(firstLoadKey);
+        
+        if (isFirstLoad) {
+            // Mark that first load has happened
+            try {
+                localStorage.setItem(firstLoadKey, 'true');
+                // Also try to set in parent window's localStorage (if plugin is in iframe)
+                try {
+                    if (window.parent && window.parent !== window && window.parent.localStorage) {
+                        window.parent.localStorage.setItem(firstLoadKey, 'true');
+                    }
+                } catch (parentError) {
+                    // Cross-origin or other error accessing parent, ignore
+                }
+            } catch (error) {
+                console.warn('Could not set first load flag:', error);
+            }
+            
+            // Force resize window to 360px on first load only
+            // Delay ensures editor layout is ready before resizing
+            setTimeout(function() {
+                forceResizeWindow();
+                console.log('ResizeWindow: Forced main menu width to 360px on first load');
+            }, 300);
+        } else {
+            console.log('Not first load - skipping forced resize (user may have custom width)');
+        }
         
         // Initialize tab navigation
         initTabNavigation();
