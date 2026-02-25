@@ -305,7 +305,7 @@
         // Delay ensures editor layout is ready before resizing
         setTimeout(function() {
             forceResizeWindow();
-        }, 300);
+        }, 100);
         
         // Initialize tab navigation
         initTabNavigation();
