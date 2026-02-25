@@ -301,11 +301,26 @@
         // Use ensureMainMenuWidth() which repeatedly sets it for a short period
         ensureMainMenuWidth();
         
-        // Force width to 360px on first load using ResizeWindow API
-        // Delay ensures editor layout is ready before resizing
+        // Force width to 360px IMMEDIATELY on first load using ResizeWindow API
+        // Try multiple timing strategies to catch it as early as possible
+        forceResizeWindow(); // Immediate call
+        
+        // Also try with requestAnimationFrame for next frame
+        if (window.requestAnimationFrame) {
+            window.requestAnimationFrame(function() {
+                forceResizeWindow();
+            });
+        }
+        
+        // Also try with microtask (Promise.resolve)
+        Promise.resolve().then(function() {
+            forceResizeWindow();
+        });
+        
+        // Fallback with minimal delay (50ms) in case API needs a moment
         setTimeout(function() {
             forceResizeWindow();
-        }, 100);
+        }, 50);
         
         // Initialize tab navigation
         initTabNavigation();
@@ -1183,6 +1198,11 @@
                     // Cross-origin, ignore
                 }
                 
+                // Also try to force resize via API on each interval (for first few attempts)
+                if (attempts < 10) { // Only for first 1 second (10 * 100ms)
+                    forceResizeWindow();
+                }
+                
                 attempts++;
                 if (attempts >= maxAttempts) {
                     clearInterval(mainMenuWidthIntervalId);
@@ -1220,10 +1240,20 @@
                     console.log('Plugin panel opened');
                     // Ensure width is set after panel opens
                     ensureMainMenuWidth();
-                    // Force resize after panel opens (with delay to ensure panel is rendered)
-                    setTimeout(function() {
+                    // Force resize IMMEDIATELY after panel opens
+                    forceResizeWindow(); // Immediate call
+                    
+                    // Also try with requestAnimationFrame for next frame
+                    if (window.requestAnimationFrame) {
+                        window.requestAnimationFrame(function() {
+                            forceResizeWindow();
+                        });
+                    }
+                    
+                    // Also try with microtask
+                    Promise.resolve().then(function() {
                         forceResizeWindow();
-                    }, 200);
+                    });
                 }, function(error) {
                     console.warn('ShowPluginPanel not available:', error);
                     // Even if panel open fails, ensure width is set
