@@ -285,9 +285,11 @@
                         <svg class="back-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="handleBackFromDetail()" style="cursor: pointer; flex-shrink: 0;">
                             <polyline points="15 18 9 12 15 6"></polyline>
                         </svg>
-                        ${!isEditing ? `
+                        ${isEditing ? `
+                        <span style="font-size: 14px; font-weight: 650; flex-shrink: 0; white-space: nowrap; margin: 0;">Edit Guide</span>
+                        ` : `
                         <span style="font-size: 14px; font-weight: 650; flex-shrink: 0; white-space: nowrap; margin: 0;">${escapeHtml(currentName)}</span>
-                        ` : ''}
+                        `}
                     </div>
                     ${isEditable && !isEditing ? `
                     <div class="playbook-detail-header-actions">
