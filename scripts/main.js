@@ -335,7 +335,7 @@
             } catch (e) {
                 console.warn('Resize failed:', e);
             }
-        }, 300);
+        }, 500);
         };
         
         // Plugin execution complete callback
