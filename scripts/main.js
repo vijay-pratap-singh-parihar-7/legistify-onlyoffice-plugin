@@ -301,6 +301,12 @@
         // Use ensureMainMenuWidth() which repeatedly sets it for a short period
         ensureMainMenuWidth();
         
+        // Force width to 360px on first load using ResizeWindow API
+        // Delay ensures editor layout is ready before resizing
+        setTimeout(function() {
+            forceResizeWindow();
+        }, 300);
+        
         // Initialize tab navigation
         initTabNavigation();
         
@@ -1191,6 +1197,21 @@
         }, 100); // Check every 100ms
     }
     
+    // Helper function to force resize window to 360px using OnlyOffice API
+    function forceResizeWindow() {
+        try {
+            if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
+                window.Asc.plugin.executeMethod("ResizeWindow", [360, 0], function() {
+                    console.log('ResizeWindow: Forced main menu width to 360px');
+                }, function(error) {
+                    console.warn('ResizeWindow failed:', error);
+                });
+            }
+        } catch (e) {
+            console.warn('ResizeWindow error:', e);
+        }
+    }
+    
     // Open plugin panel on the left side
     function openPluginPanel() {
         try {
@@ -1199,19 +1220,26 @@
                     console.log('Plugin panel opened');
                     // Ensure width is set after panel opens
                     ensureMainMenuWidth();
+                    // Force resize after panel opens (with delay to ensure panel is rendered)
+                    setTimeout(function() {
+                        forceResizeWindow();
+                    }, 200);
                 }, function(error) {
                     console.warn('ShowPluginPanel not available:', error);
                     // Even if panel open fails, ensure width is set
                     ensureMainMenuWidth();
+                    forceResizeWindow();
                 });
             } else {
                 // If API not available, still try to ensure width
                 ensureMainMenuWidth();
+                forceResizeWindow();
             }
         } catch (error) {
             console.warn('Error opening plugin panel:', error);
             // Even on error, try to ensure width
             ensureMainMenuWidth();
+            forceResizeWindow();
         }
     }
 
