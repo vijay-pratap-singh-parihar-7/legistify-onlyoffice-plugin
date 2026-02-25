@@ -7,8 +7,6 @@ body {
     position: relative;
     height: 100vh;
     max-height: 100vh;
-    min-width: 365px;
-    width: 365px;
 }
 
 .plugin-root {
@@ -18,13 +16,11 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     background: #ffffff;
     position: relative;
-    min-width: 365px;
-    width: 365px;
 }
 
 #plugin-container {
     width: 100%;
-    height: 100%;
+    /* height: 100%; */
     display: flex;
     flex-direction: column;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -80,22 +76,37 @@ body {
     height: 16px;
 }
 
-/* Hide OnlyOffice Plugin Close Button */
+/* Hide OnlyOffice Plugin Close Button - Comprehensive selectors */
 .asc-window-close,
 .asc-window-button-close,
 .plugin-close,
+.plugin-close.close,
+.plugin-close button,
+.plugin-close .btn,
+.plugin-close .btn-close,
 .current-plugin-header button:last-child,
 .current-plugin-header .asc-window-close,
+.current-plugin-header .plugin-close,
 .asc-window-header .asc-window-close,
 .asc-window-header button:last-child,
+.asc-window-header .plugin-close,
 button[aria-label*="close" i],
+button[aria-label*="Close plugin" i],
 button[title*="close" i],
 [aria-label*="close" i][role="button"],
-[title*="close" i][role="button"] {
+[title*="close" i][role="button"],
+.btn.btn-toolbar[aria-label*="close" i],
+.btn.btn-toolbar[aria-label*="Close plugin" i],
+.btn-close,
+.icon.btn-close {
     display: none !important;
     visibility: hidden !important;
     opacity: 0 !important;
     pointer-events: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 /* Tab List - Matches MS Editor App.jsx tabList - Dynamic Resizing */
@@ -296,10 +307,10 @@ button[title*="close" i],
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    padding: 8px 16px;
+    padding: 8px 10px;
     border-bottom: 1px solid #e0e0e0;
     flex-shrink: 0;
-    gap: 12px;
+    gap: 5px;
     position: sticky;
     top: 0;
     z-index: 10;
@@ -1472,7 +1483,7 @@ button[title*="close" i],
     align-items: center;
     justify-content: center;
     padding: clamp(1rem, 3vw, 2rem);
-    background: #fff;
+    background: #f8f9fa;
     box-sizing: border-box;
     position: relative;
 }
@@ -1683,7 +1694,7 @@ button[title*="close" i],
     overflow-y: auto;
     overflow-x: hidden;
     min-height: 0;
-    max-height: calc(100vh - 120px);
+    max-height: calc(100vh - 110px);
     height: 100%;
 }
 
@@ -1830,7 +1841,7 @@ button[title*="close" i],
     overflow-y: auto;
     overflow-x: hidden;
     min-height: 0;
-    max-height: calc(100vh - 120px);
+    max-height: calc(100vh - 40px);
     padding-bottom: 20px;
 }
 
@@ -2336,7 +2347,7 @@ button[title*="close" i],
     padding: 12px;
     padding-bottom: 12px;
     width: fit-content;
-    max-width: calc(100% - 50px);
+    max-width: calc(100% - 15px);
     box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
     font-size: 12px;
     word-wrap: break-word;
@@ -3666,7 +3677,7 @@ button[title*="close" i],
     gap: 10px;
     padding: 8px 10px;
     flex-shrink: 0;
-    width: 95%;
+    width: 92%;
     height: 20px;
 }
 

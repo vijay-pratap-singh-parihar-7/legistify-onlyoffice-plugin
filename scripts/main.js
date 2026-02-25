@@ -6,6 +6,35 @@
     console.log('Plugin main.js script loaded at:', new Date().toISOString());
     console.log('window.Asc at script load:', typeof window.Asc !== 'undefined' ? window.Asc : 'undefined');
     
+    // Helper function to set main menu width to 360px
+    // This ensures the OnlyOffice main menu always opens at 360px width
+    function setMainMenuWidth() {
+        try {
+            const mainMenuWidthKey = 'de-mainmenu-width';
+            const defaultWidth = '360';
+            
+            // Set in current window's localStorage
+            localStorage.setItem(mainMenuWidthKey, defaultWidth);
+            
+            // Also try to set it in parent window's localStorage (if plugin is in iframe)
+            try {
+                if (window.parent && window.parent !== window && window.parent.localStorage) {
+                    window.parent.localStorage.setItem(mainMenuWidthKey, defaultWidth);
+                }
+            } catch (parentError) {
+                // Cross-origin or other error accessing parent, ignore
+            }
+            
+            console.log('Set main menu width to', defaultWidth, 'px');
+        } catch (error) {
+            console.warn('Could not set main menu width:', error);
+        }
+    }
+    
+    // Always set main menu width to 360px on plugin load
+    // Must be set early, before OnlyOffice reads it during initialization
+    setMainMenuWidth();
+    
     // Store plugin data (contractId, accessToken, etc.) - will be populated from backend
     // These are empty defaults - actual values come from backend via initData
     window.pluginData = {
@@ -266,6 +295,17 @@
             organizationId: window.pluginData.organizationId ? 'Set' : 'Missing',
             backendUrl: window.pluginData.backendUrl || 'Missing'
         });
+        
+        // Ensure main menu width is set to 360px (set again after initialization)
+        // This ensures it's set even if OnlyOffice reads it after plugin init
+        // Use ensureMainMenuWidth() which repeatedly sets it for a short period
+        ensureMainMenuWidth();
+        
+        // Force width to 360px on first load using ResizeWindow API
+        // Delay ensures editor layout is ready before resizing
+        setTimeout(function() {
+            forceResizeWindow();
+        }, 300);
         
         // Initialize tab navigation
         initTabNavigation();
@@ -828,6 +868,24 @@
         let attempts = 0;
         const maxAttempts = 10;
         
+        // Function to hide close button elements
+        const hideCloseButton = function(element) {
+            if (element) {
+                element.style.display = 'none';
+                element.style.visibility = 'hidden';
+                element.style.opacity = '0';
+                element.style.pointerEvents = 'none';
+                element.style.width = '0';
+                element.style.height = '0';
+                element.style.margin = '0';
+                element.style.padding = '0';
+                // Also hide parent if it's a wrapper div
+                if (element.parentElement && element.parentElement.classList.contains('plugin-close')) {
+                    hideCloseButton(element.parentElement);
+                }
+            }
+        };
+
         const findAndSetupCloseButton = function() {
             attempts++;
             
@@ -851,11 +909,23 @@
             
             let onlyOfficeCloseBtn = null;
             for (const selector of selectors) {
-                onlyOfficeCloseBtn = document.querySelector(selector);
-                if (onlyOfficeCloseBtn) {
-                    console.log('Found OnlyOffice close button with selector:', selector);
-                    break;
-                }
+                const elements = document.querySelectorAll(selector);
+                elements.forEach(el => {
+                    // Check if it's actually a close button
+                    const isCloseButton = el.getAttribute('aria-label')?.toLowerCase().includes('close') ||
+                                        el.getAttribute('title')?.toLowerCase().includes('close') ||
+                                        el.classList.contains('plugin-close') ||
+                                        el.classList.contains('asc-window-close') ||
+                                        el.classList.contains('close');
+                    if (isCloseButton) {
+                        hideCloseButton(el);
+                        if (!onlyOfficeCloseBtn) {
+                            onlyOfficeCloseBtn = el;
+                            console.log('Found and hiding OnlyOffice close button with selector:', selector);
+                        }
+                    }
+                });
+                if (onlyOfficeCloseBtn) break;
             }
             
             // Also check for close button within current-plugin-header specifically
@@ -870,11 +940,17 @@
                                            btn.getAttribute('title')?.toLowerCase().includes('close') ||
                                            btn.classList.contains('close') ||
                                            btn.classList.contains('asc-window-close') ||
+                                           btn.classList.contains('plugin-close') ||
                                            (btn === buttons[buttons.length - 1] && buttons.length > 0);
                         
                         if (isCloseButton || buttons.length === 1) {
+                            hideCloseButton(btn);
+                            // Also hide parent wrapper if it exists
+                            if (btn.parentElement && btn.parentElement.classList.contains('plugin-close')) {
+                                hideCloseButton(btn.parentElement);
+                            }
                             onlyOfficeCloseBtn = btn;
-                            console.log('Found close button in current-plugin-header');
+                            console.log('Found and hiding close button in current-plugin-header');
                             break;
                         }
                     }
@@ -887,11 +963,22 @@
                     const parentDoc = window.parent?.document || window.top?.document;
                     if (parentDoc) {
                         for (const selector of selectors) {
-                            onlyOfficeCloseBtn = parentDoc.querySelector(selector);
-                            if (onlyOfficeCloseBtn) {
-                                console.log('Found OnlyOffice close button in parent with selector:', selector);
-                                break;
-                            }
+                            const elements = parentDoc.querySelectorAll(selector);
+                            elements.forEach(el => {
+                                const isCloseButton = el.getAttribute('aria-label')?.toLowerCase().includes('close') ||
+                                                    el.getAttribute('title')?.toLowerCase().includes('close') ||
+                                                    el.classList.contains('plugin-close') ||
+                                                    el.classList.contains('asc-window-close') ||
+                                                    el.classList.contains('close');
+                                if (isCloseButton) {
+                                    hideCloseButton(el);
+                                    if (!onlyOfficeCloseBtn) {
+                                        onlyOfficeCloseBtn = el;
+                                        console.log('Found and hiding OnlyOffice close button in parent with selector:', selector);
+                                    }
+                                }
+                            });
+                            if (onlyOfficeCloseBtn) break;
                         }
                         
                         // Also check parent for current-plugin-header
@@ -904,11 +991,17 @@
                                                        btn.getAttribute('title')?.toLowerCase().includes('close') ||
                                                        btn.classList.contains('close') ||
                                                        btn.classList.contains('asc-window-close') ||
+                                                       btn.classList.contains('plugin-close') ||
                                                        (btn === buttons[buttons.length - 1] && buttons.length > 0);
                                     
                                     if (isCloseButton || buttons.length === 1) {
+                                        hideCloseButton(btn);
+                                        // Also hide parent wrapper if it exists
+                                        if (btn.parentElement && btn.parentElement.classList.contains('plugin-close')) {
+                                            hideCloseButton(btn.parentElement);
+                                        }
                                         onlyOfficeCloseBtn = btn;
-                                        console.log('Found close button in parent current-plugin-header');
+                                        console.log('Found and hiding close button in parent current-plugin-header');
                                         break;
                                     }
                                 }
@@ -920,25 +1013,11 @@
                 }
             }
             
-            if (onlyOfficeCloseBtn) {
-                // Check if listener is already attached
-                if (onlyOfficeCloseBtn.hasAttribute('data-close-listener-attached')) {
-                    console.log('Close button listener already attached');
-                    return true;
-                }
-                
-                // Mark as having listener attached
-                onlyOfficeCloseBtn.setAttribute('data-close-listener-attached', 'true');
-                
-                onlyOfficeCloseBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('OnlyOffice close button clicked');
-                    closePluginPanel();
-                    return false;
-                });
-                
-                console.log('OnlyOffice close button listener attached');
+            // Close button is now hidden, but we keep the function for collapse functionality
+            // The collapse functionality is preserved via closePluginPanel() which uses HidePluginPanel
+            if (onlyOfficeCloseBtn || attempts >= 5) {
+                // Button found and hidden, or we've tried enough times
+                console.log('Close button hidden successfully');
                 return true;
             } else if (attempts < maxAttempts) {
                 // Retry after a delay
@@ -951,7 +1030,7 @@
         // Start looking for the close button
         setTimeout(findAndSetupCloseButton, 100);
         
-        // Set up mutation observer to watch for dynamically added close buttons
+        // Set up mutation observer to watch for dynamically added close buttons and hide them immediately
         const observer = new MutationObserver(function(mutations) {
             mutations.forEach(function(mutation) {
                 mutation.addedNodes.forEach(function(node) {
@@ -964,7 +1043,17 @@
                         );
                         
                         if (isCloseButton) {
-                            console.log('Close button or header detected, re-running setup');
+                            // Immediately hide any close buttons found
+                            if (node.matches && (node.matches('.plugin-close, .asc-window-close') || 
+                                node.getAttribute('aria-label')?.toLowerCase().includes('close'))) {
+                                hideCloseButton(node);
+                            }
+                            // Also check for close buttons inside the node
+                            const closeButtons = node.querySelectorAll && node.querySelectorAll('.plugin-close, .asc-window-close, [aria-label*="close" i]');
+                            if (closeButtons) {
+                                closeButtons.forEach(btn => hideCloseButton(btn));
+                            }
+                            console.log('Close button or header detected, hiding immediately');
                             setTimeout(findAndSetupCloseButton, 100);
                         }
                     }
@@ -993,7 +1082,17 @@
                                 );
                                 
                                 if (isCloseButton) {
-                                    console.log('Close button or header detected in parent, re-running setup');
+                                    // Immediately hide any close buttons found in parent
+                                    if (node.matches && (node.matches('.plugin-close, .asc-window-close') || 
+                                        node.getAttribute('aria-label')?.toLowerCase().includes('close'))) {
+                                        hideCloseButton(node);
+                                    }
+                                    // Also check for close buttons inside the node
+                                    const closeButtons = node.querySelectorAll && node.querySelectorAll('.plugin-close, .asc-window-close, [aria-label*="close" i]');
+                                    if (closeButtons) {
+                                        closeButtons.forEach(btn => hideCloseButton(btn));
+                                    }
+                                    console.log('Close button or header detected in parent, hiding immediately');
                                     setTimeout(findAndSetupCloseButton, 100);
                                 }
                             }
@@ -1050,34 +1149,97 @@
         }
     }
     
+    // Track if ensureMainMenuWidth interval is already running
+    let mainMenuWidthIntervalId = null;
+    
+    // Function to ensure main menu width stays at 360px
+    // Uses interval to repeatedly set it for a short period to catch OnlyOffice's reads
+    function ensureMainMenuWidth() {
+        // Clear any existing interval
+        if (mainMenuWidthIntervalId !== null) {
+            clearInterval(mainMenuWidthIntervalId);
+            mainMenuWidthIntervalId = null;
+        }
+        
+        const mainMenuWidthKey = 'de-mainmenu-width';
+        const defaultWidth = '360';
+        let attempts = 0;
+        const maxAttempts = 30; // Check for 3 seconds (30 * 100ms) to catch late reads
+        
+        // Set it immediately
+        setMainMenuWidth();
+        
+        mainMenuWidthIntervalId = setInterval(function() {
+            try {
+                // Set in current window
+                localStorage.setItem(mainMenuWidthKey, defaultWidth);
+                
+                // Also try to set in parent window (if in iframe)
+                try {
+                    if (window.parent && window.parent !== window && window.parent.localStorage) {
+                        window.parent.localStorage.setItem(mainMenuWidthKey, defaultWidth);
+                    }
+                } catch (e) {
+                    // Cross-origin, ignore
+                }
+                
+                attempts++;
+                if (attempts >= maxAttempts) {
+                    clearInterval(mainMenuWidthIntervalId);
+                    mainMenuWidthIntervalId = null;
+                    console.log('Stopped ensuring main menu width (max attempts reached)');
+                }
+            } catch (error) {
+                clearInterval(mainMenuWidthIntervalId);
+                mainMenuWidthIntervalId = null;
+                console.warn('Error ensuring main menu width:', error);
+            }
+        }, 100); // Check every 100ms
+    }
+    
+    // Helper function to force resize window to 360px using OnlyOffice API
+    function forceResizeWindow() {
+        try {
+            if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
+                window.Asc.plugin.executeMethod("ResizeWindow", [360, 0], function() {
+                    console.log('ResizeWindow: Forced main menu width to 360px');
+                }, function(error) {
+                    console.warn('ResizeWindow failed:', error);
+                });
+            }
+        } catch (e) {
+            console.warn('ResizeWindow error:', e);
+        }
+    }
+    
     // Open plugin panel on the left side
     function openPluginPanel() {
         try {
             if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
-                // Set default panel width to 365px
-                const defaultWidth = 365;
-                window.Asc.plugin.executeMethod("SetPluginPanelWidth", [defaultWidth], function() {
-                    console.log('Panel width set to default:', defaultWidth);
-                }, function(error) {
-                    console.warn('SetPluginPanelWidth not available, using CSS fallback:', error);
-                    // Fallback: set width via CSS
-                    const iframe = window.frameElement;
-                    if (iframe) {
-                        iframe.style.width = defaultWidth + 'px';
-                        iframe.style.minWidth = defaultWidth + 'px';
-                    }
-                    document.body.style.minWidth = defaultWidth + 'px';
-                    document.body.style.width = defaultWidth + 'px';
-                });
-                
                 window.Asc.plugin.executeMethod("ShowPluginPanel", [], function() {
                     console.log('Plugin panel opened');
+                    // Ensure width is set after panel opens
+                    ensureMainMenuWidth();
+                    // Force resize after panel opens (with delay to ensure panel is rendered)
+                    setTimeout(function() {
+                        forceResizeWindow();
+                    }, 200);
                 }, function(error) {
                     console.warn('ShowPluginPanel not available:', error);
+                    // Even if panel open fails, ensure width is set
+                    ensureMainMenuWidth();
+                    forceResizeWindow();
                 });
+            } else {
+                // If API not available, still try to ensure width
+                ensureMainMenuWidth();
+                forceResizeWindow();
             }
         } catch (error) {
             console.warn('Error opening plugin panel:', error);
+            // Even on error, try to ensure width
+            ensureMainMenuWidth();
+            forceResizeWindow();
         }
     }
 
@@ -1139,6 +1301,9 @@
     }
 
     // Function to close/hide the plugin panel programmatically
+    // NOTE: This function uses HidePluginPanel which COLLAPSES the plugin (not permanently closes it)
+    // The collapse functionality is preserved - users can still collapse the plugin via other means
+    // The close button is hidden but collapse functionality remains intact
     window.closePluginPanel = function() {
         console.log('closePluginPanel called');
         
@@ -1150,7 +1315,7 @@
         // Try multiple methods to close the plugin panel
         try {
             if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
-                // Method 1: HidePluginPanel
+                // Method 1: HidePluginPanel - This COLLAPSES the plugin (preserves collapse functionality)
                 window.Asc.plugin.executeMethod("HidePluginPanel", [], function() {
                     console.log('Plugin panel closed via HidePluginPanel');
                 }, function(error) {
@@ -1294,7 +1459,7 @@
             if (!isResizing) return;
 
             const diff = startX - e.clientX;
-            const newWidth = Math.max(365, Math.min(800, startWidth + diff));
+            const newWidth = Math.max(250, Math.min(800, startWidth + diff));
 
             if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
                 try {
@@ -1315,7 +1480,6 @@
             const iframe = window.frameElement;
             if (iframe) {
                 iframe.style.width = newWidth + 'px';
-                iframe.style.minWidth = newWidth + 'px';
             }
             document.body.style.minWidth = newWidth + 'px';
             document.body.style.width = newWidth + 'px';
