@@ -285,11 +285,7 @@
                         <svg class="back-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="handleBackFromDetail()" style="cursor: pointer; flex-shrink: 0;">
                             <polyline points="15 18 9 12 15 6"></polyline>
                         </svg>
-                        ${isEditing ? `
-                        <span style="font-size: 14px; font-weight: 650; flex-shrink: 0; white-space: nowrap; margin: 0;">Edit Guide</span>
-                        ` : `
-                        <span style="font-size: 14px; font-weight: 650; flex-shrink: 0; white-space: nowrap; margin: 0;">${escapeHtml(currentName)}</span>
-                        `}
+                        <span style="font-size: 14px; font-weight: 650; cursor: pointer; flex-shrink: 0; white-space: nowrap; margin: 0;" onclick="handleBackFromDetail()">Back</span>
                     </div>
                     ${isEditable && !isEditing ? `
                     <div class="playbook-detail-header-actions">
@@ -322,7 +318,9 @@
                             </div>
                             <input type="text" id="edited-playbook-name" value="${escapeHtml(currentName)}" placeholder="Enter guide name" style="font-size: 14px; font-weight: 500; width: 100%; box-sizing: border-box; max-width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
                         </div>
-                        ` : ''}
+                        ` : `
+                        <h1 style="font-size: 14px; font-weight: bold; color: #212529; margin: 0 0 6px 0;">${escapeHtml(currentName)}</h1>
+                        `}
                     </div>
                     <div class="playbook-detail-guidelines">
                         <div class="guidelines-list" id="guidelines-list-container">
