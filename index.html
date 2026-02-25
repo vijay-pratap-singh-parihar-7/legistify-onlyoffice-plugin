@@ -7,6 +7,31 @@
     <script type="text/javascript" src="../v1/plugins-ui.js" onerror="console.error('Failed to load plugins-ui.js')"></script>
     <link rel="stylesheet" href="../v1/plugins.css">
     <script>
+        // Set main menu width to 360px IMMEDIATELY before OnlyOffice reads it
+        // This must run before any OnlyOffice scripts execute
+        (function() {
+            try {
+                const mainMenuWidthKey = 'de-mainmenu-width';
+                const defaultWidth = '360';
+                
+                // Set in current window
+                localStorage.setItem(mainMenuWidthKey, defaultWidth);
+                
+                // Also try to set in parent window (if in iframe)
+                try {
+                    if (window.parent && window.parent !== window && window.parent.localStorage) {
+                        window.parent.localStorage.setItem(mainMenuWidthKey, defaultWidth);
+                    }
+                } catch (e) {
+                    // Cross-origin, ignore
+                }
+                
+                console.log('HTML: Set main menu width to', defaultWidth, 'px (before OnlyOffice loads)');
+            } catch (error) {
+                console.warn('HTML: Could not set main menu width:', error);
+            }
+        })();
+        
         // Debug: Check if scripts loaded
         window.addEventListener('load', function() {
             console.log('Page loaded. window.Asc:', typeof window.Asc !== 'undefined' ? window.Asc : 'undefined');

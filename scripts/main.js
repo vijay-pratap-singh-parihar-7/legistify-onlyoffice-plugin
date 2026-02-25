@@ -298,7 +298,8 @@
         
         // Ensure main menu width is set to 360px (set again after initialization)
         // This ensures it's set even if OnlyOffice reads it after plugin init
-        setMainMenuWidth();
+        // Use ensureMainMenuWidth() which repeatedly sets it for a short period
+        ensureMainMenuWidth();
         
         // Initialize tab navigation
         initTabNavigation();
@@ -1142,18 +1143,75 @@
         }
     }
     
+    // Track if ensureMainMenuWidth interval is already running
+    let mainMenuWidthIntervalId = null;
+    
+    // Function to ensure main menu width stays at 360px
+    // Uses interval to repeatedly set it for a short period to catch OnlyOffice's reads
+    function ensureMainMenuWidth() {
+        // Clear any existing interval
+        if (mainMenuWidthIntervalId !== null) {
+            clearInterval(mainMenuWidthIntervalId);
+            mainMenuWidthIntervalId = null;
+        }
+        
+        const mainMenuWidthKey = 'de-mainmenu-width';
+        const defaultWidth = '360';
+        let attempts = 0;
+        const maxAttempts = 30; // Check for 3 seconds (30 * 100ms) to catch late reads
+        
+        // Set it immediately
+        setMainMenuWidth();
+        
+        mainMenuWidthIntervalId = setInterval(function() {
+            try {
+                // Set in current window
+                localStorage.setItem(mainMenuWidthKey, defaultWidth);
+                
+                // Also try to set in parent window (if in iframe)
+                try {
+                    if (window.parent && window.parent !== window && window.parent.localStorage) {
+                        window.parent.localStorage.setItem(mainMenuWidthKey, defaultWidth);
+                    }
+                } catch (e) {
+                    // Cross-origin, ignore
+                }
+                
+                attempts++;
+                if (attempts >= maxAttempts) {
+                    clearInterval(mainMenuWidthIntervalId);
+                    mainMenuWidthIntervalId = null;
+                    console.log('Stopped ensuring main menu width (max attempts reached)');
+                }
+            } catch (error) {
+                clearInterval(mainMenuWidthIntervalId);
+                mainMenuWidthIntervalId = null;
+                console.warn('Error ensuring main menu width:', error);
+            }
+        }, 100); // Check every 100ms
+    }
+    
     // Open plugin panel on the left side
     function openPluginPanel() {
         try {
             if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
                 window.Asc.plugin.executeMethod("ShowPluginPanel", [], function() {
                     console.log('Plugin panel opened');
+                    // Ensure width is set after panel opens
+                    ensureMainMenuWidth();
                 }, function(error) {
                     console.warn('ShowPluginPanel not available:', error);
+                    // Even if panel open fails, ensure width is set
+                    ensureMainMenuWidth();
                 });
+            } else {
+                // If API not available, still try to ensure width
+                ensureMainMenuWidth();
             }
         } catch (error) {
             console.warn('Error opening plugin panel:', error);
+            // Even on error, try to ensure width
+            ensureMainMenuWidth();
         }
     }
 
