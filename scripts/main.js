@@ -6,6 +6,35 @@
     console.log('Plugin main.js script loaded at:', new Date().toISOString());
     console.log('window.Asc at script load:', typeof window.Asc !== 'undefined' ? window.Asc : 'undefined');
     
+    // Helper function to set main menu width to 360px
+    // This ensures the OnlyOffice main menu always opens at 360px width
+    function setMainMenuWidth() {
+        try {
+            const mainMenuWidthKey = 'de-mainmenu-width';
+            const defaultWidth = '360';
+            
+            // Set in current window's localStorage
+            localStorage.setItem(mainMenuWidthKey, defaultWidth);
+            
+            // Also try to set it in parent window's localStorage (if plugin is in iframe)
+            try {
+                if (window.parent && window.parent !== window && window.parent.localStorage) {
+                    window.parent.localStorage.setItem(mainMenuWidthKey, defaultWidth);
+                }
+            } catch (parentError) {
+                // Cross-origin or other error accessing parent, ignore
+            }
+            
+            console.log('Set main menu width to', defaultWidth, 'px');
+        } catch (error) {
+            console.warn('Could not set main menu width:', error);
+        }
+    }
+    
+    // Always set main menu width to 360px on plugin load
+    // Must be set early, before OnlyOffice reads it during initialization
+    setMainMenuWidth();
+    
     // Store plugin data (contractId, accessToken, etc.) - will be populated from backend
     // These are empty defaults - actual values come from backend via initData
     window.pluginData = {
@@ -266,6 +295,10 @@
             organizationId: window.pluginData.organizationId ? 'Set' : 'Missing',
             backendUrl: window.pluginData.backendUrl || 'Missing'
         });
+        
+        // Ensure main menu width is set to 360px (set again after initialization)
+        // This ensures it's set even if OnlyOffice reads it after plugin init
+        setMainMenuWidth();
         
         // Initialize tab navigation
         initTabNavigation();
