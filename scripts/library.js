@@ -407,18 +407,6 @@
         subClauseVisible = true;
         subClauseLoading = true;
         
-        // Change drawer header close button to back arrow
-        const drawerCloseButton = document.querySelector('.drawer-close-button');
-        if (drawerCloseButton) {
-            drawerCloseButton.innerHTML = `
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="handleBackFromSubClause()" style="cursor: pointer;">
-                    <polyline points="15 18 9 12 15 6"></polyline>
-                </svg>
-            `;
-            // Remove the onclick from button and add to svg
-            drawerCloseButton.onclick = null;
-        }
-        
         // Check for drawer view first, then original
         let libraryView = document.getElementById('library-view-drawer') || document.getElementById('library-view');
         if (!libraryView) {
@@ -430,21 +418,41 @@
         }
         if (!libraryView) return;
 
+        // Update drawer header to show back button and copy button
+        const drawerCloseButton = document.querySelector('.drawer-close-button');
+        const drawerHeaderActions = document.getElementById('drawer-header-actions');
+        const drawerCopyBtn = document.getElementById('drawer-copy-btn');
+        const drawerTitle = document.getElementById('drawer-title');
+        
+        // Replace close button with back button
+        if (drawerCloseButton) {
+            drawerCloseButton.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            `;
+            drawerCloseButton.onclick = handleBackFromSubClause;
+            drawerCloseButton.title = 'Back to Clause Library';
+        }
+        
+        // Update drawer title
+        if (drawerTitle) {
+            drawerTitle.textContent = 'Sub Clause';
+        }
+        
+        // Show copy button in drawer header
+        if (drawerHeaderActions) {
+            drawerHeaderActions.style.display = 'flex';
+        }
+        if (drawerCopyBtn) {
+            drawerCopyBtn.style.display = 'flex';
+            drawerCopyBtn.onclick = copySubClause;
+            drawerCopyBtn.title = 'Copy SubClause Details';
+        }
+
+        // Render sub clause view without feature-header
         libraryView.innerHTML = `
             <div class="sub-clause-box" style="position: relative; height: 100vh; overflow: hidden; margin-top: -10px; display: flex; flex-direction: column;">
-                <div class="copy-button" id="sub-clause-copy-button" onclick="copySubClause()" style="position: absolute; top: 8px; right: 20px; padding: 4px; border-radius: 5px; display: none; align-items: center; cursor: pointer; border: 1px solid #0000003d; z-index: 10;" title="Copy SubClause Details">
-                    <svg id="copy" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                    </svg>
-                </div>
-                <div class="feature-header">
-                    <div class="header-box">
-                        <svg class="back-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="handleBackFromSubClause()" style="cursor: pointer;">
-                            <polyline points="15 18 9 12 15 6"></polyline>
-                        </svg>
-                    </div>
-                </div>
                 <div id="sub-clause-content" class="hiddenScrollbar" style="flex: 1; overflow-y: auto; margin-left: 16px; display: flex; align-items: center; justify-content: center;">
                     <div class="loading-spinner"></div>
                 </div>
@@ -476,17 +484,11 @@
             if (data?.status && data?.data) {
                 subClause = data.data;
                 const contentDiv = document.getElementById('sub-clause-content');
-                const copyButton = document.getElementById('sub-clause-copy-button');
                 if (contentDiv && subClause.content) {
-                    // Remove flex centering when content is loaded
                     contentDiv.style.display = 'block';
-                    contentDiv.style.alignItems = 'normal';
-                    contentDiv.style.justifyContent = 'normal';
-                    contentDiv.innerHTML = `<div id="subClauseHtmlContentContainer" style="margin-top: -22px; line-height: normal;">${subClause.content}</div>`;
-                    // Show copy button when content is loaded
-                    if (copyButton) {
-                        copyButton.style.display = 'flex';
-                    }
+                    contentDiv.style.alignItems = 'flex-start';
+                    contentDiv.style.justifyContent = 'flex-start';
+                    contentDiv.innerHTML = `<div id="subClauseHtmlContentContainer" style="line-height: normal;">${subClause.content}</div>`;
                 }
             } else {
                 errorMessage = data.msg || 'Failed to load sub clause details';
@@ -506,8 +508,12 @@
         subClauseVisible = false;
         subClause = null;
         
-        // Restore drawer header close button to X
+        // Restore drawer close button
         const drawerCloseButton = document.querySelector('.drawer-close-button');
+        const drawerHeaderActions = document.getElementById('drawer-header-actions');
+        const drawerCopyBtn = document.getElementById('drawer-copy-btn');
+        const drawerTitle = document.getElementById('drawer-title');
+        
         if (drawerCloseButton) {
             drawerCloseButton.innerHTML = `
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -516,6 +522,20 @@
                 </svg>
             `;
             drawerCloseButton.onclick = window.closeDrawer;
+            drawerCloseButton.title = '';
+        }
+        
+        // Update drawer title back to Clause Library
+        if (drawerTitle) {
+            drawerTitle.textContent = 'Clause Library';
+        }
+        
+        // Hide copy button in drawer header
+        if (drawerHeaderActions) {
+            drawerHeaderActions.style.display = 'none';
+        }
+        if (drawerCopyBtn) {
+            drawerCopyBtn.style.display = 'none';
         }
         
         renderLibraryView();

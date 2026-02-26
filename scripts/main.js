@@ -637,9 +637,23 @@
         const drawerOverlay = document.getElementById('drawer-overlay');
         const drawerContent = document.getElementById('drawer-content');
         const drawerHeaderActions = document.getElementById('drawer-header-actions');
+        const drawerCloseButton = document.querySelector('.drawer-close-button');
+        const drawerTitle = document.getElementById('drawer-title');
 
         // Check if we're closing Copilot drawer
         const wasCopilot = activeContent === 'genai' || activeContent === 'askai';
+
+        // Reset close button to X (in case it was changed to back button)
+        if (drawerCloseButton) {
+            drawerCloseButton.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            `;
+            drawerCloseButton.onclick = window.closeDrawer;
+            drawerCloseButton.title = '';
+        }
 
         if (drawer) drawer.style.display = 'none';
         if (drawerOverlay) drawerOverlay.style.display = 'none';
