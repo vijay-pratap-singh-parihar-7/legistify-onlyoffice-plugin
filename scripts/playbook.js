@@ -1287,7 +1287,7 @@
                         <svg class="back-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="handleBackFromResults()" style="cursor: pointer;">
                             <polyline points="15 18 9 12 15 6"></polyline>
                         </svg>
-                        <p class="summary-text" onclick="handleBackFromResults()" style="cursor: pointer; margin: 0; font-weight: 650; font-size: 16px;">Back</p>
+                        <p class="summary-text" onclick="handleBackFromResults()" style="cursor: pointer; margin: 0; font-weight: 650; font-size: 14px;">Back</p>
                     </div>
                     <div id="streaming-indicator" style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #6e6b7b; font-weight: 500; flex: 0 0 auto;"></div>
                 </div>
@@ -1576,7 +1576,7 @@
                         <svg class="back-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="handleBackFromGuidelineDetail()" style="cursor: pointer;">
                             <polyline points="15 18 9 12 15 6"></polyline>
                         </svg>
-                        <p class="summary-text" onclick="handleBackFromGuidelineDetail()" style="cursor: pointer; margin: 0; font-weight: 650; font-size: 16px;">Back</p>
+                        <p class="summary-text" onclick="handleBackFromGuidelineDetail()" style="cursor: pointer; margin: 0; font-weight: 650; font-size: 14px;">Back</p>
                     </div>
                     <div style="flex: 0 0 auto; width: 60px;"></div>
                 </div>
