@@ -1532,6 +1532,15 @@
         renderDrawer();
     };
 
+    // Handle back from guideline detail drawer
+    window.handleBackFromGuidelineDetail = function() {
+        isDrawerOpen = false;
+        activeContentPlaybook = null;
+        
+        // Re-render the results view to go back to the playbook results
+        renderResultsView();
+    };
+
     // Render drawer for playbook item details - uses existing drawer infrastructure
     function renderDrawer() {
         if (!activeContentPlaybook) return;
@@ -1540,8 +1549,20 @@
         const drawer = document.getElementById('drawer');
         const drawerTitle = document.getElementById('drawer-title');
         const drawerContent = document.getElementById('drawer-content');
+        const drawerHeader = document.querySelector('.drawer-header');
+        const drawerHeaderActions = document.getElementById('drawer-header-actions');
         
         if (!drawerOverlay || !drawer || !drawerTitle || !drawerContent) return;
+        
+        // Hide drawer header for guideline detail view (no close button, no title)
+        if (drawerHeader) {
+            drawerHeader.style.display = 'none';
+        }
+        
+        // Hide header actions for guideline detail
+        if (drawerHeaderActions) {
+            drawerHeaderActions.style.display = 'none';
+        }
         
         const status = activeContentPlaybook.Status || activeContentPlaybook.status;
         const statusValue = activeContentPlaybook.statusValue;
@@ -1549,28 +1570,39 @@
         
         drawerTitle.textContent = 'Guideline Details';
         drawerContent.innerHTML = `
-            <div style="padding: 12px; max-height: calc(90vh - 60px); overflow-y: auto;">
-                ${isNotMet ? `
-                    <div style="margin-bottom: 12px;">
-                        <strong>Guideline:</strong> <span style="color: #666;">${escapeHtml(activeContentPlaybook.Rule || 'No guideline text available')}</span>
+            <div style="display: flex; flex-direction: column; height: 100%;">
+                <div class="results-header" style="display: flex; justify-content: space-between; align-items: center; position: relative; padding: 12px; border-bottom: 1px solid #e9ecef;">
+                    <div class="header-box" style="display: flex; align-items: center; gap: 4px; flex: 0 0 auto;">
+                        <svg class="back-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="handleBackFromGuidelineDetail()" style="cursor: pointer;">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                        <p class="summary-text" onclick="handleBackFromGuidelineDetail()" style="cursor: pointer; margin: 0; font-weight: 650; font-size: 16px;">Back</p>
                     </div>
-                    <div style="margin-bottom: 12px;">
-                        <strong>Evaluation:</strong> <span style="color: #666;">${escapeHtml(activeContentPlaybook.Evaluation || 'No evaluation available')}</span>
-                    </div>
-                ` : `
-                    <div style="margin-bottom: 12px;">
-                        <strong>Guideline:</strong>
-                        <div style="color: #666; margin-top: 4px;">${escapeHtml(activeContentPlaybook.Rule || 'No guideline text available')}</div>
-                    </div>
-                    <div style="margin-bottom: 12px;">
-                        <strong>Conclusion:</strong>
-                        <div style="color: #666; margin-top: 4px;">${escapeHtml(activeContentPlaybook.Conclusion || 'No conclusion available')}</div>
-                    </div>
-                    <div style="margin-bottom: 12px;">
-                        <strong>Evaluation:</strong>
-                        <div style="color: #666; margin-top: 4px;">${escapeHtml(activeContentPlaybook.Evaluation || 'No evaluation available')}</div>
-                    </div>
-                `}
+                    <div style="flex: 0 0 auto; width: 60px;"></div>
+                </div>
+                <div style="padding: 12px; flex: 1; overflow-y: auto; max-height: calc(90vh - 100px);">
+                    ${isNotMet ? `
+                        <div style="margin-bottom: 12px;">
+                            <strong>Guideline:</strong> <span style="color: #666;">${escapeHtml(activeContentPlaybook.Rule || 'No guideline text available')}</span>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <strong>Evaluation:</strong> <span style="color: #666;">${escapeHtml(activeContentPlaybook.Evaluation || 'No evaluation available')}</span>
+                        </div>
+                    ` : `
+                        <div style="margin-bottom: 12px;">
+                            <strong>Guideline:</strong>
+                            <div style="color: #666; margin-top: 4px;">${escapeHtml(activeContentPlaybook.Rule || 'No guideline text available')}</div>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <strong>Conclusion:</strong>
+                            <div style="color: #666; margin-top: 4px;">${escapeHtml(activeContentPlaybook.Conclusion || 'No conclusion available')}</div>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <strong>Evaluation:</strong>
+                            <div style="color: #666; margin-top: 4px;">${escapeHtml(activeContentPlaybook.Evaluation || 'No evaluation available')}</div>
+                        </div>
+                    `}
+                </div>
             </div>
         `;
         
