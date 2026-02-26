@@ -154,6 +154,7 @@ button[title*="close" i],
 .tab-button.active {
     background-color: #fff;
     padding: 0 12px;
+    border-bottom: 3px solid #2b70ff;
 }
 
 .tab-button.active:hover {
@@ -374,11 +375,13 @@ button[title*="close" i],
 
 /* Playbook Container - Matches MS Editor playbookContainer */
 .playbook-container {
-    height: calc(100vh - 45px);
-    max-height: calc(100vh - 45px);
+    flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
     position: relative;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 .playbook-container::-webkit-scrollbar {
@@ -696,17 +699,21 @@ button[title*="close" i],
 }
 
 .tab-button.active {
-    background: #2667ff;
-    color: white;
-    font-weight: 600;
-    border-bottom-color: #2667ff;
+    background-color: #fff;
+    padding: 0 12px;
+    border-bottom: 3px solid #2b70ff;
 }
 
 .tab-button.active:hover {
-    background: #2667ff;
+    background-color: #fff !important;
     color: black !important;
     visibility: visible;
     opacity: 1;
+}
+
+/* Ensure Playbook tab has 3px Indigo Blue bottom border when active */
+.tab-button[data-tab="Playbook"].active {
+    border-bottom: 3px solid #2b70ff;
 }
 
 /* Tab Content */
@@ -1664,7 +1671,7 @@ button[title*="close" i],
 }
 
 .new-guide-button {
-    background-color: #2667ff;
+    background-color: #2b70ff;
     color: #fff;
     border: none;
     border-radius: 6px;
@@ -1694,8 +1701,6 @@ button[title*="close" i],
     overflow-y: auto;
     overflow-x: hidden;
     min-height: 0;
-    max-height: calc(100vh - 110px);
-    height: 100%;
 }
 
 .playbook-list {
@@ -1708,7 +1713,10 @@ button[title*="close" i],
     padding: 8px 0;
 }
 
-.playbook-item {
+/* Scoped playbook styles to prevent CSS leakage */
+.plugin-root .playbook-item {
+    display: flex;
+    flex-direction: column;
     background-color: transparent;
     padding: 10px 20px;
     cursor: pointer;
@@ -1716,28 +1724,45 @@ button[title*="close" i],
     border-bottom: 1px solid #e9ecef;
 }
 
-.playbook-item:last-child {
+.plugin-root .playbook-item:last-child {
     border-bottom: none;
     margin-bottom: 8px;
 }
 
-.playbook-item:hover {
+.plugin-root .playbook-item:hover {
     background-color: #f8f9ff;
 }
 
-.playbook-header {
+/* Guidelines text - small gray font above title */
+.plugin-root .playbook-guidelines {
+    font-size: 11px;
+    color: #9ca3af;
+    margin: 0 0 4px 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    line-height: 1.4;
+}
+
+.plugin-root .standard-text {
+    font-size: 11px;
+    color: #9ca3af;
+    font-weight: 400;
+}
+
+/* Action row containing title and button */
+.plugin-root .playbook-action-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 8px;
+    min-width: 0;
 }
 
-.playbook-info {
-    display: flex;
-    flex-direction: column;
+/* Title container with flex and truncation */
+.plugin-root .playbook-title {
     flex: 1;
-}
-
-.playbook-title {
+    min-width: 0;
     font-size: 14px;
     font-weight: 400;
     color: #212529;
@@ -1745,31 +1770,11 @@ button[title*="close" i],
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 200px;
 }
 
-.playbook-guidelines {
-    font-size: 14px;
-    color: #6c757d;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.standard-text {
-    font-size: 14px;
-    color: #2667ff;
-    font-weight: 500;
-}
-
-.playbook-actions {
-    display: flex;
-    gap: 6px;
-}
-
-.run-button {
-    background-color: #9da4aaff;
+/* Run button - always accessible, never wraps */
+.plugin-root .run-button {
+    background-color: #9ca3af;
     color: #fff;
     border: none;
     border-radius: 5px;
@@ -1781,13 +1786,15 @@ button[title*="close" i],
     align-items: center;
     gap: 4px;
     transition: all 0.2s ease;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
-.run-button:hover:not(:disabled) {
-    background-color: #2667ff;
+.plugin-root .run-button:hover:not(:disabled) {
+    background-color: #2b70ff;
 }
 
-.run-button:disabled {
+.plugin-root .run-button:disabled {
     background-color: #adb5bd;
     cursor: not-allowed;
 }
