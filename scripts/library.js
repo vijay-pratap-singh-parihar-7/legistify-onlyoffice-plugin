@@ -407,6 +407,18 @@
         subClauseVisible = true;
         subClauseLoading = true;
         
+        // Change drawer header close button to back arrow
+        const drawerCloseButton = document.querySelector('.drawer-close-button');
+        if (drawerCloseButton) {
+            drawerCloseButton.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="handleBackFromSubClause()" style="cursor: pointer;">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            `;
+            // Remove the onclick from button and add to svg
+            drawerCloseButton.onclick = null;
+        }
+        
         // Check for drawer view first, then original
         let libraryView = document.getElementById('library-view-drawer') || document.getElementById('library-view');
         if (!libraryView) {
@@ -420,21 +432,20 @@
 
         libraryView.innerHTML = `
             <div class="sub-clause-box" style="position: relative; height: 100vh; overflow: hidden; margin-top: -10px; display: flex; flex-direction: column;">
+                <div class="copy-button" id="sub-clause-copy-button" onclick="copySubClause()" style="position: absolute; top: 8px; right: 20px; padding: 4px; border-radius: 5px; display: none; align-items: center; cursor: pointer; border: 1px solid #0000003d; z-index: 10;" title="Copy SubClause Details">
+                    <svg id="copy" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                </div>
                 <div class="feature-header">
                     <div class="header-box">
                         <svg class="back-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="handleBackFromSubClause()" style="cursor: pointer;">
                             <polyline points="15 18 9 12 15 6"></polyline>
                         </svg>
-                        <p class="summary-text">Sub Clause</p>
-                    </div>
-                    <div class="copy-button" onclick="copySubClause()" style="position: absolute; right: 20px; padding: 4px; border-radius: 5px; display: flex; align-items: center; cursor: pointer; border: 1px solid #0000003d;" title="Copy SubClause Details">
-                        <svg id="copy" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                        </svg>
                     </div>
                 </div>
-                <div id="sub-clause-content" class="hiddenScrollbar" style="flex: 1; overflow-y: auto; margin-left: 16px;">
+                <div id="sub-clause-content" class="hiddenScrollbar" style="flex: 1; overflow-y: auto; margin-left: 16px; display: flex; align-items: center; justify-content: center;">
                     <div class="loading-spinner"></div>
                 </div>
             </div>
@@ -465,8 +476,17 @@
             if (data?.status && data?.data) {
                 subClause = data.data;
                 const contentDiv = document.getElementById('sub-clause-content');
+                const copyButton = document.getElementById('sub-clause-copy-button');
                 if (contentDiv && subClause.content) {
+                    // Remove flex centering when content is loaded
+                    contentDiv.style.display = 'block';
+                    contentDiv.style.alignItems = 'normal';
+                    contentDiv.style.justifyContent = 'normal';
                     contentDiv.innerHTML = `<div id="subClauseHtmlContentContainer" style="margin-top: -22px; line-height: normal;">${subClause.content}</div>`;
+                    // Show copy button when content is loaded
+                    if (copyButton) {
+                        copyButton.style.display = 'flex';
+                    }
                 }
             } else {
                 errorMessage = data.msg || 'Failed to load sub clause details';
@@ -485,6 +505,19 @@
     window.handleBackFromSubClause = function() {
         subClauseVisible = false;
         subClause = null;
+        
+        // Restore drawer header close button to X
+        const drawerCloseButton = document.querySelector('.drawer-close-button');
+        if (drawerCloseButton) {
+            drawerCloseButton.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            `;
+            drawerCloseButton.onclick = window.closeDrawer;
+        }
+        
         renderLibraryView();
         if (searchType === 'clause') {
             getClauseLibrary();
