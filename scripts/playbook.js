@@ -178,17 +178,21 @@
 
             return `
                 <div class="playbook-item" onclick="handlePlaybookClick('${playbook._id}')">
-                    <p class="playbook-guidelines">
-                        <span class="standard-text">${isStandard ? 'Standard' : 'Custom'}</span>
-                        <span>•</span>
-                        <span>${rulesCount} Guidelines</span>
-                    </p>
-                    <div class="playbook-action-row">
-                        <h3 class="playbook-title" title="${escapeHtml(playbook.name)}">${escapeHtml(playbook.name)}</h3>
-                        <button class="run-button" onclick="event.stopPropagation(); handleRunPlaybook('${playbook._id}')" ${runningPlaybook !== null ? 'disabled' : ''}>
-                            ${isRunning ? '<div class="loading-spinner-small"></div>' : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>'}
-                            Run
-                        </button>
+                    <div class="playbook-header">
+                        <div class="playbook-info">
+                            <p class="playbook-guidelines">
+                                <span class="standard-text">${isStandard ? 'Standard' : 'Custom'}</span>
+                                <span>•</span>
+                                <span>${rulesCount} Guidelines</span>
+                            </p>
+                            <h3 class="playbook-title" title="${escapeHtml(playbook.name)}">${escapeHtml(playbook.name)}</h3>
+                        </div>
+                        <div class="playbook-actions">
+                            <button class="run-button" onclick="event.stopPropagation(); handleRunPlaybook('${playbook._id}')" ${runningPlaybook !== null ? 'disabled' : ''}>
+                                ${isRunning ? '<div class="loading-spinner-small"></div>' : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>'}
+                                Run
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;
