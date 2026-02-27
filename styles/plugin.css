@@ -2058,11 +2058,30 @@ button[title*="close" i],
 
 .sub-clause-box {
     position: relative;
-    height: 100vh;
+    height: 100%;
     overflow: hidden;
-    margin-top: -10px;
     display: flex;
     flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+/* Sub-clause content wrapper - centers loader when loading */
+.sub-clause-content-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    width: 100%;
+}
+
+.sub-clause-content-wrapper .loading-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 
 /* Hidden Scrollbar - Matches MS Editor Library.js */

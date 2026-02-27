@@ -655,8 +655,9 @@
             drawerCloseButton.title = '';
         }
 
-        // Reset drawer title (in case it was changed to "Sub Clause")
-        if (drawerTitle && drawerTitle.textContent === 'Sub Clause') {
+        // Reset drawer title if we're closing from library view (could be in sub-clause mode)
+        // Check if we're closing from library view and reset title
+        if (drawerTitle && activeContent === 'library' && drawerTitle.textContent !== 'Clause Library') {
             drawerTitle.textContent = 'Clause Library';
         }
 

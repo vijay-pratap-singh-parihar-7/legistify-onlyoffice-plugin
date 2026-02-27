@@ -435,11 +435,6 @@
             drawerCloseButton.title = 'Back to Clause Library';
         }
         
-        // Update drawer title to "Sub Clause"
-        if (drawerTitle) {
-            drawerTitle.textContent = 'Sub Clause';
-        }
-        
         // Show copy button in drawer header actions
         if (drawerHeaderActions) {
             drawerHeaderActions.style.display = 'flex';
@@ -452,8 +447,8 @@
 
         // Render sub clause view without feature-header
         libraryView.innerHTML = `
-            <div class="sub-clause-box" style="position: relative; height: 100vh; overflow: hidden; margin-top: -10px; display: flex; flex-direction: column;">
-                <div id="sub-clause-content" class="hiddenScrollbar" style="flex: 1; overflow-y: auto; display: flex; align-items: center; justify-content: center; width: 100%;">
+            <div class="sub-clause-box">
+                <div id="sub-clause-content" class="hiddenScrollbar sub-clause-content-wrapper">
                     <div class="loading-spinner"></div>
                 </div>
             </div>
@@ -483,10 +478,15 @@
                 const data = await response.json();
             if (data?.status && data?.data) {
                 subClause = data.data;
+                
+                // Update drawer title to show clause name (dynamic title)
+                if (drawerTitle && subClause.name) {
+                    drawerTitle.textContent = subClause.name;
+                }
+                
                 const contentDiv = document.getElementById('sub-clause-content');
                 if (contentDiv && subClause.content) {
                     // Remove centering styles when content is loaded and add margin-left
-                    contentDiv.style.display = 'block';
                     contentDiv.style.alignItems = 'flex-start';
                     contentDiv.style.justifyContent = 'flex-start';
                     contentDiv.style.marginLeft = '16px';
