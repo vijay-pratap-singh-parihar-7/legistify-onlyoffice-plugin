@@ -526,8 +526,8 @@
                 const actionBoxes = clonedView.querySelectorAll('.response-action-box');
                 actionBoxes.forEach(box => box.remove());
 
-                // Remove feature-header from Ask AI view (header is in drawer)
-                if (contentKey === 'genai' || contentKey === 'askai') {
+                // Remove feature-header from Ask AI and Library views (header is in drawer)
+                if (contentKey === 'genai' || contentKey === 'askai' || contentKey === 'library') {
                     const featureHeaders = clonedView.querySelectorAll('.feature-header');
                     featureHeaders.forEach(header => header.remove());
                 }

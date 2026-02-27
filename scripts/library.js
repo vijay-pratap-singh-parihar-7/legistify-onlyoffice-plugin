@@ -435,6 +435,11 @@
             drawerCloseButton.title = 'Back to Clause Library';
         }
         
+        // Set title to "Clause Library" initially (will be updated with clause name after API call)
+        if (drawerTitle) {
+            drawerTitle.textContent = 'Clause Library';
+        }
+        
         // Show copy button in drawer header actions
         if (drawerHeaderActions) {
             drawerHeaderActions.style.display = 'flex';
@@ -445,6 +450,10 @@
             drawerCopyBtn.title = 'Copy SubClause Details';
         }
 
+        // Remove any existing feature-headers that might be in the view
+        const existingHeaders = libraryView.querySelectorAll('.feature-header');
+        existingHeaders.forEach(header => header.remove());
+        
         // Render sub clause view without feature-header
         libraryView.innerHTML = `
             <div class="sub-clause-box">
@@ -480,8 +489,9 @@
                 subClause = data.data;
                 
                 // Update drawer title to show clause name (dynamic title)
-                if (drawerTitle && subClause.name) {
-                    drawerTitle.textContent = subClause.name;
+                if (drawerTitle) {
+                    // Use clause name if available, otherwise keep "Clause Library"
+                    drawerTitle.textContent = subClause.name || 'Clause Library';
                 }
                 
                 const contentDiv = document.getElementById('sub-clause-content');
