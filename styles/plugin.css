@@ -2690,7 +2690,6 @@ button[title*="close" i],
 }
 
 .create-page-content {
-    flex: 1;
     padding: 0px 12px;
     overflow-y: auto;
     overflow-x: hidden;
@@ -2702,6 +2701,7 @@ button[title*="close" i],
     width: 95%;
     justify-content: flex-start;
     min-height: 0;
+    height: calc(100vh - 80px);
 }
 
 .create-page-inner {
