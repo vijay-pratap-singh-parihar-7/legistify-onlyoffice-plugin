@@ -1685,10 +1685,16 @@
                     <p class="footer-text">Want to craft your own guidelines?</p>
                     <span class="start-from-scratch" onclick="handleStartFromScratch()" style="display: inline-block;">Start From Scratch</span>
                 </div>
+                <div class="create-page-save-footer" id="create-page-save-footer" style="display: none;">
+                    <button class="fixed-save-button" onclick="handleSaveGuide()" ${isSavingPlaybook ? 'disabled' : ''}>
+                        ${isSavingPlaybook ? '<div class="loading-spinner-small"></div> Saving...' : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Save Guide'}
+                    </button>
+                </div>
             </div>
         `;
         // Update footer visibility based on current state
         updateCreatePageFooter();
+        updateCreatePageSaveFooter();
     }
     
     // Render create page content based on state
@@ -1710,6 +1716,25 @@
         // Show footer only in initial view (not generating, not generated)
         const shouldShow = !isGeneratingPlaybook && !generatedPlaybook;
         footer.style.display = shouldShow ? 'block' : 'none';
+    }
+    
+    // Update save footer visibility based on current state
+    function updateCreatePageSaveFooter() {
+        const saveFooter = document.getElementById('create-page-save-footer');
+        if (!saveFooter) return;
+        
+        // Show save footer only when playbook is generated
+        const shouldShow = !isGeneratingPlaybook && generatedPlaybook;
+        saveFooter.style.display = shouldShow ? 'block' : 'none';
+        
+        // Update button disabled state
+        const saveButton = saveFooter.querySelector('.fixed-save-button');
+        if (saveButton) {
+            saveButton.disabled = isSavingPlaybook;
+            saveButton.innerHTML = isSavingPlaybook 
+                ? '<div class="loading-spinner-small"></div> Saving...' 
+                : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Save Guide';
+        }
     }
     
     // Render initial create view - Matches MS Editor CreateGuidePage exactly
@@ -1769,34 +1794,84 @@
         `;
     }
     
-    // Render generating view - Matches MS Editor smartphone loading animation exactly
+    // Render generating view - 4-step progress loader
     function renderGeneratingView() {
         return `
-            <div class="loading-container-visual">
-                <div class="smartphone-illustration">
-                    <div class="phone-container">
-                        <div class="phone-screen">
-                            <div class="screen-line" style="width: 100%;"></div>
-                            <div class="screen-line" style="width: 80%;"></div>
-                            <div class="screen-line" style="width: 90%;"></div>
-                            <div class="screen-line" style="width: 70%;"></div>
+            <div class="progress-loader-container">
+                <h2 class="progress-loader-title">Generating your personalized Guide</h2>
+                <div class="progress-loader-steps">
+                    <div class="progress-step" data-step="0">
+                        <div class="progress-step-icon">
+                            <div class="progress-step-placeholder"></div>
                         </div>
-                        <div class="phone-button"></div>
+                        <span class="progress-step-text">Analyzing your contract</span>
                     </div>
-                    <!-- Decorative elements matching MS Editor -->
-                    <div class="phone-decorative-dot phone-dot-1"></div>
-                    <div class="phone-decorative-dot phone-dot-2"></div>
-                    <div class="phone-decorative-dot phone-dot-3"></div>
-                </div>
-                <h2 class="loading-title">Generating your Guide</h2>
-                <p class="loading-description">
-                    AI is analyzing your contract and creating personalized guidelines...
-                </p>
-                <div class="loading-spinner-wrapper">
-                    <div class="custom-loader"></div>
+                    <div class="progress-step" data-step="1">
+                        <div class="progress-step-icon">
+                            <div class="progress-step-placeholder"></div>
+                        </div>
+                        <span class="progress-step-text">Extracting key information</span>
+                    </div>
+                    <div class="progress-step" data-step="2">
+                        <div class="progress-step-icon">
+                            <div class="progress-step-placeholder"></div>
+                        </div>
+                        <span class="progress-step-text">Generating personalized guidelines</span>
+                    </div>
+                    <div class="progress-step" data-step="3">
+                        <div class="progress-step-icon">
+                            <div class="progress-step-placeholder"></div>
+                        </div>
+                        <span class="progress-step-text">Finalizing your Guide</span>
+                    </div>
                 </div>
             </div>
         `;
+    }
+    
+    // Start progress loader animation
+    function startProgressLoader() {
+        const steps = document.querySelectorAll('.progress-step');
+        let currentStep = 0;
+        const stepDelay = 1000; // 1 second between steps
+        
+        function updateStep(stepIndex) {
+            steps.forEach((step, index) => {
+                const icon = step.querySelector('.progress-step-icon');
+                const text = step.querySelector('.progress-step-text');
+                
+                if (index < stepIndex) {
+                    // Completed step - show checkmark
+                    icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2667ff" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+                    text.classList.add('progress-step-completed');
+                } else if (index === stepIndex) {
+                    // Current step - show spinner
+                    icon.innerHTML = '<div class="progress-spinner"><span class="spinner-dot dot1"></span><span class="spinner-dot dot2"></span><span class="spinner-dot dot3"></span><span class="spinner-dot dot4"></span></div>';
+                    text.classList.add('progress-step-current');
+                } else {
+                    // Pending step
+                    icon.innerHTML = '<div class="progress-step-placeholder"></div>';
+                    text.classList.remove('progress-step-completed', 'progress-step-current');
+                }
+            });
+        }
+        
+        // Start with first step
+        updateStep(0);
+        
+        // Progress through steps
+        const interval = setInterval(() => {
+            currentStep++;
+            if (currentStep < steps.length) {
+                updateStep(currentStep);
+            } else {
+                // All steps completed, keep showing last step with spinner until API responds
+                clearInterval(interval);
+            }
+        }, stepDelay);
+        
+        // Return cleanup function
+        return () => clearInterval(interval);
     }
     
     // Render generated playbook view
@@ -1849,9 +1924,6 @@
                     ${rulesHTML}
                 </div>
             </div>
-            <button class="fixed-save-button" onclick="handleSaveGuide()" ${isSavingPlaybook ? 'disabled' : ''}>
-                ${isSavingPlaybook ? '<div class="loading-spinner-small"></div> Saving...' : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Save Guide'}
-            </button>
         `;
     }
     
@@ -1878,6 +1950,11 @@
         if (contentDiv) {
             contentDiv.innerHTML = renderGeneratingView();
             updateCreatePageFooter();
+            updateCreatePageSaveFooter();
+            // Start progress loader animation
+            setTimeout(() => {
+                startProgressLoader();
+            }, 100);
         }
         
         try {
@@ -1930,6 +2007,7 @@
             if (contentDiv) {
                 contentDiv.innerHTML = renderCreatePageContent();
                 updateCreatePageFooter();
+                updateCreatePageSaveFooter();
             }
         }
     };
@@ -2307,6 +2385,7 @@
         if (contentDiv) {
             contentDiv.innerHTML = renderCreatePageContent();
             updateCreatePageFooter();
+            updateCreatePageSaveFooter();
             // Focus on textarea
             setTimeout(() => {
                 const textarea = document.getElementById(`rule-textarea-${index}`);
@@ -2329,6 +2408,7 @@
             if (contentDiv) {
                 contentDiv.innerHTML = renderCreatePageContent();
                 updateCreatePageFooter();
+                updateCreatePageSaveFooter();
             }
         }
     };
@@ -2341,6 +2421,7 @@
         if (contentDiv) {
             contentDiv.innerHTML = renderCreatePageContent();
             updateCreatePageFooter();
+            updateCreatePageSaveFooter();
         }
     };
     
@@ -2352,6 +2433,7 @@
             if (contentDiv) {
                 contentDiv.innerHTML = renderCreatePageContent();
                 updateCreatePageFooter();
+                updateCreatePageSaveFooter();
             }
         }
     };
@@ -2383,10 +2465,7 @@
         }
         
         isSavingPlaybook = true;
-        const saveButton = document.querySelector('.fixed-save-button');
-        if (saveButton) {
-            saveButton.disabled = true;
-        }
+        updateCreatePageSaveFooter();
         
         try {
             const url = `${backendUrl}/ai-assistant/editor-create-playbook`;
@@ -2435,12 +2514,10 @@
             showToast(error?.message || 'Failed to save guide', 'error');
         } finally {
             isSavingPlaybook = false;
-            if (saveButton) {
-                saveButton.disabled = false;
-            }
+            updateCreatePageSaveFooter();
         }
     };
-
+    
     // Escape HTML
     function escapeHtml(text) {
         const div = document.createElement('div');
