@@ -2066,22 +2066,20 @@ button[title*="close" i],
     min-height: 0;
 }
 
-/* Sub-clause content wrapper - centers loader when loading */
+/* Sub-clause content wrapper - matches MS Editor structure */
 .sub-clause-content-wrapper {
     flex: 1;
     overflow-y: auto;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
+    flex-direction: column;
     width: 100%;
+    position: relative;
 }
 
+/* Loader positioning - matches MS Editor Spinner with marginTop: 120px */
 .sub-clause-content-wrapper .loading-spinner {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    margin: 120px auto 0;
+    display: block;
 }
 
 /* Hidden Scrollbar - Matches MS Editor Library.js */

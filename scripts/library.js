@@ -435,9 +435,9 @@
             drawerCloseButton.title = 'Back to Clause Library';
         }
         
-        // Set title to "Clause Library" initially (will be updated with clause name after API call)
+        // Set title to "Sub Clause" to match MS Editor
         if (drawerTitle) {
-            drawerTitle.textContent = 'Clause Library';
+            drawerTitle.textContent = 'Sub Clause';
         }
         
         // Show copy button in drawer header actions
@@ -454,11 +454,11 @@
         const existingHeaders = libraryView.querySelectorAll('.feature-header');
         existingHeaders.forEach(header => header.remove());
         
-        // Render sub clause view without feature-header
+        // Render sub clause view - match MS Editor structure
         libraryView.innerHTML = `
             <div class="sub-clause-box">
-                <div id="sub-clause-content" class="hiddenScrollbar sub-clause-content-wrapper">
-                    <div class="loading-spinner"></div>
+                <div id="sub-clause-content" class="sub-clause-content-wrapper">
+                    <div class="loading-spinner" style="margin-top: 120px;"></div>
                 </div>
             </div>
         `;
@@ -488,19 +488,18 @@
             if (data?.status && data?.data) {
                 subClause = data.data;
                 
-                // Update drawer title to show clause name (dynamic title)
-                if (drawerTitle) {
-                    // Use clause name if available, otherwise keep "Clause Library"
-                    drawerTitle.textContent = subClause.name || 'Clause Library';
-                }
+                // Keep title as "Sub Clause" to match MS Editor (not clause name)
+                // Title is already set above, no need to change it
                 
                 const contentDiv = document.getElementById('sub-clause-content');
                 if (contentDiv && subClause.content) {
-                    // Remove centering styles when content is loaded and add margin-left
-                    contentDiv.style.alignItems = 'flex-start';
-                    contentDiv.style.justifyContent = 'flex-start';
+                    // Match MS Editor structure: content div with marginLeft and hiddenScrollbar
+                    contentDiv.style.display = 'flex';
+                    contentDiv.style.flexDirection = 'column';
+                    contentDiv.style.flex = '1';
+                    contentDiv.style.overflowY = 'auto';
                     contentDiv.style.marginLeft = '16px';
-                    contentDiv.innerHTML = `<div id="subClauseHtmlContentContainer" style="line-height: normal;">${subClause.content}</div>`;
+                    contentDiv.innerHTML = `<div class="hiddenScrollbar" id="subClauseHtmlContentContainer" style="line-height: normal;">${subClause.content}</div>`;
                 }
             } else {
                 errorMessage = data.msg || 'Failed to load sub clause details';
@@ -537,7 +536,7 @@
             drawerCloseButton.title = '';
         }
         
-        // Restore drawer title to "Clause Library"
+        // Restore drawer title to "Clause Library" (matching MS Editor behavior)
         if (drawerTitle) {
             drawerTitle.textContent = 'Clause Library';
         }
@@ -605,37 +604,62 @@
         window.open("https://contracts.legistify.com/add-clause", "_blank");
     };
 
-    // Copy sub clause
+    // Copy sub clause - matches MS Editor selectAllText approach
     window.copySubClause = function() {
-        const contentContainer = document.getElementById('subClauseHtmlContentContainer');
+        const containerId = 'subClauseHtmlContentContainer';
+        const contentContainer = document.getElementById(containerId);
         if (!contentContainer) {
             showToast('No sub clause content to copy', 'error');
             return;
         }
 
-        // Extract plain text from the rendered HTML (no HTML tags)
-        let text = '';
-        if (window.htmlToString) {
-            // Use the utility function if available
-            text = window.htmlToString(contentContainer.innerHTML);
-        } else {
-            // Fallback: extract text using DOM
-            text = contentContainer.textContent || contentContainer.innerText || '';
-            // Clean up whitespace
-            text = text.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
-        }
-        
-        if (!text) {
-            showToast('No sub clause content to copy', 'error');
-            return;
-        }
-        
-        navigator.clipboard.writeText(text).then(() => {
-            showToast('Sub clause copied to clipboard', 'success');
-        }).catch(err => {
+        // Match MS Editor selectAllText implementation
+        try {
+            if (document.selection) {
+                // IE/Edge legacy
+                const range = document.body.createTextRange();
+                range.moveToElementText(contentContainer);
+                range.select();
+                document.execCommand('copy');
+                showToast('Sub clause copied to clipboard', 'success');
+            } else if (window.getSelection) {
+                // Modern browsers
+                const range = document.createRange();
+                range.selectNode(contentContainer);
+                window.getSelection().removeAllRanges();
+                window.getSelection().addRange(range);
+                document.execCommand('copy');
+                window.getSelection().removeAllRanges();
+                showToast('Sub clause copied to clipboard', 'success');
+            } else {
+                // Fallback to clipboard API
+                const text = contentContainer.textContent || contentContainer.innerText || '';
+                if (text) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        showToast('Sub clause copied to clipboard', 'success');
+                    }).catch(err => {
+                        console.error('Failed to copy:', err);
+                        showToast('Failed to copy sub clause', 'error');
+                    });
+                } else {
+                    showToast('No sub clause content to copy', 'error');
+                }
+            }
+        } catch (err) {
             console.error('Failed to copy:', err);
-            showToast('Failed to copy sub clause', 'error');
-        });
+            // Fallback to clipboard API
+            const text = contentContainer.textContent || contentContainer.innerText || '';
+            if (text) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast('Sub clause copied to clipboard', 'success');
+                }).catch(err => {
+                    console.error('Failed to copy:', err);
+                    showToast('Failed to copy sub clause', 'error');
+                });
+            } else {
+                showToast('No sub clause content to copy', 'error');
+            }
+        }
     };
 
     // Handle back from library
