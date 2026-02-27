@@ -151,12 +151,11 @@
                                 <div class="container">
                                     <div class="prompt-container">
                                         <p class="p5">${escapeHtml(prompt)}</p>
+                                        <div class="chat_response_footer">
+                                            <span class="chat_response_date fs-11 text-secondary">${formatTime(new Date())}</span>
+                                        </div>
                                     </div>
-                                    // <div style="width: 32px; height: 32px; border-radius: 50%; background: #2667ff; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0; margin-left: 8px;">
-                                    //     ${getUserInitials()}
-                                    // </div>
                                 </div>
-                                <p style="margin-right: 34px; margin-top: 3px; text-align: right;" class="p6">${formatTime(new Date())}</p>
                             </div>
                         ` : ''}
                         <div class="prompt-outer-container" style="flex-shrink: 0; background-color: #fff; width: 100%; max-width: 49.7rem; margin: 0 auto; padding: 11px; padding-top: 8px; box-sizing: border-box;">
@@ -276,10 +275,12 @@
                         <div key="${item?._id || i}" class="outer-container" style="margin-bottom: 10px; padding: 0 6px; margin-top: 12px;">
                             <div class="div1" style="display: flex; justify-content: center; align-items: center;">
                                 <div style="margin-right: 7px;" class="prompt-container">
-                                    // <p class="p1">${escapeHtml(item?.instruction || '')}</p>
+                                    <p class="p1">${escapeHtml(item?.instruction || '')}</p>
+                                    <div class="chat_response_footer">
+                                        <span class="chat_response_date fs-11 text-secondary">${formatTime(item?.createdAt)}</span>
+                                    </div>
                                 </div>
                             </div>
-                            <p style="margin-top: 3px;" class="p2">${formatTime(item?.createdAt)}</p>
                             <div class="div2">
                                 <div style="margin-left: 7px;" class="response-container">
                                     <p class="p3">${formatResponse(item.response || '')}</p>
