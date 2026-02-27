@@ -149,9 +149,9 @@
                         ${historySearch?.length > 0 ? renderChatHistory() : ''}
                         ${loader && pendingPrompt ? `
                             <div class="outer-container">
-                                <div class="div1" style="display: flex; justify-content: center; align-items: center;">
+                                <div class="div1" style="display: flex; justify-content: center; align-items: center; padding-bottom: 10px;">
                                     <div style="margin-right: 7px;" class="prompt-container">
-                                        <p class="p1">${sanitizeHtml(pendingPrompt)}</p>
+                                        <p class="p1">${escapeHtml(pendingPrompt)}</p>
                                         <div class="chat_response_footer">
                                             <span class="chat_response_date fs-11 text-secondary">${formatTime(new Date())}</span>
                                         </div>
@@ -286,9 +286,9 @@
                 } else {
                     return `
                         <div key="${item?._id || i}" class="outer-container">
-                            <div class="div1" style="display: flex; justify-content: center; align-items: center;">
+                            <div class="div1" style="display: flex; justify-content: center; align-items: center; padding-bottom: 10px;">
                                 <div style="margin-right: 7px;" class="prompt-container">
-                                    <p class="p1">${sanitizeHtml(item?.instruction || '')}</p>
+                                    <p class="p1">${escapeHtml(item?.instruction || '')}</p>
                                     <div class="chat_response_footer">
                                         <span class="chat_response_date fs-11 text-secondary">${formatTime(item?.createdAt)}</span>
                                     </div>
