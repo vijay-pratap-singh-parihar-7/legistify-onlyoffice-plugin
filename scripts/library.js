@@ -418,13 +418,13 @@
         }
         if (!libraryView) return;
 
-        // Update drawer header to show back button and copy button
+        // Update drawer header: replace close button with back button and show copy button
         const drawerCloseButton = document.querySelector('.drawer-close-button');
         const drawerHeaderActions = document.getElementById('drawer-header-actions');
         const drawerCopyBtn = document.getElementById('drawer-copy-btn');
         const drawerTitle = document.getElementById('drawer-title');
         
-        // Replace close button with back button
+        // Replace close button (X) with back arrow button
         if (drawerCloseButton) {
             drawerCloseButton.innerHTML = `
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -435,12 +435,12 @@
             drawerCloseButton.title = 'Back to Clause Library';
         }
         
-        // Update drawer title
+        // Update drawer title to "Sub Clause"
         if (drawerTitle) {
             drawerTitle.textContent = 'Sub Clause';
         }
         
-        // Show copy button in drawer header
+        // Show copy button in drawer header actions
         if (drawerHeaderActions) {
             drawerHeaderActions.style.display = 'flex';
         }
@@ -453,7 +453,7 @@
         // Render sub clause view without feature-header
         libraryView.innerHTML = `
             <div class="sub-clause-box" style="position: relative; height: 100vh; overflow: hidden; margin-top: -10px; display: flex; flex-direction: column;">
-                <div id="sub-clause-content" class="hiddenScrollbar" style="flex: 1; overflow-y: auto; margin-left: 16px; display: flex; align-items: center; justify-content: center;">
+                <div id="sub-clause-content" class="hiddenScrollbar" style="flex: 1; overflow-y: auto; display: flex; align-items: center; justify-content: center; width: 100%;">
                     <div class="loading-spinner"></div>
                 </div>
             </div>
@@ -485,9 +485,11 @@
                 subClause = data.data;
                 const contentDiv = document.getElementById('sub-clause-content');
                 if (contentDiv && subClause.content) {
+                    // Remove centering styles when content is loaded and add margin-left
                     contentDiv.style.display = 'block';
                     contentDiv.style.alignItems = 'flex-start';
                     contentDiv.style.justifyContent = 'flex-start';
+                    contentDiv.style.marginLeft = '16px';
                     contentDiv.innerHTML = `<div id="subClauseHtmlContentContainer" style="line-height: normal;">${subClause.content}</div>`;
                 }
             } else {
@@ -508,7 +510,7 @@
         subClauseVisible = false;
         subClause = null;
         
-        // Restore drawer close button
+        // Restore drawer close button to X (close button)
         const drawerCloseButton = document.querySelector('.drawer-close-button');
         const drawerHeaderActions = document.getElementById('drawer-header-actions');
         const drawerCopyBtn = document.getElementById('drawer-copy-btn');
@@ -525,12 +527,12 @@
             drawerCloseButton.title = '';
         }
         
-        // Update drawer title back to Clause Library
+        // Restore drawer title to "Clause Library"
         if (drawerTitle) {
             drawerTitle.textContent = 'Clause Library';
         }
         
-        // Hide copy button in drawer header
+        // Hide copy button in drawer header actions
         if (drawerHeaderActions) {
             drawerHeaderActions.style.display = 'none';
         }
