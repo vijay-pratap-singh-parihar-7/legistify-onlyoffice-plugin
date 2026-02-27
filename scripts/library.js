@@ -225,7 +225,10 @@
                 throw new Error('Access token not available');
             }
 
-            const query = mode ? `${param}&onlyFavourite=true` : param;
+            let query = param;
+            if (mode) {
+                query = param ? `${param}&onlyFavourite=true` : 'onlyFavourite=true';
+            }
             const url = `${backendUrl}/clause-library/clause-list${query ? '?' + query : ''}`;
             
             const response = await fetch(url, {
@@ -275,7 +278,10 @@
                 throw new Error('Access token not available');
             }
 
-            const query = clauseSwitch ? `${param}&onlyFavourite=true` : param;
+            let query = param;
+            if (clauseSwitch) {
+                query = param ? `${param}&onlyFavourite=true` : 'onlyFavourite=true';
+            }
             const url = `${backendUrl}/clause-library/sub-clause-list${query ? '?' + query : ''}`;
             
             const response = await fetch(url, {
@@ -472,7 +478,7 @@
                 throw new Error('Access token not available');
         }
 
-            const url = `${backendUrl}/clause-library/sub-clause-details?subClauseId=${subClauseId}`;
+            const url = `${backendUrl}/clause-library/sub-clause-details/${subClauseId}`;
             const response = await fetch(url, {
                 headers: {
                     'x-auth-token': accessToken,
