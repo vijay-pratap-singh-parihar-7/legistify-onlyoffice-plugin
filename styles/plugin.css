@@ -2379,9 +2379,15 @@ button[title*="close" i],
 }
 
 .outer-container {
-    margin-bottom: 10px;
+    margin-bottom: 12px;
     padding: 0 6px;
+    margin-top: 0;
+}
+.outer-container + .outer-container {
     margin-top: 12px;
+}
+.outer-container:first-child {
+    margin-top: 0;
 }
 
 .prompt-container {
@@ -2482,6 +2488,7 @@ button[title*="close" i],
 .div2 {
     display: flex;
     align-items: top;
+    margin-top: 8px;
 }
 
 .div3 {

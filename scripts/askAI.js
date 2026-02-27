@@ -11,6 +11,7 @@
     let isHistoryLoading = true;
     let errorMessage = '';
     let loader = false;
+    let pendingPrompt = '';
     let error = false;
     let bottomRef = null;
     let promptInputRef = null;
@@ -146,11 +147,11 @@
                 <div class="ask-ai-body" style="display: flex; flex-direction: column; overflow: scroll; height: calc(100vh - 20px); margin-right: -8px;">
                     <div class="" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto !important; overflow-x: hidden !important; min-height: 0; position: relative;">
                         ${historySearch?.length > 0 ? renderChatHistory() : ''}
-                        ${loader ? `
-                            <div class="div3">
-                                <div class="container">
-                                    <div class="prompt-container">
-                                        <p class="p5">${escapeHtml(prompt)}</p>
+                        ${loader && pendingPrompt ? `
+                            <div class="outer-container">
+                                <div class="div1" style="display: flex; justify-content: center; align-items: center;">
+                                    <div style="margin-right: 7px;" class="prompt-container">
+                                        <p class="p1">${sanitizeHtml(pendingPrompt)}</p>
                                         <div class="chat_response_footer">
                                             <span class="chat_response_date fs-11 text-secondary">${formatTime(new Date())}</span>
                                         </div>
@@ -196,6 +197,18 @@
         
         // Store reference globally for scroll handling
         window.messageDivRef = messageDivRef;
+        
+        // Delegate suggestion clicks so data-question works without inline onclick escaping issues
+        if (messageDivRef && !messageDivRef.hasAttribute('data-delegate-bound')) {
+            messageDivRef.setAttribute('data-delegate-bound', 'true');
+            messageDivRef.addEventListener('click', function(e) {
+                const el = e.target && e.target.closest && e.target.closest('.doc-questions');
+                if (el) {
+                    const q = el.getAttribute('data-question');
+                    if (q && window.setPromptFromQuestion) window.setPromptFromQuestion(q);
+                }
+            });
+        }
         
         // Ensure scrollbar works - let flexbox handle height naturally
         const ensureScrollable = () => {
@@ -272,10 +285,10 @@
                     return syncDocumentWithAiResponse(item);
                 } else {
                     return `
-                        <div key="${item?._id || i}" class="outer-container" style="margin-bottom: 10px; padding: 0 6px; margin-top: 12px;">
+                        <div key="${item?._id || i}" class="outer-container">
                             <div class="div1" style="display: flex; justify-content: center; align-items: center;">
                                 <div style="margin-right: 7px;" class="prompt-container">
-                                    <p class="p1">${escapeHtml(item?.instruction || '')}</p>
+                                    <p class="p1">${sanitizeHtml(item?.instruction || '')}</p>
                                     <div class="chat_response_footer">
                                         <span class="chat_response_date fs-11 text-secondary">${formatTime(item?.createdAt)}</span>
                                     </div>
@@ -283,7 +296,7 @@
                             </div>
                             <div class="div2">
                                 <div style="margin-left: 7px;" class="response-container">
-                                    <p class="p3">${formatResponse(item.response || '')}</p>
+                                    <p class="p3">${formatResponseOrSafeHtml(item.response || '')}</p>
                                     <div class="chat_response_footer">
                                         <div onclick="copyResponseText(this)" style="cursor: pointer; display: flex; align-items: center;">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="cursor: pointer;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
@@ -319,12 +332,12 @@
         const textToCopy = plainText;
 
         return `
-            <div key="${item?._id || ''}" class="outer-container" style="margin-bottom: 10px; padding: 0 6px; margin-top: 12px;">
+            <div key="${item?._id || ''}" class="outer-container">
                 <div class="div2">
                     <div style="margin-left: 7px;" class="response-container">
                         <p class="p3">${responseText}</p>
                         ${Questions?.length ? Questions.map((qs, i) => `
-                            <div key="${i}" id="question-${i}" onclick="setPromptFromQuestion('${escapeHtml(qs)}')" class="doc-questions" style="display: flex; align-items: flex-start; cursor: pointer; margin-bottom: 8px;" onmouseover="this.style.color='#446995'; this.style.textDecoration='dotted';" onmouseout="this.style.color=''; this.style.textDecoration='none';">
+                            <div key="${i}" id="question-${i}" data-question="${escapeHtml(qs)}" class="doc-questions" style="display: flex; align-items: flex-start; cursor: pointer; margin-bottom: 8px;">
                                 <p class="p8" style="margin: 0; margin-right: 8px; font-size: 12px; flex-shrink: 0;">${i + 1}</p>
                                 <p style="margin: 0; font-size: 12px; flex: 1;">- ${escapeHtml(qs)}</p>
                             </div>
@@ -434,7 +447,7 @@
         if (prompt?.length > 2000 || loader || !prompt?.trim()) return;
         
         const currentPrompt = prompt.trim();
-        // Clear prompt immediately to clear input box
+        pendingPrompt = currentPrompt;
         prompt = '';
         loader = true;
         error = false;
@@ -485,8 +498,7 @@
 
             const data = await response.json();
             if (data?.status && data?.data?.chat) {
-                // Prompt already cleared on submit, no need to clear again
-                
+                pendingPrompt = '';
                 // Add new chat to history
                 historySearch = [data.data.chat, ...historySearch];
                 if (historySearch.length > 4) {
@@ -527,6 +539,7 @@
                 promptInput.disabled = false;
             }
         } finally {
+            pendingPrompt = '';
             loader = false;
             renderAskAIView();
         }
@@ -1156,6 +1169,46 @@
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    // Sanitize HTML for safe display - allow only safe tags, strip scripts and events (XSS-safe)
+    function sanitizeHtml(html) {
+        if (!html || typeof html !== 'string') return '';
+        const doc = document.implementation.createHTMLDocument('');
+        const body = doc.body;
+        body.innerHTML = html;
+        const allowedTags = ['b', 'i', 'strong', 'em', 'u', 'br', 'p', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'span'];
+        const walk = (node) => {
+            if (node.nodeType === 1) {
+                const tag = node.tagName.toLowerCase();
+                if (!allowedTags.includes(tag)) {
+                    const frag = doc.createDocumentFragment();
+                    while (node.firstChild) frag.appendChild(node.firstChild);
+                    node.parentNode.replaceChild(frag, node);
+                    return;
+                }
+                for (let i = node.attributes.length - 1; i >= 0; i--) {
+                    const name = node.attributes[i].name.toLowerCase();
+                    if (name.startsWith('on') || name === 'href' || name === 'src' || name === 'style') node.removeAttribute(node.attributes[i].name);
+                }
+                let child = node.firstChild;
+                while (child) {
+                    const next = child.nextSibling;
+                    walk(child);
+                    child = next;
+                }
+            }
+        };
+        walk(body);
+        return body.innerHTML;
+    }
+
+    // Render response: if content looks like HTML use sanitized HTML; else use formatResponse (markdown-style)
+    function formatResponseOrSafeHtml(text) {
+        if (!text) return '';
+        const trimmed = String(text).trim();
+        if (/<[a-z][\s\S]*>/i.test(trimmed)) return sanitizeHtml(trimmed);
+        return formatResponse(trimmed);
     }
 
     // Show toast
