@@ -2436,6 +2436,7 @@ button[title*="close" i],
     align-items: center;
     gap: 8px;
     margin-top: 8px;
+    justify-content: end;
 }
 
 .chat_response_date {
