@@ -3171,8 +3171,9 @@ button[title*="close" i],
     justify-content: center;
     gap: 4px;
     transition: all 0.2s ease;
-    width: 100%;
+    width: 95%;
     box-sizing: border-box;
+    margin: 8px;
 }
 
 .fixed-save-button:hover:not(:disabled) {
