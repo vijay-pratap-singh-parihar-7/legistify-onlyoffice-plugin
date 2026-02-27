@@ -199,6 +199,25 @@
         }).join('');
 
         listContainer.innerHTML = itemsHTML;
+        
+        // Clean up any incorrect inline styles that might have been applied to playbook titles
+        // (e.g., from mutation observers that incorrectly matched "close" in titles like "Discloser")
+        const playbookTitles = listContainer.querySelectorAll('.playbook-title');
+        playbookTitles.forEach(title => {
+            // Remove inline styles that shouldn't be on playbook titles
+            if (title.style.display === 'none' || 
+                title.style.visibility === 'hidden' || 
+                title.style.opacity === '0') {
+                title.style.display = '';
+                title.style.visibility = '';
+                title.style.opacity = '';
+                title.style.pointerEvents = '';
+                title.style.width = '';
+                title.style.height = '';
+                title.style.margin = '';
+                title.style.padding = '';
+            }
+        });
     }
 
     // Handle playbook click - opens in drawer

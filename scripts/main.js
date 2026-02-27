@@ -917,6 +917,26 @@
             }
         };
 
+        // Helper function to check if an element is actually a close button
+        // This prevents false matches like playbook titles containing "close" (e.g., "Discloser")
+        const isActuallyCloseButton = function(element) {
+            if (!element || !element.matches) return false;
+            // Check for close button classes first (most reliable)
+            if (element.matches('.asc-window-close, .plugin-close, .close')) {
+                return true;
+            }
+            // Check aria-label for close (but only if it's actually a button element or has button role)
+            const ariaLabel = element.getAttribute('aria-label')?.toLowerCase();
+            if (ariaLabel && ariaLabel.includes('close')) {
+                // Only consider it a close button if it's actually a button element or has button role
+                if (element.tagName === 'BUTTON' || element.getAttribute('role') === 'button') {
+                    return true;
+                }
+            }
+            // Don't check title attribute as it's too broad (matches "Discloser", etc.)
+            return false;
+        };
+
         const findAndSetupCloseButton = function () {
             attempts++;
 
@@ -942,12 +962,12 @@
             for (const selector of selectors) {
                 const elements = document.querySelectorAll(selector);
                 elements.forEach(el => {
-                    // Check if it's actually a close button
-                    const isCloseButton = el.getAttribute('aria-label')?.toLowerCase().includes('close') ||
-                        el.getAttribute('title')?.toLowerCase().includes('close') ||
-                        el.classList.contains('plugin-close') ||
+                    // Check if it's actually a close button - be more specific to avoid matching playbook titles
+                    const isCloseButton = el.classList.contains('plugin-close') ||
                         el.classList.contains('asc-window-close') ||
-                        el.classList.contains('close');
+                        el.classList.contains('close') ||
+                        (el.getAttribute('aria-label')?.toLowerCase().includes('close') && (el.tagName === 'BUTTON' || el.getAttribute('role') === 'button')) ||
+                        (el.getAttribute('title')?.toLowerCase().includes('close') && el.tagName === 'BUTTON' && (el.closest('.asc-window-header') || el.closest('.current-plugin-header')));
                     if (isCloseButton) {
                         hideCloseButton(el);
                         if (!onlyOfficeCloseBtn) {
@@ -1067,22 +1087,25 @@
                 mutation.addedNodes.forEach(function (node) {
                     if (node.nodeType === 1) { // Element node
                         // Check if the added node is a close button or contains one
-                        const isCloseButton = node.matches && (
-                            node.matches('.asc-window-close, .plugin-close, [aria-label*="close" i], [title*="close" i]') ||
+                        const isCloseButtonNode = node.matches && (
+                            node.matches('.asc-window-close, .plugin-close') ||
                             node.matches('.current-plugin-header') ||
-                            node.querySelector && node.querySelector('.current-plugin-header, .asc-window-close, .plugin-close, [aria-label*="close" i], [title*="close" i]')
+                            (node.querySelector && node.querySelector('.current-plugin-header, .asc-window-close, .plugin-close'))
                         );
 
-                        if (isCloseButton) {
-                            // Immediately hide any close buttons found
-                            if (node.matches && (node.matches('.plugin-close, .asc-window-close') ||
-                                node.getAttribute('aria-label')?.toLowerCase().includes('close'))) {
+                        if (isCloseButtonNode) {
+                            // Immediately hide any close buttons found using the helper function
+                            if (node.matches && isActuallyCloseButton(node)) {
                                 hideCloseButton(node);
                             }
                             // Also check for close buttons inside the node
-                            const closeButtons = node.querySelectorAll && node.querySelectorAll('.plugin-close, .asc-window-close, [aria-label*="close" i]');
-                            if (closeButtons) {
-                                closeButtons.forEach(btn => hideCloseButton(btn));
+                            if (node.querySelectorAll) {
+                                const allElements = node.querySelectorAll('*');
+                                allElements.forEach(el => {
+                                    if (isActuallyCloseButton(el)) {
+                                        hideCloseButton(el);
+                                    }
+                                });
                             }
                             console.log('Close button or header detected, hiding immediately');
                             setTimeout(findAndSetupCloseButton, 100);
@@ -1106,22 +1129,25 @@
                     mutations.forEach(function (mutation) {
                         mutation.addedNodes.forEach(function (node) {
                             if (node.nodeType === 1) {
-                                const isCloseButton = node.matches && (
-                                    node.matches('.asc-window-close, .plugin-close, [aria-label*="close" i], [title*="close" i]') ||
+                                const isCloseButtonNode = node.matches && (
+                                    node.matches('.asc-window-close, .plugin-close') ||
                                     node.matches('.current-plugin-header') ||
-                                    node.querySelector && node.querySelector('.current-plugin-header, .asc-window-close, .plugin-close, [aria-label*="close" i], [title*="close" i]')
+                                    (node.querySelector && node.querySelector('.current-plugin-header, .asc-window-close, .plugin-close'))
                                 );
 
-                                if (isCloseButton) {
-                                    // Immediately hide any close buttons found in parent
-                                    if (node.matches && (node.matches('.plugin-close, .asc-window-close') ||
-                                        node.getAttribute('aria-label')?.toLowerCase().includes('close'))) {
+                                if (isCloseButtonNode) {
+                                    // Immediately hide any close buttons found in parent using the helper function
+                                    if (node.matches && isActuallyCloseButton(node)) {
                                         hideCloseButton(node);
                                     }
                                     // Also check for close buttons inside the node
-                                    const closeButtons = node.querySelectorAll && node.querySelectorAll('.plugin-close, .asc-window-close, [aria-label*="close" i]');
-                                    if (closeButtons) {
-                                        closeButtons.forEach(btn => hideCloseButton(btn));
+                                    if (node.querySelectorAll) {
+                                        const allElements = node.querySelectorAll('*');
+                                        allElements.forEach(el => {
+                                            if (isActuallyCloseButton(el)) {
+                                                hideCloseButton(el);
+                                            }
+                                        });
                                     }
                                     console.log('Close button or header detected in parent, hiding immediately');
                                     setTimeout(findAndSetupCloseButton, 100);
