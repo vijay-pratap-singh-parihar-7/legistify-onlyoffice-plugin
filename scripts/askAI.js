@@ -157,6 +157,11 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div class="div2">
+                                    <div style="margin-left: 7px;" class="response-container">
+                                        <div class="loading-spinner" style="margin: 0;"></div>
+                                    </div>
+                                </div>
                             </div>
                         ` : ''}
                         <div class="prompt-outer-container" style="flex-shrink: 0; background-color: #fff; width: 100%; max-width: 49.7rem; margin: 0 auto; padding: 11px; padding-top: 8px; box-sizing: border-box;">
