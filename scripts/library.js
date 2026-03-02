@@ -407,16 +407,16 @@
         subClauseVisible = true;
         subClauseLoading = true;
         
-        // Check for drawer view first, then original
+        // Check for drawer view first (visible when drawer is open), then original
         let libraryView = document.getElementById('library-view-drawer') || document.getElementById('library-view');
         if (!libraryView) {
-            // Try to find by container
             const container = document.getElementById('library-container-drawer') || document.getElementById('library-container');
-            if (container) {
-                libraryView = container.parentElement;
-            }
+            if (container) libraryView = container.parentElement;
         }
-        if (!libraryView) return;
+        if (!libraryView) {
+            subClauseLoading = false;
+            return;
+        }
 
         // Update drawer header: replace close button with back button and show copy button
         const drawerCloseButton = document.querySelector('.drawer-close-button');
@@ -472,7 +472,8 @@
                 throw new Error('Access token not available');
         }
 
-            const url = `${backendUrl}/clause-library/sub-clause-details?subClauseId=${subClauseId}`;
+            // Use path param like ms-editor-addins (SUB_CLAUSE_DETAILS/${id})
+            const url = `${backendUrl}/clause-library/sub-clause-details/${subClauseId}`;
             const response = await fetch(url, {
                 headers: {
                     'x-auth-token': accessToken,
@@ -496,20 +497,23 @@
                 
                 const contentDiv = document.getElementById('sub-clause-content');
                 if (contentDiv && subClause.content) {
-                    // Remove centering styles when content is loaded and add margin-left
                     contentDiv.style.alignItems = 'flex-start';
                     contentDiv.style.justifyContent = 'flex-start';
                     contentDiv.style.marginLeft = '16px';
                     contentDiv.innerHTML = `<div id="subClauseHtmlContentContainer" style="line-height: normal;">${subClause.content}</div>`;
                 }
             } else {
-                errorMessage = data.msg || 'Failed to load sub clause details';
-                showError(errorMessage);
+                errorMessage = data?.msg || 'Failed to load sub clause details';
+                const contentDiv = document.getElementById('sub-clause-content');
+                if (contentDiv) contentDiv.innerHTML = `<div class="error-message">${escapeHtml(errorMessage)}</div>`;
+                else showError(errorMessage);
             }
         } catch (error) {
             console.error('Error fetching sub clause details:', error);
             errorMessage = error.message || 'Failed to load sub clause details';
-            showError(errorMessage);
+            const contentDiv = document.getElementById('sub-clause-content');
+            if (contentDiv) contentDiv.innerHTML = `<div class="error-message">${escapeHtml(errorMessage)}</div>`;
+            else showError(errorMessage);
         } finally {
             subClauseLoading = false;
         }
