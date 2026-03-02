@@ -148,7 +148,7 @@
                     <div class="" id="message-div-ref" onscroll="handleChatScroll(event)" style="flex: 1; overflow-y: auto !important; overflow-x: hidden !important; min-height: 0; position: relative;">
                         ${historySearch?.length > 0 ? renderChatHistory() : ''}
                         ${loader && pendingPrompt ? `
-                            <div class="outer-container">
+                            <div class="outer-container ask-ai-pending-response">
                                 <div class="div1" style="display: flex; justify-content: center; align-items: center; padding-bottom: 10px;">
                                     <div style="margin-right: 7px;" class="prompt-container">
                                         <p class="p1">${escapeHtml(pendingPrompt)}</p>
@@ -157,9 +157,9 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="div2">
-                                    <div style="margin-left: 7px;" class="response-container">
-                                        <div class="loading-spinner" style="margin: 0;"></div>
+                                <div class="div2" style="min-height: 32px;">
+                                    <div style="margin-left: 7px; display: flex; align-items: center; min-height: 32px;" class="response-container">
+                                        <div class="loading-spinner ask-ai-chat-loader" style="margin: 0; width: 24px; height: 24px; flex-shrink: 0;"></div>
                                     </div>
                                 </div>
                             </div>
@@ -473,6 +473,11 @@
                 bottomRefElement.scrollIntoView({ behavior: 'smooth' });
             }
         }, 100);
+
+        // Yield to browser so loader paints before we start fetch (matches litigation-tool-react behavior)
+        await new Promise(resolve => {
+            requestAnimationFrame(() => { setTimeout(resolve, 0); });
+        });
 
         try {
             const pluginData = window.getPluginData();
