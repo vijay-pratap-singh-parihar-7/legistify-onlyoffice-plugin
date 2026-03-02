@@ -552,6 +552,12 @@
             const inputArea = wrapper?.querySelector('.c_d_ai_prompt_input_area');
             const iconsContainer = wrapper?.querySelector('.c_d_ai_prompt_icons_container');
             
+            // Scroll so the input is visible at the bottom when focused (e.g. after clicking)
+            const bottomRefEl = document.getElementById('bottom-ref');
+            if (bottomRefEl) {
+                bottomRefEl.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            }
+            
             // Remove _v2 class to expand the wrapper
             if (wrapper) {
                 wrapper.classList.remove('c_d_ai_prompt_input_wrapper_v2');
