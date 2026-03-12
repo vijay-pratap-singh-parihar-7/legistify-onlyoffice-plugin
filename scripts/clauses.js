@@ -9,13 +9,24 @@
     let isStreaming = false;
     let initialLoading = true;
     let regenerateLoader = false;
+    let shouldHideLoader = false;
+    let firstChunkReceived = false;
     let abortControllerRef = null;
     let readerRef = null;
     let progressLoaderInstance = null;
     let responseContainerRef = null;
     let currentClauseTimeStamp = null;
-    let shouldHideLoader = false;
     let didStartRef = false;
+
+    function getClausesResultContainer() {
+        const drawerContent = document.getElementById('drawer-content');
+        if (drawerContent) {
+            return drawerContent.querySelector('#clauses-result-drawer') ||
+                drawerContent.querySelector('#clauses-result') ||
+                drawerContent.querySelector('[id*="clauses-result"]');
+        }
+        return document.getElementById('clauses-result');
+    }
 
     // Initialize clauses view
     window.initClausesView = async function() {
@@ -48,7 +59,8 @@
         
         responseContainerRef = resultContainer;
 
-        // Show progress loader immediately
+        shouldHideLoader = false;
+        firstChunkReceived = false;
         if (window.createProgressLoader) {
             progressLoaderInstance = window.createProgressLoader(resultContainer, {
                 title: 'Analyzing contract clauses',
@@ -60,7 +72,12 @@
                 ],
                 stepDelay: 1000,
                 minDisplayTime: 3000,
-                titleMarginBottom: '1.5rem'
+                titleMarginBottom: '1.5rem',
+                onRelease: function() {
+                    progressLoaderInstance = null;
+                    shouldHideLoader = true;
+                    updateStreamingUI();
+                }
             });
         }
 
@@ -155,7 +172,8 @@
             return;
         }
 
-        // Immediately clear data and chunks when regenerate is clicked
+        shouldHideLoader = false;
+        firstChunkReceived = false;
         if (type === "reGenerate") {
             regenerateLoader = true;
             responseChunks = [];
@@ -169,23 +187,30 @@
             isStreaming = true;
         }
 
-        // Show progress loader if not already showing
-        if (!progressLoaderInstance && window.createProgressLoader && resultContainer) {
+        if (resultContainer && window.createProgressLoader) {
+            if (progressLoaderInstance) {
+                progressLoaderInstance.cleanup();
+                progressLoaderInstance.hide();
+                progressLoaderInstance = null;
+            }
             progressLoaderInstance = window.createProgressLoader(resultContainer, {
                 title: 'Analyzing contract clauses',
                 steps: [
-                    'Scanning contract sections:',
-                    'Detecting important clauses:',
-                    'Categorizing by type:',
-                    'Preparing findings:'
+                    'Scanning contract sections',
+                    'Detecting important clauses',
+                    'Categorizing by type',
+                    'Preparing findings'
                 ],
                 stepDelay: 1000,
                 minDisplayTime: 3000,
-                titleMarginBottom: '1.5rem'
+                titleMarginBottom: '1.5rem',
+                onRelease: function() {
+                    progressLoaderInstance = null;
+                    shouldHideLoader = true;
+                    updateStreamingUI();
+                }
             });
         }
-
-        // Update UI immediately
         updateStreamingUI();
 
         try {
@@ -226,8 +251,12 @@
                 const chunk = decoder.decode(value, { stream: true });
                 accumulatedChunks.push(chunk);
                 responseChunks = [...responseChunks, chunk];
-                
-                // Update UI with streaming chunks
+                if (chunk.trim() && !firstChunkReceived) {
+                    firstChunkReceived = true;
+                    if (progressLoaderInstance && typeof progressLoaderInstance.setFirstChunkReceived === 'function') {
+                        progressLoaderInstance.setFirstChunkReceived(true);
+                    }
+                }
                 updateStreamingUI();
                 
                 // Auto-scroll to bottom during streaming
@@ -283,18 +312,17 @@
                 }
             }
         } finally {
-            // Only clear refs if this is still the current request
             if (abortControllerRef === abortController) {
                 abortControllerRef = null;
                 readerRef = null;
             }
             regenerateLoader = false;
             isStreaming = false;
-            
-            // Final UI update
+            firstChunkReceived = true;
+            if (progressLoaderInstance && typeof progressLoaderInstance.setFirstChunkReceived === 'function') {
+                progressLoaderInstance.setFirstChunkReceived(true);
+            }
             updateStreamingUI();
-            
-            // Scroll to top after streaming completes
             setTimeout(() => {
                 scrollToTop();
             }, 100);
@@ -330,90 +358,37 @@
     }
 
     function updateStreamingUI() {
-        // Find result container - check drawer first (with -drawer suffix), then original view
-        const drawerContent = document.getElementById('drawer-content');
-        let resultContainer = null;
-        
-        if (drawerContent) {
-            // Try with -drawer suffix first (cloned content)
-            resultContainer = drawerContent.querySelector('#clauses-result-drawer');
-            // If not found, try without suffix
-            if (!resultContainer) {
-                resultContainer = drawerContent.querySelector('#clauses-result');
-            }
-            // Also check nested containers
-            if (!resultContainer) {
-                resultContainer = drawerContent.querySelector('[id*="clauses-result"]');
-            }
-        }
-        
-        // Fallback to original view
-        if (!resultContainer) {
-            resultContainer = document.getElementById('clauses-result');
-        }
-        
+        const resultContainer = getClausesResultContainer();
         if (!resultContainer) {
             console.warn('Clauses result container not found');
             return;
         }
-
-        // Set responseContainerRef for scrolling
         responseContainerRef = resultContainer;
 
-        // Show blank loading screen when regenerating and no chunks/data yet
-        if (regenerateLoader && responseChunks.length === 0 && !savedClause && !clausesData) {
-            resultContainer.innerHTML = '';
-            if (window.createProgressLoader) {
-                progressLoaderInstance = window.createProgressLoader(resultContainer, {
-                    title: 'Analyzing contract clauses',
-                    steps: [
-                        'Scanning contract sections',
-                        'Detecting important clauses',
-                        'Categorizing by type',
-                        'Preparing findings'
-                    ],
-                    stepDelay: 1000,
-                    minDisplayTime: 3000,
-                    titleMarginBottom: '1.5rem'
-                });
-            } else {
-                resultContainer.innerHTML = '<div class="loading-spinner"></div>';
-            }
-            return;
-        }
-
-        if (isStreaming && responseChunks.length === 0 && !savedClause && !clausesData) {
-            resultContainer.innerHTML = '';
-            if (window.createProgressLoader) {
-                progressLoaderInstance = window.createProgressLoader(resultContainer, {
-                    title: 'Analyzing contract clauses',
-                    steps: [
-                        'Scanning contract sections',
-                        'Detecting important clauses',
-                        'Categorizing by type',
-                        'Preparing findings'
-                    ],
-                    stepDelay: 1000,
-                    minDisplayTime: 3000,
-                    titleMarginBottom: '1.5rem'
-                });
-            } else {
-                resultContainer.innerHTML = '<div class="loading-spinner"></div>';
-            }
-            return;
-        }
-
-        // Determine what to display
         const displayData = savedClause || (responseChunks.length > 0 ? responseChunks.join('') : clausesData);
-        
-        // Hide progress loader only when we have meaningful content to display
-        if (displayData && displayData.trim() && progressLoaderInstance) {
-            progressLoaderInstance.hide();
-            progressLoaderInstance = null;
-        }
-        
-        // If no data yet, keep showing loader
-        if (!displayData || !displayData.trim()) {
+        const hasContent = displayData && displayData.trim();
+        const mayShowContent = hasContent && (shouldHideLoader || !progressLoaderInstance);
+
+        if (!mayShowContent) {
+            if (!hasContent && (isStreaming || regenerateLoader) && !progressLoaderInstance && window.createProgressLoader) {
+                progressLoaderInstance = window.createProgressLoader(resultContainer, {
+                    title: 'Analyzing contract clauses',
+                    steps: [
+                        'Scanning contract sections',
+                        'Detecting important clauses',
+                        'Categorizing by type',
+                        'Preparing findings'
+                    ],
+                    stepDelay: 1000,
+                    minDisplayTime: 3000,
+                    titleMarginBottom: '1.5rem',
+                    onRelease: function() {
+                        progressLoaderInstance = null;
+                        shouldHideLoader = true;
+                        updateStreamingUI();
+                    }
+                });
+            }
             return;
         }
 
@@ -554,27 +529,18 @@
     }
 
     function copyClauses() {
-        const resultContainer = document.getElementById('clauses-result');
+        const resultContainer = getClausesResultContainer();
         if (!resultContainer) {
             showToast('No clauses content to copy', 'error');
             return;
         }
-
-        const htmlClausesText = document.getElementById('html_clauses_text');
-        if (!htmlClausesText) {
-            showToast('No clauses content to copy', 'error');
-            return;
-        }
-
-        // Extract plain text from the rendered HTML (no HTML tags)
+        const htmlClausesText = resultContainer.querySelector('#html_clauses_text') || resultContainer;
+        const sourceHtml = htmlClausesText.innerHTML || '';
         let text = '';
-        if (window.htmlToString) {
-            // Use the utility function if available
-            text = window.htmlToString(htmlClausesText.innerHTML);
+        if (window.htmlToString && sourceHtml) {
+            text = window.htmlToString(sourceHtml);
         } else {
-            // Fallback: extract text using DOM
             text = htmlClausesText.textContent || htmlClausesText.innerText || '';
-            // Clean up whitespace
             text = text.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
         }
         

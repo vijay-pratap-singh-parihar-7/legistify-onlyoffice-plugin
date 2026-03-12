@@ -12,8 +12,12 @@
             steps = ['Reading document', 'Identifying main themes', 'Extracting critical information', 'Synthesizing summary'],
             stepDelay = 1000,
             minDisplayTime = 3000,
-            titleMarginBottom = '1.5rem'
+            titleMarginBottom = '1.5rem',
+            onRelease = null
         } = options;
+
+        // First-chunk received: loader hides only when this is true AND minDisplayTime has passed (matches contract-frontend)
+        let firstChunkReceived = false;
 
         // Remove existing loader if present
         const existingLoader = container.querySelector('.progress-loader-container');
@@ -51,7 +55,13 @@
             </div>
         `;
 
-        container.appendChild(loaderContainer);
+        // Replace container content with loader in one go to avoid blank frame (no innerHTML = '' then append)
+        if (container.replaceChildren) {
+            container.replaceChildren(loaderContainer);
+        } else {
+            container.innerHTML = '';
+            container.appendChild(loaderContainer);
+        }
 
         // Animation state
         let currentStep = 0;
@@ -122,18 +132,44 @@
 
             function checkCompletion() {
                 const elapsed = Date.now() - startTime;
-                const remaining = Math.max(0, minDisplayTime - elapsed);
-                
-                completionTimer = setTimeout(() => {
-                    // Hide loader
-                    loaderContainer.style.opacity = '0';
-                    loaderContainer.style.transition = 'opacity 0.3s ease-out';
-                    setTimeout(() => {
-                        if (loaderContainer.parentNode) {
-                            loaderContainer.remove();
+
+                if (onRelease && typeof onRelease === 'function') {
+                    // Match contract-frontend: hide only when first chunk arrived AND min display time passed
+                    function pollRelease() {
+                        const el = Date.now() - startTime;
+                        if (firstChunkReceived && el >= minDisplayTime) {
+                            if (completionTimer) {
+                                clearTimeout(completionTimer);
+                                completionTimer = null;
+                            }
+                            onRelease();
+                            if (loaderContainer.parentNode) {
+                                loaderContainer.style.opacity = '0';
+                                loaderContainer.style.transition = 'opacity 0.3s ease-out';
+                                setTimeout(() => {
+                                    if (loaderContainer.parentNode) {
+                                        loaderContainer.remove();
+                                    }
+                                }, 300);
+                            }
+                            return;
                         }
-                    }, 300);
-                }, remaining);
+                        completionTimer = setTimeout(pollRelease, 100);
+                    }
+                    pollRelease();
+                } else {
+                    // Legacy: no onRelease – wait minDisplayTime then hide
+                    const remaining = Math.max(0, minDisplayTime - elapsed);
+                    completionTimer = setTimeout(() => {
+                        loaderContainer.style.opacity = '0';
+                        loaderContainer.style.transition = 'opacity 0.3s ease-out';
+                        setTimeout(() => {
+                            if (loaderContainer.parentNode) {
+                                loaderContainer.remove();
+                            }
+                        }, 300);
+                    }, remaining);
+                }
             }
 
             // Start animation
@@ -153,7 +189,7 @@
         // Start animation
         startAnimation();
 
-        // Return cleanup function
+        // Return API: hide (immediate), setFirstChunkReceived (for streaming), cleanup
         return {
             cleanup: cleanup,
             hide: function() {
@@ -167,6 +203,9 @@
                         }
                     }, 300);
                 }
+            },
+            setFirstChunkReceived: function(value) {
+                firstChunkReceived = !!value;
             }
         };
     };

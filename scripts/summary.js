@@ -10,10 +10,22 @@
     let initialLoading = true;
     let regenerateLoader = false;
     let shouldHideLoader = false;
+    let firstChunkReceived = false;
     let abortControllerRef = null;
     let readerRef = null;
     let progressLoaderInstance = null;
     let responseContainerRef = null;
+
+    // Drawer-aware active result container (same resolution as updateStreamingUI – for copy and consistent UI)
+    function getSummaryResultContainer() {
+        const drawerContent = document.getElementById('drawer-content');
+        if (drawerContent) {
+            return drawerContent.querySelector('#summary-result-drawer') ||
+                drawerContent.querySelector('#summary-result') ||
+                drawerContent.querySelector('[id*="summary-result"]');
+        }
+        return document.getElementById('summary-result');
+    }
 
     // Initialize when DOM is ready
     if (document.readyState === 'loading') {
@@ -62,19 +74,26 @@
         
         responseContainerRef = resultContainer;
 
-        // Show progress loader immediately
+        // Show progress loader immediately (onRelease: loader hides only after first chunk + min time)
+        shouldHideLoader = false;
+        firstChunkReceived = false;
         if (window.createProgressLoader) {
             progressLoaderInstance = window.createProgressLoader(resultContainer, {
-                    title: 'Generating contract summary',
-                    steps: [
-                        'Reading document',
-                        'Identifying main themes',
-                        'Extracting critical information',
-                        'Synthesizing summary'
-                    ],
+                title: 'Generating contract summary',
+                steps: [
+                    'Reading document',
+                    'Identifying main themes',
+                    'Extracting critical information',
+                    'Synthesizing summary'
+                ],
                 stepDelay: 1000,
                 minDisplayTime: 3000,
-                titleMarginBottom: '1.5rem'
+                titleMarginBottom: '1.5rem',
+                onRelease: function() {
+                    progressLoaderInstance = null;
+                    shouldHideLoader = true;
+                    updateStreamingUI();
+                }
             });
         }
 
@@ -214,6 +233,8 @@
         }
 
         // Immediately clear data and chunks when regenerate is clicked
+        shouldHideLoader = false;
+        firstChunkReceived = false;
         if (type === "reGenerate") {
             regenerateLoader = true;
             responseChunks = [];
@@ -227,28 +248,30 @@
             isStreaming = true;
         }
 
-        // Clear result container and show progress loader if not already showing
-        if (resultContainer) {
-            // Only clear and show loader if we don't already have one showing
-            if (!progressLoaderInstance) {
-                resultContainer.innerHTML = '';
-                
-                // Show progress loader
-                if (window.createProgressLoader) {
-                    progressLoaderInstance = window.createProgressLoader(resultContainer, {
-                    title: 'Generating contract summary',
-                    steps: [
-                        'Reading document',
-                        'Identifying main themes',
-                        'Extracting critical information',
-                        'Synthesizing summary'
-                    ],
-                        stepDelay: 1000,
-                        minDisplayTime: 3000,
-                        titleMarginBottom: '1.5rem'
-                    });
-                }
+        // Show progress loader without clearing container first (loader replaces content in one go to avoid blank frame)
+        if (resultContainer && window.createProgressLoader) {
+            if (progressLoaderInstance) {
+                progressLoaderInstance.cleanup();
+                progressLoaderInstance.hide();
+                progressLoaderInstance = null;
             }
+            progressLoaderInstance = window.createProgressLoader(resultContainer, {
+                title: 'Generating contract summary',
+                steps: [
+                    'Reading document',
+                    'Identifying main themes',
+                    'Extracting critical information',
+                    'Synthesizing summary'
+                ],
+                stepDelay: 1000,
+                minDisplayTime: 3000,
+                titleMarginBottom: '1.5rem',
+                onRelease: function() {
+                    progressLoaderInstance = null;
+                    shouldHideLoader = true;
+                    updateStreamingUI();
+                }
+            });
         }
 
         try {
@@ -423,7 +446,13 @@
                 const chunk = decoder.decode(value, { stream: true });
                 accumulatedChunks.push(chunk);
                 responseChunks = [...responseChunks, chunk];
-                
+                // First non-empty chunk: allow loader to transition (loader stays until min display time)
+                if (chunk.trim() && !firstChunkReceived) {
+                    firstChunkReceived = true;
+                    if (progressLoaderInstance && typeof progressLoaderInstance.setFirstChunkReceived === 'function') {
+                        progressLoaderInstance.setFirstChunkReceived(true);
+                    }
+                }
                 // Update UI with streaming chunks
                 updateStreamingUI();
                 
@@ -479,16 +508,13 @@
             }
             regenerateLoader = false;
             isStreaming = false;
-            
-            // Hide progress loader
-            if (progressLoaderInstance) {
-                progressLoaderInstance.hide();
-                progressLoaderInstance = null;
+            // Signal loader it can release (first chunk received; loader will hide after min time and call onRelease)
+            firstChunkReceived = true;
+            if (progressLoaderInstance && typeof progressLoaderInstance.setFirstChunkReceived === 'function') {
+                progressLoaderInstance.setFirstChunkReceived(true);
             }
-            
-            // Final UI update
+            // Final UI update (onRelease will run when min time passes and then updateStreamingUI shows content)
             updateStreamingUI();
-            
             // Scroll to top after streaming completes
             setTimeout(() => {
                 scrollToTop();
@@ -525,28 +551,7 @@
     }
 
     function updateStreamingUI() {
-        // Find result container - check drawer first (with -drawer suffix), then original view
-        const drawerContent = document.getElementById('drawer-content');
-        let resultContainer = null;
-        
-        if (drawerContent) {
-            // Try with -drawer suffix first (cloned content)
-            resultContainer = drawerContent.querySelector('#summary-result-drawer');
-            // If not found, try without suffix
-            if (!resultContainer) {
-                resultContainer = drawerContent.querySelector('#summary-result');
-            }
-            // Also check nested containers
-            if (!resultContainer) {
-                resultContainer = drawerContent.querySelector('[id*="summary-result"]');
-            }
-        }
-        
-        // Fallback to original view
-        if (!resultContainer) {
-            resultContainer = document.getElementById('summary-result');
-        }
-        
+        const resultContainer = getSummaryResultContainer();
         if (!resultContainer) {
             console.warn('Summary result container not found');
             return;
@@ -557,16 +562,12 @@
 
         // Determine what to display
         const displayData = savedSummary || (responseChunks.length > 0 ? responseChunks.join('') : summaryData);
-        
-        // Hide progress loader only when we have meaningful content to display
-        if (displayData && displayData.trim() && progressLoaderInstance) {
-            progressLoaderInstance.hide();
-            progressLoaderInstance = null;
-        }
-        
-        // If no data yet, keep showing loader or show it if still loading
-        if (!displayData || !displayData.trim()) {
-            if ((isStreaming || regenerateLoader) && !progressLoaderInstance && window.createProgressLoader) {
+        const hasContent = displayData && displayData.trim();
+
+        // Show content only when loader has been released (first chunk + min time) or we have saved data and no loader
+        const mayShowContent = hasContent && (shouldHideLoader || !progressLoaderInstance);
+        if (!mayShowContent) {
+            if (!hasContent && (isStreaming || regenerateLoader) && !progressLoaderInstance && window.createProgressLoader) {
                 progressLoaderInstance = window.createProgressLoader(resultContainer, {
                     title: 'Generating contract summary',
                     steps: [
@@ -576,7 +577,12 @@
                         'Synthesizing summary'
                     ],
                     stepDelay: 1000,
-                    minDisplayTime: 3000
+                    minDisplayTime: 3000,
+                    onRelease: function() {
+                        progressLoaderInstance = null;
+                        shouldHideLoader = true;
+                        updateStreamingUI();
+                    }
                 });
             }
             return;
@@ -661,22 +667,19 @@
     }
 
     function copySummary() {
-        // Get the rendered content from the UI
-        const resultContainer = document.getElementById('summary-result');
+        // Use same active container as display (drawer-aware) so copy matches what user sees
+        const resultContainer = getSummaryResultContainer();
         if (!resultContainer) {
             showToast('No summary content to copy');
             return;
         }
-
-        // Extract plain text from the rendered HTML (no HTML tags)
+        const contentEl = resultContainer.querySelector('#html_summary_text') || resultContainer;
+        const sourceHtml = contentEl.innerHTML || '';
         let text = '';
-        if (window.htmlToString) {
-            // Use the utility function if available
-            text = window.htmlToString(resultContainer.innerHTML);
+        if (window.htmlToString && sourceHtml) {
+            text = window.htmlToString(sourceHtml);
         } else {
-            // Fallback: extract text using DOM
-            text = resultContainer.textContent || resultContainer.innerText || '';
-            // Clean up whitespace
+            text = contentEl.textContent || contentEl.innerText || '';
             text = text.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
         }
         
