@@ -2242,6 +2242,86 @@ button[title*="close" i],
     background: #1a4fd9;
 }
 
+/* Approval form inputs - match contract-frontend */
+.approval-form-input,
+.approval-form-textarea,
+.approval-form-select {
+    font-family: inherit;
+    font-size: 14px;
+    padding: 8px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.approval-form-input::placeholder,
+.approval-form-textarea::placeholder {
+    color: #9aa0a6;
+}
+
+.approval-form-select {
+    background-color: #fff;
+    cursor: pointer;
+}
+
+.approval-form-select:focus {
+    outline: none;
+    border-color: #2563eb;
+}
+
+/* Team member dropdown portal - prevents clipping by drawer overflow */
+.team-member-dropdown-portal {
+    position: fixed;
+    z-index: 9999;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.team-member-dropdown-portal .dropdown-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 12px;
+    transition: background-color 0.2s;
+}
+
+.team-member-dropdown-portal .dropdown-item:hover {
+    background-color: #f5f5f5;
+}
+
+/* Auto Summarize button - match contract-frontend */
+.auto-summarize-btn {
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.auto-summarize-btn:not(:disabled) {
+    background: #2667ff;
+    color: white;
+}
+
+.auto-summarize-btn:not(:disabled):hover {
+    background: #1a56e6;
+}
+
+.auto-summarize-btn:disabled {
+    background: #ccc;
+    color: #666;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
 /* Ask AI Styles - Matches MS Editor Chat.js */
 .ask-ai-container {
     margin-bottom: 0;
@@ -4151,6 +4231,7 @@ button[title*="close" i],
     border: none !important;
     outline: none !important;
     font-size: 16px;
+    line-height: 1.5;
     color: #202124;
     background-color: transparent !important;
     padding: 0 !important;
@@ -4158,7 +4239,6 @@ button[title*="close" i],
     max-height: 200px;
     resize: none;
     overflow-y: auto;
-    line-height: 24px;
     font-weight: 400;
     margin: 0;
     display: block;

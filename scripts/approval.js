@@ -27,6 +27,10 @@
         reminderDays: ''
     };
 
+    // Team member dropdown portal (rendered to body to avoid drawer overflow clipping)
+    let teamMemberPortalEl = null;
+    const TEAM_MEMBER_DEBOUNCE_MS = 400;
+
     // Initialize approval view
     window.initApprovalView = function() {
         // Check for drawer view first (cloned), then original view
@@ -134,18 +138,24 @@
         const content = document.getElementById('approval-content-drawer') || document.getElementById('approval-content');
         if (!content) return;
 
+        // Restore focus after re-render if user was in a form input (e.g. team member search)
+        const activeId = document.activeElement && document.activeElement.id && document.activeElement.id.startsWith('team-member-input-') ? document.activeElement.id : null;
+
         if (loading) {
             content.innerHTML = '<div class="loading-container" style="margin-top: 100px;"><div class="loading-spinner"></div></div>';
+            if (activeId) setTimeout(function() { var el = document.getElementById(activeId); if (el) el.focus(); }, 0);
             return;
         }
 
         if (showNewApprovalForm) {
             content.innerHTML = renderForm();
+            if (activeId) setTimeout(function() { var el = document.getElementById(activeId); if (el) el.focus(); }, 0);
             return;
         }
 
         if (selectedClause) {
             content.innerHTML = renderClauseDetails();
+            if (activeId) setTimeout(function() { var el = document.getElementById(activeId); if (el) el.focus(); }, 0);
             return;
         }
 
@@ -427,51 +437,48 @@
         return `(${day} ${month}, ${year} @ ${time.toLowerCase()})`;
     }
 
-    // Render form - matches MS Editor exactly
+    // Render form - matches MS Editor exactly; team member dropdown uses portal (no inline dropdown)
     function renderForm() {
         return `
             <div class="form-container" style="width: 100%; padding: 12px; padding-bottom: 50px; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; overflow: visible; margin-bottom: 30px; min-height: 0;">
                 <div style="display: flex; gap: 10px; justify-content: flex-start; align-items: center; width: 100%;">
                     <div style="flex: 1; width: 50%;">
-                        <input type="text" placeholder="Clause No" value="${escapeHtml(form.clauseNo || '')}" onchange="handleFormInputChange('clauseNo', this.value)" class="approval-form-input" style="width: 100%; padding: 8px 12px; border: 1px solid ${errors.clauseNo ? 'red' : 'rgb(153 153 153 / 64%)'}; border-radius: 4px; font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; box-sizing: border-box;" />
+                        <input type="text" placeholder="Clause No" value="${escapeHtml(form.clauseNo || '')}" onchange="handleFormInputChange('clauseNo', this.value)" class="approval-form-input" style="border-color: ${errors.clauseNo ? 'red' : '#d1d5db'};" />
                         ${errors.clauseNo ? `<div style="color: red; margin: -5px 0; font-size: 12px;">${errors.clauseNo}</div>` : ''}
                     </div>
                     <div style="flex: 1; width: 50%;">
-                        <select value="${form.reminderDays}" onchange="handleFormInputChange('reminderDays', this.value)" class="approval-form-select" style="width: 100%; padding: 8px 12px; border: 1px solid ${errors.reminderDays ? 'red' : 'rgb(153 153 153 / 64%)'}; border-radius: 4px; font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; box-sizing: border-box; background-color: white;">
+                        <select value="${form.reminderDays}" onchange="handleFormInputChange('reminderDays', this.value)" class="approval-form-select" style="border-color: ${errors.reminderDays ? 'red' : '#d1d5db'};">
                             <option value="">Reminder</option>
                             ${Array.from({ length: 10 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('')}
                         </select>
                         ${errors.reminderDays ? `<div style="color: red; margin: -5px 0; font-size: 12px;">${errors.reminderDays}</div>` : ''}
                     </div>
                 </div>
-                <textarea placeholder="Clause" onchange="handleFormInputChange('clause', this.value)" class="approval-form-textarea" style="width: 100%; padding: 8px 12px; border: 1px solid ${errors.clause ? 'red' : 'rgb(153 153 153 / 64%)'}; border-radius: 4px; height: 120px; resize: vertical; font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; box-sizing: border-box;">${escapeHtml(form.clause || '')}</textarea>
+                <textarea placeholder="Clause" onchange="handleFormInputChange('clause', this.value)" class="approval-form-textarea" style="height: 120px; resize: vertical; border-color: ${errors.clause ? 'red' : '#d1d5db'}; box-sizing: border-box;">${escapeHtml(form.clause || '')}</textarea>
                 ${errors.clause ? `<div style="color: red; margin: -5px 0; font-size: 12px;">${errors.clause}</div>` : ''}
                 <div style="width: 100%; margin-bottom: 8px; position: relative;">
-                    <textarea placeholder="Summary" onchange="handleFormInputChange('summary', this.value)" class="approval-form-textarea" style="width: 100%; padding: 8px 12px; border: 1px solid ${errors.summary ? 'red' : 'rgb(153 153 153 / 64%)'}; border-radius: 4px; height: 120px; resize: vertical; font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; box-sizing: border-box;">${escapeHtml(form.summary || '')}</textarea>
+                    <textarea placeholder="Summary" onchange="handleFormInputChange('summary', this.value)" class="approval-form-textarea" style="height: 120px; resize: vertical; border-color: ${errors.summary ? 'red' : '#d1d5db'}; box-sizing: border-box;">${escapeHtml(form.summary || '')}</textarea>
                     ${errors.summary ? `<div style="color: red; margin: -5px 0; font-size: 12px;">${errors.summary}</div>` : ''}
                     <div style="display: flex; justify-content: flex-end; margin-top: 6px;">
-                        <button onclick="handleGenerateSummary()" disabled="${generatingSummary || !form.clause}" style="padding: 6px 12px; font-size: 13px; color: ${(generatingSummary || !form.clause) ? 'black' : 'white'}; border: none; border-radius: 6px; cursor: ${generatingSummary ? 'not-allowed' : !form.clause ? 'not-allowed' : 'pointer'}; opacity: ${generatingSummary ? 0.6 : 1}; background: ${(generatingSummary || !form.clause) ? '#ccc' : '#2667ff'}; margin-bottom: -8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+                        <button type="button" class="auto-summarize-btn" onclick="handleGenerateSummary()" disabled="${generatingSummary || !form.clause}" style="margin-bottom: -8px;">
                             ${generatingSummary ? 'Generating...' : 'Auto Summarize'}
                         </button>
                     </div>
                 </div>
-                <textarea placeholder="Implications of Deviation" onchange="handleFormInputChange('standPosition', this.value)" class="approval-form-textarea" style="width: 100%; padding: 8px 12px; border: 1px solid ${errors.standPosition ? 'red' : 'rgb(153 153 153 / 64%)'}; border-radius: 4px; height: 120px; resize: vertical; font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; box-sizing: border-box;">${escapeHtml(form.standPosition || '')}</textarea>
+                <textarea placeholder="Implications of Deviation" onchange="handleFormInputChange('standPosition', this.value)" class="approval-form-textarea" style="height: 120px; resize: vertical; border-color: ${errors.standPosition ? 'red' : '#d1d5db'}; box-sizing: border-box;">${escapeHtml(form.standPosition || '')}</textarea>
                 ${errors.standPosition ? `<div style="color: red; margin: -5px 0; font-size: 12px;">${errors.standPosition}</div>` : ''}
                 ${form.levels.map((level, index) => `
                     <div style="margin-bottom: 8px; width: 100%; display: flex; gap: 10px;">
                         <div style="width: 90%; position: relative;">
-                            <input type="text" 
-                                id="team-member-input-${index}" 
-                                placeholder="Search team members" 
-                                value="${escapeHtml(level.fullName || '')}" 
-                                oninput="handleTeamMemberSearch(${index}, this.value)" 
+                            <input type="text"
+                                id="team-member-input-${index}"
+                                placeholder="Search team members"
+                                value="${escapeHtml(level.fullName || '')}"
+                                oninput="handleTeamMemberSearch(${index}, this.value)"
                                 onfocus="handleTeamMemberFocus(${index})"
-                                class="approval-form-input team-member-input" 
-                                style="width: 100%; padding: 8px 12px; border: 1px solid ${errors.level ? 'red' : 'rgb(153 153 153 / 64%)'}; border-radius: 4px; font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; box-sizing: border-box; position: relative;" 
+                                class="approval-form-input team-member-input"
+                                style="border-color: ${errors.level ? 'red' : '#d1d5db'};"
                                 autocomplete="off" />
-                            <div id="team-member-dropdown-${index}" class="team-member-dropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 4px; max-height: 200px; overflow-y: auto; z-index: 1000; margin-top: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                                <div class="dropdown-loading" style="padding: 12px; text-align: center; color: #666; font-size: 12px;">Loading...</div>
-                            </div>
                         </div>
                         <div onclick="handleLevelDelete(${index})" style="padding: 8px; cursor: pointer; border-radius: 5px; background-color: rgb(223 20 20); color: white; display: flex; align-items: center;">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
@@ -730,57 +737,73 @@
         }
     };
 
-    // Handle team member search with debounce
+    // Team member dropdown portal helpers (avoids drawer overflow clipping)
+    function getOrCreateTeamMemberPortal() {
+        if (!teamMemberPortalEl) {
+            teamMemberPortalEl = document.createElement('div');
+            teamMemberPortalEl.className = 'team-member-dropdown-portal';
+            teamMemberPortalEl.style.display = 'none';
+            document.body.appendChild(teamMemberPortalEl);
+        }
+        return teamMemberPortalEl;
+    }
+
+    function closeTeamMemberPortal() {
+        if (teamMemberPortalEl) {
+            teamMemberPortalEl.style.display = 'none';
+        }
+    }
+
+    function positionTeamMemberPortal(portal, input) {
+        const rect = input.getBoundingClientRect();
+        portal.style.position = 'fixed';
+        portal.style.top = rect.bottom + 'px';
+        portal.style.left = rect.left + 'px';
+        portal.style.width = rect.width + 'px';
+        portal.style.minWidth = rect.width + 'px';
+    }
+
+    // Handle team member search with debounce (400ms for faster UX)
     let searchTimers = {};
     window.handleTeamMemberSearch = function(index, value) {
         const input = document.getElementById(`team-member-input-${index}`);
-        const dropdown = document.getElementById(`team-member-dropdown-${index}`);
-        
-        if (!input || !dropdown) return;
-        
-        // Clear previous timer
-        if (searchTimers[index]) {
-            clearTimeout(searchTimers[index]);
-        }
-        
-        // Update input value
+        if (!input) return;
+
         if (form.levels[index]) {
             form.levels[index].fullName = value;
         }
-        
-        // Show dropdown if there's text
+
+        if (searchTimers[index]) {
+            clearTimeout(searchTimers[index]);
+        }
+
         if (value && value.trim().length > 0) {
-            // Clear previous timer and set new one - matches MS Editor debounce timing
             searchTimers[index] = setTimeout(() => {
                 fetchTeamMembers(index, value.trim());
-            }, 1000);
+            }, TEAM_MEMBER_DEBOUNCE_MS);
         } else {
-            dropdown.style.display = 'none';
+            closeTeamMemberPortal();
         }
     };
 
-    // Handle team member input focus
+    // Handle team member input focus - show dropdown on focus (defaultOptions-like behavior)
     window.handleTeamMemberFocus = function(index) {
         const input = document.getElementById(`team-member-input-${index}`);
-        const dropdown = document.getElementById(`team-member-dropdown-${index}`);
-        
-        if (!input || !dropdown) return;
-        
-        // If there's a value, show dropdown
-        if (input.value && input.value.trim().length > 0) {
-            fetchTeamMembers(index, input.value.trim());
-        }
+        if (!input) return;
+        fetchTeamMembers(index, (input.value && input.value.trim()) ? input.value.trim() : '');
     };
 
-    // Fetch team members from API
+    // Fetch team members from API; render into portal to avoid drawer overflow clipping
     async function fetchTeamMembers(index, searchValue) {
-        const dropdown = document.getElementById(`team-member-dropdown-${index}`);
-        if (!dropdown) return;
+        const input = document.getElementById(`team-member-input-${index}`);
+        if (!input) return;
+
+        const portal = getOrCreateTeamMemberPortal();
+        positionTeamMemberPortal(portal, input);
+        portal.style.display = 'block';
+        portal.innerHTML = '<div class="dropdown-loading" style="padding: 12px; text-align: center; color: #666; font-size: 12px;">Loading...</div>';
 
         try {
-            dropdown.innerHTML = '<div class="dropdown-loading" style="padding: 12px; text-align: center; color: #666; font-size: 12px;">Loading...</div>';
-            dropdown.style.display = 'block';
-
             const pluginData = window.getPluginData();
             const backendUrl = window.getBackendUrl();
             const accessToken = window.getAccessToken();
@@ -789,16 +812,13 @@
                 throw new Error('Access token not available');
             }
 
-            // Get already selected user IDs to filter them out
             const selectedUserIds = form.levels
                 ?.flatMap((level) => level?.orgUsers)
                 ?.filter(Boolean)
                 ?.map((user) => (typeof user === 'object' ? user._id : user)) || [];
 
-            // Clean search value (remove non-word characters) - matches MS Editor handleOrgUserInputChange
-            const cleanValue = searchValue.replace(/\W/g, '');
+            const cleanValue = (searchValue || '').replace(/\W/g, '');
 
-            // Use correct endpoint - matches contract-frontend and MS Editor
             const url = `${backendUrl}/org-user/all-users?email=${encodeURIComponent(cleanValue)}`;
             const response = await fetch(url, {
                 headers: {
@@ -809,88 +829,65 @@
 
             if (response.ok) {
                 const data = await response.json();
-                // Handle different response structures - matches contract-frontend and MS Editor
-                // Contract-frontend: response?.data?.orgUsers
-                // MS Editor: response?.data?.orgUsers
                 const orgUsers = data?.data?.orgUsers || data?.data?.users || data?.orgUsers || data?.users || [];
-                
-                // Check status or if orgUsers array exists (some APIs might not have status field)
+
                 if ((data?.status !== false) && orgUsers?.length > 0) {
-                    // Filter out already selected users
                     const filteredUsers = orgUsers.filter(
                         (item) => !selectedUserIds.includes(item._id)
                     );
 
                     if (filteredUsers.length > 0) {
-                        dropdown.innerHTML = filteredUsers.map((user) => {
-                            const safeName = escapeHtml(user.fullName || user.name || '');
+                        portal.innerHTML = filteredUsers.map((user) => {
+                            const rawName = user.fullName || user.name || '';
+                            const safeName = escapeHtml(rawName);
                             const safeId = String(user._id || user.id || '').replace(/'/g, "&#39;").replace(/"/g, "&quot;");
-                            return `
-                                <div class="dropdown-item" 
-                                    onclick="selectTeamMember(${index}, '${safeName}', '${safeId}')"
-                                    style="padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 12px; transition: background-color 0.2s;"
-                                    onmouseover="this.style.backgroundColor='#f5f5f5'"
-                                    onmouseout="this.style.backgroundColor='white'">
-                                    ${safeName}
-                                </div>
-                            `;
+                            const safeNameAttr = rawName.replace(/\\/g, "\\\\").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/&/g, "&amp;");
+                            return '<div class="dropdown-item" onclick="selectTeamMember(' + index + ', \'' + safeNameAttr.replace(/'/g, "&#39;") + '\', \'' + safeId + '\')">' + safeName + '</div>';
                         }).join('');
                     } else {
-                        dropdown.innerHTML = '<div style="padding: 12px; text-align: center; color: #666; font-size: 12px;">No team members found</div>';
+                        portal.innerHTML = '<div style="padding: 12px; text-align: center; color: #666; font-size: 12px;">No team members found</div>';
                     }
                 } else {
-                    dropdown.innerHTML = '<div style="padding: 12px; text-align: center; color: #666; font-size: 12px;">No team members found</div>';
+                    portal.innerHTML = '<div style="padding: 12px; text-align: center; color: #666; font-size: 12px;">No team members found</div>';
                 }
             } else {
                 const errorData = await response.json().catch(() => ({}));
                 const errorMsg = errorData.msg || errorData.message || 'Error loading team members';
-                dropdown.innerHTML = `<div style="padding: 12px; text-align: center; color: #d32f2f; font-size: 12px;">${escapeHtml(errorMsg)}</div>`;
+                portal.innerHTML = '<div style="padding: 12px; text-align: center; color: #d32f2f; font-size: 12px;">' + escapeHtml(errorMsg) + '</div>';
             }
         } catch (err) {
             console.error('Error fetching team members:', err);
-            if (dropdown) {
-                dropdown.innerHTML = '<div style="padding: 12px; text-align: center; color: #d32f2f; font-size: 12px;">Error loading team members</div>';
-            }
+            portal.innerHTML = '<div style="padding: 12px; text-align: center; color: #d32f2f; font-size: 12px;">Error loading team members</div>';
         }
     }
 
     // Select team member from dropdown
     window.selectTeamMember = function(index, fullName, userId) {
+        closeTeamMemberPortal();
+
         const input = document.getElementById(`team-member-input-${index}`);
-        const dropdown = document.getElementById(`team-member-dropdown-${index}`);
-        
+
         if (form.levels[index]) {
             form.levels[index].fullName = fullName;
             form.levels[index].orgUsers = [userId];
         }
-        
-        // Update input value immediately
+
         if (input) {
             input.value = fullName;
-            // Trigger input event to ensure any listeners are notified
             input.dispatchEvent(new Event('input', { bubbles: true }));
         }
-        
-        if (dropdown) {
-            dropdown.style.display = 'none';
-        }
-        
-        // Clear any errors
+
         if (errors.level) {
             delete errors.level;
         }
-        
-        // Re-render to ensure form state is updated
+
         updateApprovalContent();
     };
 
-    // Close dropdowns when clicking outside
+    // Close portal when clicking outside (not on input or portal)
     document.addEventListener('click', function(event) {
-        if (!event.target.closest('.team-member-input') && !event.target.closest('.team-member-dropdown')) {
-            const dropdowns = document.querySelectorAll('.team-member-dropdown');
-            dropdowns.forEach(dropdown => {
-                dropdown.style.display = 'none';
-            });
+        if (!event.target.closest('.team-member-input') && !event.target.closest('.team-member-dropdown-portal')) {
+            closeTeamMemberPortal();
         }
     });
 
