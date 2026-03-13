@@ -2248,7 +2248,8 @@ button[title*="close" i],
 .approval-form-select {
     font-family: inherit;
     font-size: 14px;
-    padding: 8px 10px;
+    min-height: 36px;
+    padding: 6px 10px;
     border: 1px solid #d1d5db;
     border-radius: 6px;
     width: 100%;
@@ -2273,7 +2274,7 @@ button[title*="close" i],
 /* Team member dropdown portal - prevents clipping by drawer overflow */
 .team-member-dropdown-portal {
     position: fixed;
-    z-index: 9999;
+    z-index: 10000;
     background: white;
     border: 1px solid #ddd;
     border-radius: 6px;

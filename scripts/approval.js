@@ -29,7 +29,10 @@
 
     // Team member dropdown portal (rendered to body to avoid drawer overflow clipping)
     let teamMemberPortalEl = null;
+    let isTeamDropdownOpen = false;
     const TEAM_MEMBER_DEBOUNCE_MS = 400;
+    const FORM_INPUT_DEBOUNCE_MS = 250;
+    let formInputDebounceTimer = null;
 
     // Initialize approval view
     window.initApprovalView = function() {
@@ -148,6 +151,9 @@
         }
 
         if (showNewApprovalForm) {
+            if (isTeamDropdownOpen) {
+                return;
+            }
             content.innerHTML = renderForm();
             if (activeId) setTimeout(function() { var el = document.getElementById(activeId); if (el) el.focus(); }, 0);
             return;
@@ -454,7 +460,7 @@
                         ${errors.reminderDays ? `<div style="color: red; margin: -5px 0; font-size: 12px;">${errors.reminderDays}</div>` : ''}
                     </div>
                 </div>
-                <textarea placeholder="Clause" onchange="handleFormInputChange('clause', this.value)" class="approval-form-textarea" style="height: 120px; resize: vertical; border-color: ${errors.clause ? 'red' : '#d1d5db'}; box-sizing: border-box;">${escapeHtml(form.clause || '')}</textarea>
+                <textarea placeholder="Clause" oninput="handleFormInputChange('clause', this.value)" class="approval-form-textarea" style="height: 120px; resize: vertical; border-color: ${errors.clause ? 'red' : '#d1d5db'}; box-sizing: border-box;">${escapeHtml(form.clause || '')}</textarea>
                 ${errors.clause ? `<div style="color: red; margin: -5px 0; font-size: 12px;">${errors.clause}</div>` : ''}
                 <div style="width: 100%; margin-bottom: 8px; position: relative;">
                     <textarea placeholder="Summary" onchange="handleFormInputChange('summary', this.value)" class="approval-form-textarea" style="height: 120px; resize: vertical; border-color: ${errors.summary ? 'red' : '#d1d5db'}; box-sizing: border-box;">${escapeHtml(form.summary || '')}</textarea>
@@ -547,11 +553,25 @@
         }
     };
 
-    // Handle form input change
+    // Handle form input change (avoids full re-render for reminder; debounces textarea; skips when team dropdown open)
     window.handleFormInputChange = function(field, value) {
         form[field] = value;
         if (errors[field]) {
             delete errors[field];
+        }
+        if (field === 'reminderDays') {
+            return;
+        }
+        if (isTeamDropdownOpen) {
+            return;
+        }
+        if (field === 'clause' || field === 'summary' || field === 'standPosition') {
+            if (formInputDebounceTimer) clearTimeout(formInputDebounceTimer);
+            formInputDebounceTimer = setTimeout(function() {
+                formInputDebounceTimer = null;
+                updateApprovalContent();
+            }, FORM_INPUT_DEBOUNCE_MS);
+            return;
         }
         updateApprovalContent();
     };
@@ -743,12 +763,14 @@
             teamMemberPortalEl = document.createElement('div');
             teamMemberPortalEl.className = 'team-member-dropdown-portal';
             teamMemberPortalEl.style.display = 'none';
+            teamMemberPortalEl.style.zIndex = '10000';
             document.body.appendChild(teamMemberPortalEl);
         }
         return teamMemberPortalEl;
     }
 
     function closeTeamMemberPortal() {
+        isTeamDropdownOpen = false;
         if (teamMemberPortalEl) {
             teamMemberPortalEl.style.display = 'none';
         }
@@ -801,6 +823,7 @@
         const portal = getOrCreateTeamMemberPortal();
         positionTeamMemberPortal(portal, input);
         portal.style.display = 'block';
+        isTeamDropdownOpen = true;
         portal.innerHTML = '<div class="dropdown-loading" style="padding: 12px; text-align: center; color: #666; font-size: 12px;">Loading...</div>';
 
         try {
@@ -812,10 +835,10 @@
                 throw new Error('Access token not available');
             }
 
-            const selectedUserIds = form.levels
+            const selectedUserIds = (form.levels
                 ?.flatMap((level) => level?.orgUsers)
                 ?.filter(Boolean)
-                ?.map((user) => (typeof user === 'object' ? user._id : user)) || [];
+                ?.map((user) => String(typeof user === 'object' ? user._id : user)) || []);
 
             const cleanValue = (searchValue || '').replace(/\W/g, '');
 
@@ -829,11 +852,12 @@
 
             if (response.ok) {
                 const data = await response.json();
-                const orgUsers = data?.data?.orgUsers || data?.data?.users || data?.orgUsers || data?.users || [];
+                const rawUsers = data?.data?.orgUsers || data?.data?.users || data?.orgUsers || data?.users;
+                const orgUsers = Array.isArray(rawUsers) ? rawUsers : [];
 
-                if ((data?.status !== false) && orgUsers?.length > 0) {
+                if ((data?.status !== false) && orgUsers.length > 0) {
                     const filteredUsers = orgUsers.filter(
-                        (item) => !selectedUserIds.includes(item._id)
+                        (item) => !selectedUserIds.includes(String(item._id != null ? item._id : item.id))
                     );
 
                     if (filteredUsers.length > 0) {
