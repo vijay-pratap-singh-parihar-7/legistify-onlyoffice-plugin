@@ -77,7 +77,7 @@
         // Show progress loader immediately (onRelease: loader hides only after first chunk + min time)
         shouldHideLoader = false;
         firstChunkReceived = false;
-        if (window.createProgressLoader) {
+        if (window.createProgressLoader && !resultContainer.querySelector('.progress-loader-container')) {
             progressLoaderInstance = window.createProgressLoader(resultContainer, {
                 title: 'Generating contract summary',
                 steps: [
@@ -138,9 +138,9 @@
             
             if (response.ok) {
                 const data = await response.json();
-                if (data && data.summary) {
-                    savedSummary = data.summary;
-                    summaryData = data.summary;
+                if (data?.status && data?.data?.summary) {
+                    savedSummary = data.data.summary;
+                    summaryData = data.data.summary;
                     
                     // Hide progress loader and show data
                     if (progressLoaderInstance) {
@@ -637,9 +637,9 @@
             
             if (response.ok) {
                 const data = await response.json();
-                if (data && data.summary) {
-                    savedSummary = data.summary;
-                    summaryData = data.summary;
+                if (data?.status && data?.data?.summary) {
+                    savedSummary = data.data.summary;
+                    summaryData = data.data.summary;
                     
                     // Update UI with saved summary
                     updateStreamingUI();

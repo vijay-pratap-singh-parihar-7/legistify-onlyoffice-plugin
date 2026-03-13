@@ -608,20 +608,22 @@
             tabListContainer.style.display = 'none';
         }
 
-        // Show drawer and overlay
+        // Initialize Summary/Clauses/Obligations view before showing drawer so loader is visible immediately (no blank screen)
+        if (contentKey === 'summary' && window.initSummaryView) {
+            window.initSummaryView();
+        } else if (contentKey === 'clause' && window.initClausesView) {
+            window.initClausesView();
+        } else if (contentKey === 'obligation' && window.initObligationsView) {
+            window.initObligationsView();
+        }
+
+        // Show drawer and overlay (loader already in DOM for summary/clause/obligation)
         if (drawer) drawer.style.display = 'block';
         if (drawerOverlay) drawerOverlay.style.display = 'block';
 
-        // Initialize the view after drawer is shown (for progress loader)
-        // Use a small delay to ensure DOM is ready
+        // Initialize other views after drawer is shown (library, clauseApproval, genai)
         setTimeout(() => {
-            if (contentKey === 'summary' && window.initSummaryView) {
-                window.initSummaryView();
-            } else if (contentKey === 'clause' && window.initClausesView) {
-                window.initClausesView();
-            } else if (contentKey === 'obligation' && window.initObligationsView) {
-                window.initObligationsView();
-            } else if (contentKey === 'library' && window.initLibraryView) {
+            if (contentKey === 'library' && window.initLibraryView) {
                 window.initLibraryView();
             } else if (contentKey === 'clauseApproval' && window.initApprovalView) {
                 window.initApprovalView();
@@ -710,24 +712,8 @@
         // Set active content to show drawer first (so progress loader can be shown immediately)
         setActiveContent(contentKey);
 
-        // For Summary, Clauses, Obligations - initialize view immediately to show loader
-        // The view will auto-check for existing data and auto-generate if not found
-        if (contentKey === 'summary') {
-            // Initialize summary view immediately - will show loader and auto-generate
-            if (window.initSummaryView) {
-                window.initSummaryView();
-            }
-        } else if (contentKey === 'clause') {
-            // Initialize clauses view immediately - will show loader and auto-generate
-            if (window.initClausesView) {
-                window.initClausesView();
-            }
-        } else if (contentKey === 'obligation') {
-            // Initialize obligations view immediately - will show loader and auto-generate
-            if (window.initObligationsView) {
-                window.initObligationsView();
-            }
-        } else if (contentKey === 'library') {
+        // Summary, Clauses, Obligations: init runs inside openDrawer before drawer is shown (loader visible immediately)
+        if (contentKey === 'library') {
             await getClauseLibrary();
             if (window.initLibraryView) {
                 window.initLibraryView();

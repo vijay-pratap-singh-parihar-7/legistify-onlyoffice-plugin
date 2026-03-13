@@ -61,7 +61,7 @@
 
         shouldHideLoader = false;
         firstChunkReceived = false;
-        if (window.createProgressLoader) {
+        if (window.createProgressLoader && !resultContainer.querySelector('.progress-loader-container')) {
             progressLoaderInstance = window.createProgressLoader(resultContainer, {
                 title: 'Analyzing contract clauses',
                 steps: [
