@@ -553,7 +553,7 @@
         }
     };
 
-    // Handle form input change (avoids full re-render for reminder; debounces textarea; skips when team dropdown open)
+    // Handle form input change (avoids full re-render for reminder and clause; debounces other textareas; skips when team dropdown open)
     window.handleFormInputChange = function(field, value) {
         form[field] = value;
         if (errors[field]) {
@@ -565,7 +565,14 @@
         if (isTeamDropdownOpen) {
             return;
         }
-        if (field === 'clause' || field === 'summary' || field === 'standPosition') {
+        if (field === 'clause') {
+            var btn = document.querySelector('.auto-summarize-btn');
+            if (btn) {
+                btn.disabled = generatingSummary || !(value && value.trim && value.trim().length > 0);
+            }
+            return;
+        }
+        if (field === 'summary' || field === 'standPosition') {
             if (formInputDebounceTimer) clearTimeout(formInputDebounceTimer);
             formInputDebounceTimer = setTimeout(function() {
                 formInputDebounceTimer = null;
