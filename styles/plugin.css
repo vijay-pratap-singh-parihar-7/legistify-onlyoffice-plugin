@@ -2021,6 +2021,10 @@ button[title*="close" i],
     background-color: #f0f0f0;
 }
 
+.menu-item.active {
+    background-color: #f0f0f0;
+}
+
 .custom-button {
     padding: 0;
     min-width: 24px;

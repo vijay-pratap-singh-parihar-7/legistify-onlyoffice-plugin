@@ -169,6 +169,7 @@
         }
         searchType = name;
         closeSearchMenu();
+        syncSearchDropdownUI();
     };
 
     // Toggle search menu
@@ -185,6 +186,33 @@
         if (dropdown) {
             dropdown.style.display = 'none';
         }
+    }
+
+    // Sync dropdown highlight and search placeholder to current searchType (no re-render).
+    function syncSearchDropdownUI() {
+        const dropdownIds = ['search-menu-dropdown', 'search-menu-dropdown-drawer'];
+        dropdownIds.forEach(function(id) {
+            const dropdown = document.getElementById(id);
+            if (!dropdown) return;
+            const items = dropdown.querySelectorAll('.menu-item');
+            if (items.length < 2) return;
+            items[0].classList.remove('active');
+            items[1].classList.remove('active');
+            items[0].style.backgroundColor = '';
+            items[1].style.backgroundColor = '';
+            if (searchType === 'clause') {
+                items[0].classList.add('active');
+            } else {
+                items[1].classList.add('active');
+            }
+        });
+
+        const inputIds = ['library-search-input', 'library-search-input-drawer'];
+        inputIds.forEach(function(id) {
+            const input = document.getElementById(id);
+            if (!input) return;
+            input.placeholder = searchType === 'subClause' ? 'Search any sub clause by name' : 'Search any clause by name';
+        });
     }
 
     // Handle input change with debounce
