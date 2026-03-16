@@ -1092,43 +1092,56 @@
         return text;
     }
 
-    // Copy response text - uses source item.response and markdownToPlainText for formatted plain text
+    // Copy response text - copies from historySearch by data-chat-id, not from DOM
     window.copyResponseText = function(element) {
-        if (!element) {
-            showToast('Nothing to copy', 'error');
-            return;
-        }
+        try {
+            if (!element) {
+                showToast('Nothing to copy', 'error');
+                return;
+            }
 
-        const container = element.closest('.response-container');
-        if (!container) {
-            showToast('Nothing to copy', 'error');
-            return;
-        }
+            const container = element.closest('.response-container');
+            if (!container) {
+                showToast('Nothing to copy', 'error');
+                return;
+            }
 
-        const chatId = container.dataset.chatId;
-        if (!chatId) {
-            showToast('Nothing to copy', 'error');
-            return;
-        }
+            const chatId = container.dataset.chatId;
+            if (chatId === undefined || chatId === '') {
+                showToast('Nothing to copy', 'error');
+                return;
+            }
 
-        const chatItem = historySearch.find(function(x) { return (x._id || x.message_id) === chatId; });
-        if (!chatItem || !chatItem.response) {
-            showToast('Nothing to copy', 'error');
-            return;
-        }
+            // Match by string so _id (string/number/object) always matches data-chat-id (string)
+            const chatItem = historySearch.find(function(x) {
+                const id = x._id || x.message_id;
+                return id != null && String(id) === String(chatId);
+            });
+            if (!chatItem || !chatItem.response) {
+                showToast('Nothing to copy', 'error');
+                return;
+            }
 
-        const plainText = markdownToPlainText(chatItem.response);
-        if (!plainText.trim()) {
-            showToast('Nothing to copy', 'error');
-            return;
-        }
+            const response = chatItem.response;
+            let plainText = markdownToPlainText(response);
+            if (!plainText.trim() && window.htmlToString) {
+                plainText = window.htmlToString(response);
+            }
+            if (!plainText.trim()) {
+                showToast('Nothing to copy', 'error');
+                return;
+            }
 
-        navigator.clipboard.writeText(plainText).then(function() {
-            showToast('Copied To Clipboard!', 'success');
-        }).catch(function(err) {
-            console.error('Failed to copy:', err);
+            navigator.clipboard.writeText(plainText).then(function() {
+                showToast('Copied To Clipboard!', 'success');
+            }).catch(function(err) {
+                console.error('Failed to copy:', err);
+                showToast('Failed to copy', 'error');
+            });
+        } catch (err) {
+            console.error('Copy failed', err);
             showToast('Failed to copy', 'error');
-        });
+        }
     };
 
     // Copy to clipboard - strips HTML tags and copies only plain text
