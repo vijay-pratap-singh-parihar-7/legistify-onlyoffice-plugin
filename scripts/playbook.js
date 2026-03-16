@@ -852,8 +852,8 @@
         showDetailView = false;
         selectedPlaybookForDetail = null;
         
-        // Close drawer
-        closePlaybookDrawer();
+        // Close drawer and reset all playbook state (returning to list)
+        window.closePlaybookDrawer();
         
         renderPlaybookList();
         fetchPlaybooks();
@@ -1534,8 +1534,8 @@
         lastStreamSnapshot = null;
         runningPlaybook = null;
         
-        // Close drawer
-        closePlaybookDrawer();
+        // Close drawer and reset all playbook state (returning to list)
+        window.closePlaybookDrawer();
         
         renderPlaybookList();
         fetchPlaybooks();
@@ -1668,7 +1668,7 @@
     window.closeDrawer = function() {
         // Check if playbook drawer is open (detail view, create page, create form, or results view)
         if (showDetailView || showCreatePage || showCreateForm || showResultsView || (isDrawerOpen && activeContentPlaybook)) {
-            closePlaybookDrawer();
+            window.closePlaybookDrawer();
         } else if (originalCloseDrawer) {
             originalCloseDrawer();
         }
@@ -2356,7 +2356,7 @@
         }
     };
     
-    // Handle back from create page
+    // Handle back from create page - return to Playbook list (close drawer)
     window.handleBackFromCreatePage = function() {
         showCreatePage = false;
         window.showCreatePage = false;
@@ -2365,22 +2365,24 @@
         editingRuleIndex = null;
         editingRuleText = '';
         
-        // Close drawer
-        closePlaybookDrawer();
+        // Close drawer and reset all playbook state (returning to list)
+        window.closePlaybookDrawer();
         
         renderPlaybookList();
         fetchPlaybooks();
     };
     
-    // Handle back from create form - stays in drawer, goes back to create page
+    // Handle back from create form - stays in drawer, navigate to create page (do not close drawer)
     window.handleBackFromCreateForm = function() {
         showCreateForm = false;
         window.showCreateForm = false;
+        showCreatePage = true;
+        window.showCreatePage = true;
         manualFormRules = [];
         manualFormCurrentRule = '';
         manualFormGuideName = 'Manual Playbook';
         
-        // Ensure drawer is still open and render create page
+        // Stay in drawer and render create page
         openPlaybookDrawer();
         renderCreatePage();
     };
