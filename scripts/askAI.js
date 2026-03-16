@@ -168,7 +168,7 @@
                             <div class="c_d_ai_prompt_container" style="width: 100%; max-width: 100%; background-color: #fff !important; border: 1px solid #dadce0; border-radius: 15px; box-shadow: 0 1px 6px rgba(32, 33, 36, 0.28); position: relative; transition: box-shadow 0.2s;">
                                 <div class="c_d_ai_prompt_input_wrapper ${!prompt?.trim() ? 'c_d_ai_prompt_input_wrapper_v2' : ''}" id="prompt-input-wrapper" style="display: flex; flex-direction: ${!prompt?.trim() ? 'row' : 'column'}; align-items: ${!prompt?.trim() ? 'center' : 'flex-start'}; padding: ${!prompt?.trim() ? '8px 12px' : '12px'}; box-sizing: border-box; gap: 8px; ${!prompt?.trim() ? 'height: auto; min-height: 48px;' : ''} transition: all 0.2s ease;">
                                     <div class="c_d_ai_prompt_input_area ${!prompt?.trim() ? 'c_d_ai_prompt_input_area_v2' : ''}" style="width: 100%; flex: 1; ${!prompt?.trim() ? 'margin-right: 8px;' : ''}">
-                                        <textarea id="prompt-input-ref" rows="1" placeholder="Ask Legistify AI" class="c_d_ai_prompt_input form-control" aria-invalid="false" oninput="handlePromptInput(event)" onfocus="handlePromptFocus(event)" onblur="handlePromptBlur(event)" style="resize: none; height: auto; width: 100%; background: transparent; padding: 0; border: none; outline: none; box-sizing: border-box; direction: ltr; text-align: left; display: block !important; visibility: visible !important; color: #202124; overflow-y: auto; min-height: 24px; max-height: 200px; font-weight: 400; margin: 0; font-size: 16px;">${escapeHtml(prompt || '')}</textarea>
+                                        <textarea id="prompt-input-ref" rows="1" placeholder="Ask Legistify AI" class="c_d_ai_prompt_input form-control" aria-invalid="false" oninput="handlePromptInput(event)" onfocus="handlePromptFocus(event)" onblur="handlePromptBlur(event)" style="resize: none; height: auto; width: 100%; background: transparent; padding: 0; border: none; outline: none; box-sizing: border-box; direction: ltr; text-align: left; display: block !important; visibility: visible !important; color: #202124; overflow-y: auto; min-height: 24px; max-height: 200px; font-weight: 400; margin: 0;">${escapeHtml(prompt || '')}</textarea>
                                     </div>
                                     <div class="c_d_ai_prompt_icons_container ${!prompt?.trim() ? 'c_d_ai_prompt_icons_container_v2' : ''}" style="display: flex; justify-content: space-between; align-items: center; ${!prompt?.trim() ? 'position: static; width: auto; padding-top: 0; flex-shrink: 0;' : 'width: 100%; padding-top: 4px;'}">
                                         <div class="c_d_ai_prompt_left_icons"></div>
@@ -300,8 +300,8 @@
                                 </div>
                             </div>
                             <div class="div2">
-                                <div style="margin-left: 7px;" class="response-container">
-                                    <p class="p3">${formatResponseOrSafeHtml(item.response || '')}</p>
+                                <div style="margin-left: 7px;" class="response-container" data-chat-id="${item?._id || item?.message_id || ''}">
+                                    <div class="p3">${formatResponseOrSafeHtml(item.response || '')}</div>
                                     <div class="chat_response_footer" style="justify-content: start;">
                                         <div onclick="copyResponseText(this)" style="cursor: pointer; display: flex; align-items: center;">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="cursor: pointer;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
@@ -339,8 +339,8 @@
         return `
             <div key="${item?._id || ''}" class="outer-container">
                 <div class="div2">
-                    <div style="margin-left: 7px;" class="response-container">
-                        <p class="p3">${responseText}</p>
+                    <div style="margin-left: 7px;" class="response-container" data-chat-id="${item?._id || item?.message_id || ''}">
+                        <div class="p3">${responseText}</div>
                         ${Questions?.length ? Questions.map((qs, i) => `
                             <div key="${i}" id="question-${i}" data-question="${escapeHtml(qs)}" class="doc-questions" style="display: flex; align-items: flex-start; cursor: pointer; margin-bottom: 8px;">
                                 <p class="p8" style="margin: 0; margin-right: 8px; font-size: 12px; flex-shrink: 0;">${i + 1}</p>
@@ -1052,50 +1052,80 @@
         return text;
     };
 
-    // Copy response text - extracts plain text from the rendered response container
+    // Convert markdown or HTML to plain text with structure preserved (lists as lines, no HTML/markdown)
+    // Aligns with contract-frontend markdownToPlainText for consistent copy behaviour
+    function markdownToPlainText(markdown) {
+        if (!markdown || typeof markdown !== 'string') return '';
+        let text = markdown;
+
+        // Remove code blocks
+        text = text.replace(/```[\s\S]*?```/g, '');
+        // Remove inline code
+        text = text.replace(/`([^`]+)`/g, '$1');
+        // Headings: keep text only
+        text = text.replace(/^#{1,6}\s+(.*)$/gm, '$1');
+        // Bold
+        text = text.replace(/\*\*([^*]+)\*\*/g, '$1');
+        text = text.replace(/__([^_]+)__/g, '$1');
+        // Italic
+        text = text.replace(/\*([^*]+)\*/g, '$1');
+        text = text.replace(/_([^_]+)_/g, '$1');
+        // Links: keep text only
+        text = text.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+        // List markers: convert to bullet and preserve line breaks (- * + and 1. 2.)
+        text = text.replace(/^[\s]*[-*+]\s+(.*)$/gm, '• $1');
+        text = text.replace(/^[\s]*\d+\.\s+(.*)$/gm, '• $1');
+        // Remove HTML tags
+        text = text.replace(/<[^>]+>/g, '');
+        // Decode common entities
+        text = text.replace(/&nbsp;/g, ' ');
+        text = text.replace(/&amp;/g, '&');
+        text = text.replace(/&lt;/g, '<');
+        text = text.replace(/&gt;/g, '>');
+        text = text.replace(/&quot;/g, '"');
+        text = text.replace(/&#39;/g, "'");
+        text = text.replace(/&apos;/g, "'");
+        // Normalise whitespace but preserve paragraph/list breaks
+        text = text.replace(/[ \t]+/g, ' ');
+        text = text.replace(/\n{3,}/g, '\n\n');
+        text = text.trim();
+        return text;
+    }
+
+    // Copy response text - uses source item.response and markdownToPlainText for formatted plain text
     window.copyResponseText = function(element) {
         if (!element) {
             showToast('Nothing to copy', 'error');
             return;
         }
-        
-        // Find the parent response-container
-        const responseContainer = element.closest('.response-container');
-        if (!responseContainer) {
+
+        const container = element.closest('.response-container');
+        if (!container) {
             showToast('Nothing to copy', 'error');
             return;
         }
-        
-        // Clone the container to avoid modifying the original
-        const clone = responseContainer.cloneNode(true);
-        
-        // Remove the footer (copy button and date) from the clone
-        const footer = clone.querySelector('.chat_response_footer');
-        if (footer) {
-            footer.remove();
-        }
-        
-        // Remove questions if present
-        const questions = clone.querySelectorAll('.doc-questions');
-        questions.forEach(q => q.remove());
-        
-        // Extract plain text from the cloned element
-        let plainText = clone.textContent || clone.innerText || '';
-        
-        // Clean up the text (normalize whitespace)
-        plainText = plainText
-            .replace(/\s+/g, ' ')  // Replace multiple spaces with single space
-            .replace(/\n\s*\n/g, '\n\n')  // Normalize line breaks
-            .trim();
-        
-        if (!plainText) {
+
+        const chatId = container.dataset.chatId;
+        if (!chatId) {
             showToast('Nothing to copy', 'error');
             return;
         }
-        
-        navigator.clipboard.writeText(plainText).then(() => {
+
+        const chatItem = historySearch.find(function(x) { return (x._id || x.message_id) === chatId; });
+        if (!chatItem || !chatItem.response) {
+            showToast('Nothing to copy', 'error');
+            return;
+        }
+
+        const plainText = markdownToPlainText(chatItem.response);
+        if (!plainText.trim()) {
+            showToast('Nothing to copy', 'error');
+            return;
+        }
+
+        navigator.clipboard.writeText(plainText).then(function() {
             showToast('Copied To Clipboard!', 'success');
-        }).catch(err => {
+        }).catch(function(err) {
             console.error('Failed to copy:', err);
             showToast('Failed to copy', 'error');
         });
