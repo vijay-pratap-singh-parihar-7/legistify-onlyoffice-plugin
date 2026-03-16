@@ -1020,6 +1020,78 @@
         }
     };
 
+    // --- Copy pipeline: normalize → markdown → sanitize → structured plain text ---
+
+    // Remove fenced code block markers (e.g. ```html, ```) so content is safe for markdown parsing
+    function normalizeAiResponse(text) {
+        if (text == null || typeof text !== 'string') return '';
+        var t = text.trim();
+        // Strip leading fenced opener (e.g. ```html or ```)
+        t = t.replace(/^\s*```\w*\s*\n?/, '');
+        // Strip trailing fenced closer
+        t = t.replace(/\n?\s*```\s*$/, '');
+        return t.trim();
+    }
+
+    // Convert sanitized HTML to structured plain text (headings, lists, paragraphs, newlines)
+    function htmlToStructuredText(html) {
+        if (!html || typeof html !== 'string') return '';
+        var el = document.createElement('div');
+        el.innerHTML = html;
+        var out = '';
+
+        function getInnerText(node) {
+            if (node.nodeType === 3) return (node.textContent || '').replace(/\s+/g, ' ').trim();
+            if (node.nodeType !== 1) return '';
+            var tag = node.tagName.toLowerCase();
+            if (tag === 'br') return '\n';
+            var s = '';
+            for (var i = 0; i < node.childNodes.length; i++) s += getInnerText(node.childNodes[i]);
+            return s;
+        }
+
+        function walk(node) {
+            if (node.nodeType === 3) {
+                var s = (node.textContent || '').replace(/\s+/g, ' ').trim();
+                if (s) out += s;
+                return;
+            }
+            if (node.nodeType !== 1) return;
+            var tag = node.tagName.toLowerCase();
+            if (tag === 'br') {
+                out += '\n';
+                return;
+            }
+            if (tag === 'p') {
+                out += getInnerText(node) + '\n';
+                return;
+            }
+            if (tag === 'h1' || tag === 'h2' || tag === 'h3' || tag === 'h4' || tag === 'h5' || tag === 'h6') {
+                out += '\n' + getInnerText(node) + '\n';
+                return;
+            }
+            if (tag === 'li') {
+                out += '• ' + getInnerText(node) + '\n';
+                return;
+            }
+            if (tag === 'ul' || tag === 'ol') {
+                out += '\n';
+                for (var k = 0; k < node.childNodes.length; k++) walk(node.childNodes[k]);
+                out += '\n';
+                return;
+            }
+            if (tag === 'div') {
+                for (var m = 0; m < node.childNodes.length; m++) walk(node.childNodes[m]);
+                out += '\n';
+                return;
+            }
+            for (var n = 0; n < node.childNodes.length; n++) walk(node.childNodes[n]);
+        }
+
+        for (var i = 0; i < el.childNodes.length; i++) walk(el.childNodes[i]);
+        return out.replace(/\n{3,}/g, '\n\n').trim();
+    }
+
     // Utility function to strip HTML tags and convert to plain text
     // Matches contract-frontend/src/utility/Utils.js htmlToString function
     window.htmlToString = function(html) {
@@ -1092,7 +1164,7 @@
         return text;
     }
 
-    // Copy response text - copies from historySearch by data-chat-id, not from DOM
+    // Copy response text - content pipeline: normalize → markdown → sanitize → structured plain text
     window.copyResponseText = function(element) {
         try {
             if (!element) {
@@ -1100,21 +1172,20 @@
                 return;
             }
 
-            const container = element.closest('.response-container');
+            var container = element.closest('.response-container');
             if (!container) {
                 showToast('Nothing to copy', 'error');
                 return;
             }
 
-            const chatId = container.dataset.chatId;
+            var chatId = container.dataset.chatId;
             if (chatId === undefined || chatId === '') {
                 showToast('Nothing to copy', 'error');
                 return;
             }
 
-            // Match by string so _id (string/number/object) always matches data-chat-id (string)
-            const chatItem = historySearch.find(function(x) {
-                const id = x._id || x.message_id;
+            var chatItem = historySearch.find(function(x) {
+                var id = x._id || x.message_id;
                 return id != null && String(id) === String(chatId);
             });
             if (!chatItem || !chatItem.response) {
@@ -1122,11 +1193,21 @@
                 return;
             }
 
-            const response = chatItem.response;
-            let plainText = markdownToPlainText(response);
-            if (!plainText.trim() && window.htmlToString) {
-                plainText = window.htmlToString(response);
+            var rawResponse = chatItem.response;
+            var plainText = '';
+
+            if (typeof window.marked !== 'undefined' && typeof window.marked.parse === 'function' && typeof window.DOMPurify !== 'undefined' && typeof window.DOMPurify.sanitize === 'function') {
+                var normalized = normalizeAiResponse(rawResponse);
+                var html = /<[a-z][\s\S]*>/i.test(normalized) ? normalized : window.marked.parse(normalized);
+                var safeHtml = window.DOMPurify.sanitize(html);
+                plainText = htmlToStructuredText(safeHtml);
+            } else {
+                plainText = markdownToPlainText(rawResponse);
+                if (!plainText.trim() && window.htmlToString) {
+                    plainText = window.htmlToString(rawResponse);
+                }
             }
+
             if (!plainText.trim()) {
                 showToast('Nothing to copy', 'error');
                 return;
