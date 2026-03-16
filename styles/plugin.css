@@ -381,6 +381,10 @@ button[title*="close" i],
     position: relative;
 }
 
+#approval-content-drawer {
+    padding: 7px;
+}
+
 /* Playbook Container - Matches MS Editor playbookContainer */
 .playbook-container {
     height: calc(100vh - 45px);

@@ -128,7 +128,7 @@
                     ${statusBadge ? `<div style="display: flex; gap: 8px; align-items: center;">${statusBadge}</div>` : ''}
                 </div>
                 ` : ''}
-                <div id="${contentId}" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0px; padding-bottom: 50px; min-height: 0; box-sizing: border-box; width: 100%; -webkit-overflow-scrolling: touch;"></div>
+                <div id="${contentId}" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding: ${isInDrawer ? '7px 7px 50px 7px' : '0px'}; ${!isInDrawer ? 'padding-bottom: 50px;' : ''} min-height: 0; box-sizing: border-box; width: 100%; -webkit-overflow-scrolling: touch;"></div>
             </div>
         `;
 
