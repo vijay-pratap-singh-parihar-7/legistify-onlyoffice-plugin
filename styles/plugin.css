@@ -4121,7 +4121,7 @@ button[title*="close" i],
 
 .run-playbook-detail-button {
     width: 100%;
-    background-color: #9da4aaff;
+    background-color: #2667ff;
     color: #fff;
     border: none;
     border-radius: 6px;
@@ -4137,7 +4137,7 @@ button[title*="close" i],
 }
 
 .run-playbook-detail-button:hover:not(:disabled) {
-    background-color: #2667ff;
+    background-color: #1a52cc;
     box-shadow: 0 2px 8px rgba(38, 103, 255, 0.3);
 }
 
