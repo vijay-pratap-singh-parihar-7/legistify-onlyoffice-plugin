@@ -1,5 +1,5 @@
 // Ask AI Feature Module - Matches MS Editor Chat.js Exactly
-(function(window) {
+(function (window) {
     'use strict';
 
     // State management
@@ -18,13 +18,13 @@
     let messageDivRef = null;
 
     // Initialize Ask AI view
-    window.initAskAIView = function() {
+    window.initAskAIView = function () {
         console.log('🔵 initAskAIView called');
-        
+
         // Find ask-ai-view in drawer first, then original view
         const drawerContent = document.getElementById('drawer-content');
         let askAIView = null;
-        
+
         // Check if drawer-content has the cloned view (it will be the first child if cloned)
         if (drawerContent) {
             console.log('🔵 drawer-content found, children:', drawerContent.children.length);
@@ -47,25 +47,25 @@
                 drawerContent.appendChild(askAIView);
             }
         }
-        
+
         // Fallback to original view
         if (!askAIView) {
             askAIView = document.getElementById('ask-ai-view');
         }
-        
+
         if (!askAIView) {
             console.error('❌ Could not find or create ask-ai-view element for initialization');
             return;
         }
-        
+
         console.log('✅ ask-ai-view found/created:', askAIView.id);
 
         // Check if we have required data
         const pluginData = window.getPluginData();
         const accessToken = window.getAccessToken();
-        
+
         console.log('🔵 Plugin data:', { hasContractId: !!pluginData?.contractId, hasToken: !!accessToken });
-        
+
         if (!pluginData || !pluginData.contractId || !accessToken || accessToken === "null") {
             console.warn('⚠️ Missing required data for AI Copilot, rendering empty state');
             isHistoryLoading = false;
@@ -80,10 +80,10 @@
         currentPage = 1;
         isHistoryLoading = true;
         errorMessage = '';
-        
+
         // Render Ask AI view structure first
         renderAskAIView();
-        
+
         // Fetch chat history with first=true
         fetchHistory(null, true);
     };
@@ -93,7 +93,7 @@
         // Find ask-ai-view in drawer first, then original view
         const drawerContent = document.getElementById('drawer-content');
         let askAIView = null;
-        
+
         // Check if drawer-content has the cloned view (it will be the first child if cloned)
         if (drawerContent) {
             if (drawerContent.children.length > 0) {
@@ -113,12 +113,12 @@
                 drawerContent.appendChild(askAIView);
             }
         }
-        
+
         // Fallback to original view
         if (!askAIView) {
             askAIView = document.getElementById('ask-ai-view');
         }
-        
+
         // Last resort: create in drawer-content if it exists
         if (!askAIView && drawerContent) {
             askAIView = document.createElement('div');
@@ -126,15 +126,15 @@
             askAIView.className = 'drawer-view';
             drawerContent.appendChild(askAIView);
         }
-        
+
         if (!askAIView) {
             console.error('❌ Could not find or create ask-ai-view element for rendering');
             return;
         }
-        
+
         // Ensure the view is visible
         askAIView.style.display = 'block';
-        
+
         console.log('🔵 Rendering Ask AI view into:', askAIView.id, 'isHistoryLoading:', isHistoryLoading, 'historySearch length:', historySearch?.length);
 
         const htmlContent = `
@@ -168,8 +168,36 @@
                             <div class="c_d_ai_prompt_container" style="width: 100%; max-width: 100%; background-color: #fff !important; border: 1px solid #dadce0; border-radius: 15px; box-shadow: 0 1px 6px rgba(32, 33, 36, 0.28); position: relative; transition: box-shadow 0.2s;">
                                 <div class="c_d_ai_prompt_input_wrapper ${!prompt?.trim() ? 'c_d_ai_prompt_input_wrapper_v2' : ''}" id="prompt-input-wrapper" style="display: flex; flex-direction: ${!prompt?.trim() ? 'row' : 'column'}; align-items: ${!prompt?.trim() ? 'center' : 'flex-start'}; padding: ${!prompt?.trim() ? '8px 12px' : '12px'}; box-sizing: border-box; gap: 8px; ${!prompt?.trim() ? 'height: auto; min-height: 48px;' : ''} transition: all 0.2s ease;">
                                     <div class="c_d_ai_prompt_input_area ${!prompt?.trim() ? 'c_d_ai_prompt_input_area_v2' : ''}" style="width: 100%; flex: 1; ${!prompt?.trim() ? 'margin-right: 8px;' : ''}">
-                                        <textarea id="prompt-input-ref" rows="1" placeholder="Ask Legistify AI" class="c_d_ai_prompt_input form-control" aria-invalid="false" oninput="handlePromptInput(event)" onfocus="handlePromptFocus(event)" onblur="handlePromptBlur(event)" style="resize: none; height: auto; width: 100%; background: transparent; padding: 0; border: none; outline: none; box-sizing: border-box; direction: ltr; text-align: left; display: block !important; visibility: visible !important; color: #202124; overflow-y: auto; min-height: 24px; max-height: 200px; font-weight: 400; margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;">${escapeHtml(prompt || '')}</textarea>
-                                    </div>
+                                        <textarea
+                                            id="prompt-input-ref"
+                                            rows="1"
+                                            placeholder="Ask Legistify AI"
+                                            class="c_d_ai_prompt_input form-control"
+                                            aria-invalid="false"
+                                            oninput="handlePromptInput(event)"
+                                            onfocus="handlePromptFocus(event)"
+                                            onblur="handlePromptBlur(event)"
+                                            style="
+                                              resize: none;
+                                              height: auto;
+                                              width: 100%;
+                                              background: transparent;
+                                              padding: 0;
+                                              border: none;
+                                              outline: none;
+                                              box-sizing: border-box;
+                                              direction: ltr;
+                                              text-align: left;
+                                              overflow-y: auto;
+                                              min-height: 24px;
+                                              max-height: 200px;
+                                              font-weight: 400;
+                                              margin: 0;
+                                              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                                              color: #202124;
+                                            "
+                                        >${escapeHtml(prompt || '')}</textarea>
+                                        </div>
                                     <div class="c_d_ai_prompt_icons_container ${!prompt?.trim() ? 'c_d_ai_prompt_icons_container_v2' : ''}" style="display: flex; justify-content: space-between; align-items: center; ${!prompt?.trim() ? 'position: static; width: auto; padding-top: 0; flex-shrink: 0;' : 'width: 100%; padding-top: 4px;'}">
                                         <div class="c_d_ai_prompt_left_icons"></div>
                                         <button id="prompt-send-btn" class="c_d_ai_prompt_icon_btn c_d_ai_prompt_send_btn ${prompt?.trim() && !error && !loader ? 'c_d_ai_prompt_send_btn_active' : ''}" type="button" onclick="handleGenerate()" ${error || !prompt?.trim() || loader ? 'disabled=""' : ''} style="cursor: ${error || !prompt?.trim() || loader ? 'not-allowed' : 'pointer'}; margin: 0; display: flex !important; align-items: center; justify-content: center; border: none; width: 40px; height: 40px; box-sizing: border-box; visibility: visible !important; padding: 0; border-radius: 50%; transition: background-color 0.2s;">
@@ -190,7 +218,7 @@
                 `}
             </div>
         `;
-        
+
         console.log('🔵 Setting innerHTML, length:', htmlContent.length);
         askAIView.innerHTML = htmlContent;
         console.log('✅ innerHTML set, askAIView.children.length:', askAIView.children.length);
@@ -199,14 +227,14 @@
         bottomRef = askAIView.querySelector('#bottom-ref');
         promptInputRef = askAIView.querySelector('#prompt-input-ref');
         messageDivRef = askAIView.querySelector('#message-div-ref');
-        
+
         // Store reference globally for scroll handling
         window.messageDivRef = messageDivRef;
-        
+
         // Delegate suggestion clicks so data-question works without inline onclick escaping issues
         if (messageDivRef && !messageDivRef.hasAttribute('data-delegate-bound')) {
             messageDivRef.setAttribute('data-delegate-bound', 'true');
-            messageDivRef.addEventListener('click', function(e) {
+            messageDivRef.addEventListener('click', function (e) {
                 const el = e.target && e.target.closest && e.target.closest('.doc-questions');
                 if (el) {
                     const q = el.getAttribute('data-question');
@@ -214,7 +242,7 @@
                 }
             });
         }
-        
+
         // Ensure scrollbar works - let flexbox handle height naturally
         const ensureScrollable = () => {
             if (messageDivRef) {
@@ -223,12 +251,12 @@
                 messageDivRef.style.minHeight = '0';
                 messageDivRef.style.overflowY = 'auto';
                 messageDivRef.style.overflowX = 'hidden';
-                
+
                 // Force a reflow to trigger scrollbar
                 void messageDivRef.offsetHeight;
             }
         };
-        
+
         // Ensure scrollable after render
         setTimeout(ensureScrollable, 50);
         setTimeout(ensureScrollable, 200);
@@ -245,22 +273,22 @@
             promptInputRef.style.height = newHeight + 'px';
             promptInputRef.style.minHeight = '24px';
             promptInputRef.style.maxHeight = maxHeight + 'px';
-            
+
             // Set initial wrapper state based on content
             const wrapper = document.getElementById('prompt-input-wrapper');
             if (wrapper && (!prompt || !prompt.trim())) {
                 // Empty - should be in compact mode
                 wrapper.classList.add('c_d_ai_prompt_input_wrapper_v2');
             }
-            
+
             // Auto-focus input
             promptInputRef.focus();
         }
-        
+
         // Add auto-resize listener for textarea
         if (promptInputRef && !promptInputRef.hasAttribute('data-resize-listener')) {
             promptInputRef.setAttribute('data-resize-listener', 'true');
-            promptInputRef.addEventListener('input', function() {
+            promptInputRef.addEventListener('input', function () {
                 this.style.height = 'auto';
                 const maxHeight = 200;
                 let newHeight = this.scrollHeight;
@@ -326,13 +354,13 @@
         const Questions = matches?.map((match) => match[1]) || [];
         const regex2 = /<ol>.*?<\/ol>/gs;
         const noOlHtmlData = cleanedHtmlData?.replace(regex2, '');
-        
+
         // Convert HTML to plain text for formatting (like regular responses)
         const plainText = window.htmlToString ? window.htmlToString(noOlHtmlData) : noOlHtmlData.replace(/<[^>]*>/g, '');
-        
+
         // Format the response text exactly like regular responses
         const responseText = formatResponse(plainText);
-        
+
         // Prepare plain text for copying (same as what's rendered)
         const textToCopy = plainText;
 
@@ -390,7 +418,7 @@
         lines.forEach((line, index) => {
             const trimmedLine = line.trim();
             const isEmpty = !trimmedLine;
-            
+
             if (isEmpty) {
                 pushList();
                 // Add spacing after previous element if it was a paragraph or heading
@@ -448,24 +476,24 @@
     }
 
     // Handle generate
-    window.handleGenerate = async function() {
+    window.handleGenerate = async function () {
         if (prompt?.length > 2000 || loader || !prompt?.trim()) return;
-        
+
         const currentPrompt = prompt.trim();
         pendingPrompt = currentPrompt;
         prompt = '';
         loader = true;
         error = false;
         errorMessage = '';
-        
+
         // Update prompt input to show loading state
         const promptInput = document.getElementById('prompt-input-ref');
         if (promptInput) {
             promptInput.disabled = true;
         }
-        
+
         renderAskAIView();
-        
+
         // Scroll to bottom when showing loader
         setTimeout(() => {
             const bottomRefElement = document.getElementById('bottom-ref');
@@ -490,7 +518,7 @@
 
             const formData = { contractId: pluginData.contractId, question: currentPrompt };
             const url = `${backendUrl}/ai-assistant/ask-question`;
-            
+
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
@@ -516,16 +544,16 @@
                     totalCount += 1;
                 }
                 remainingBalance = data.data.balance;
-                
+
                 // Re-enable input
                 if (promptInput) {
                     promptInput.disabled = false;
                     promptInput.focus();
                 }
-                
+
                 loader = false;
                 renderAskAIView();
-                
+
                 // Scroll to bottom after render
                 setTimeout(() => {
                     const bottomRefElement = document.getElementById('bottom-ref');
@@ -556,18 +584,18 @@
     };
 
     // Handle prompt focus - expand wrapper and textarea
-    window.handlePromptFocus = function(event) {
+    window.handlePromptFocus = function (event) {
         if (event.target) {
             const wrapper = document.getElementById('prompt-input-wrapper');
             const inputArea = wrapper?.querySelector('.c_d_ai_prompt_input_area');
             const iconsContainer = wrapper?.querySelector('.c_d_ai_prompt_icons_container');
-            
+
             // Scroll so the input is visible at the bottom when focused (e.g. after clicking)
             const bottomRefEl = document.getElementById('bottom-ref');
             if (bottomRefEl) {
                 bottomRefEl.scrollIntoView({ behavior: 'smooth', block: 'end' });
             }
-            
+
             // Remove _v2 class to expand the wrapper
             if (wrapper) {
                 wrapper.classList.remove('c_d_ai_prompt_input_wrapper_v2');
@@ -577,13 +605,13 @@
                 wrapper.style.height = 'auto';
                 wrapper.style.minHeight = 'auto';
             }
-            
+
             // Update input area
             if (inputArea) {
                 inputArea.classList.remove('c_d_ai_prompt_input_area_v2');
                 inputArea.style.marginRight = '0';
             }
-            
+
             // Update icons container
             if (iconsContainer) {
                 iconsContainer.classList.remove('c_d_ai_prompt_icons_container_v2');
@@ -592,7 +620,7 @@
                 iconsContainer.style.paddingTop = '4px';
                 iconsContainer.style.flexShrink = 'auto';
             }
-            
+
             // Auto-resize textarea
             event.target.style.height = 'auto';
             const maxHeight = 200;
@@ -601,7 +629,7 @@
             event.target.style.height = newHeight + 'px';
             event.target.style.minHeight = '24px';
             event.target.style.maxHeight = maxHeight + 'px';
-            
+
             // Enable scrolling if content exceeds max height
             if (event.target.scrollHeight > maxHeight) {
                 event.target.style.overflowY = 'auto';
@@ -612,13 +640,13 @@
     };
 
     // Handle prompt blur - shrink wrapper if empty, keep expanded if has content
-    window.handlePromptBlur = function(event) {
+    window.handlePromptBlur = function (event) {
         if (event.target) {
             const value = event.target.value;
             const wrapper = document.getElementById('prompt-input-wrapper');
             const inputArea = wrapper?.querySelector('.c_d_ai_prompt_input_area');
             const iconsContainer = wrapper?.querySelector('.c_d_ai_prompt_icons_container');
-            
+
             if (!value || !value.trim()) {
                 // If empty, add _v2 class to shrink the wrapper
                 if (wrapper) {
@@ -629,13 +657,13 @@
                     wrapper.style.height = 'auto';
                     wrapper.style.minHeight = '48px';
                 }
-                
+
                 // Update input area
                 if (inputArea) {
                     inputArea.classList.add('c_d_ai_prompt_input_area_v2');
                     inputArea.style.marginRight = '8px';
                 }
-                
+
                 // Update icons container
                 if (iconsContainer) {
                     iconsContainer.classList.add('c_d_ai_prompt_icons_container_v2');
@@ -644,7 +672,7 @@
                     iconsContainer.style.paddingTop = '0';
                     iconsContainer.style.flexShrink = '0';
                 }
-                
+
                 // Reset textarea height
                 event.target.style.height = 'auto';
                 event.target.style.minHeight = '24px';
@@ -659,7 +687,7 @@
                 event.target.style.height = newHeight + 'px';
                 event.target.style.minHeight = '24px';
                 event.target.style.maxHeight = maxHeight + 'px';
-                
+
                 // Enable scrolling if content exceeds max height
                 if (event.target.scrollHeight > maxHeight) {
                     event.target.style.overflowY = 'auto';
@@ -671,14 +699,14 @@
     };
 
     // Handle prompt input
-    window.handlePromptInput = function(event) {
+    window.handlePromptInput = function (event) {
         prompt = event.target.value;
         error = prompt.length >= 2000;
-        
+
         const wrapper = document.getElementById('prompt-input-wrapper');
         const inputArea = wrapper?.querySelector('.c_d_ai_prompt_input_area');
         const iconsContainer = wrapper?.querySelector('.c_d_ai_prompt_icons_container');
-        
+
         // If user starts typing, expand the wrapper (remove _v2 class)
         if (prompt?.trim() && wrapper) {
             wrapper.classList.remove('c_d_ai_prompt_input_wrapper_v2');
@@ -687,12 +715,12 @@
             wrapper.style.padding = '12px';
             wrapper.style.height = 'auto';
             wrapper.style.minHeight = 'auto';
-            
+
             if (inputArea) {
                 inputArea.classList.remove('c_d_ai_prompt_input_area_v2');
                 inputArea.style.marginRight = '0';
             }
-            
+
             if (iconsContainer) {
                 iconsContainer.classList.remove('c_d_ai_prompt_icons_container_v2');
                 iconsContainer.style.position = 'static';
@@ -701,28 +729,28 @@
                 iconsContainer.style.flexShrink = 'auto';
             }
         }
-        
+
         // Auto-resize textarea - grows line by line, max 200px
         if (event.target) {
             const maxHeight = 200;
-            
+
             // Reset height to auto to get accurate scrollHeight
             event.target.style.height = 'auto';
-            
+
             // Calculate new height based on content
             let newHeight = event.target.scrollHeight;
-            
+
             // Ensure minimum height
             newHeight = Math.max(24, newHeight);
-            
+
             // Cap at maximum height
             newHeight = Math.min(maxHeight, newHeight);
-            
+
             // Apply the calculated height
             event.target.style.height = newHeight + 'px';
             event.target.style.minHeight = '24px';
             event.target.style.maxHeight = maxHeight + 'px';
-            
+
             // Enable/disable scrolling based on whether content exceeds max height
             if (event.target.scrollHeight > maxHeight) {
                 event.target.style.overflowY = 'auto';
@@ -730,7 +758,7 @@
                 event.target.style.overflowY = 'hidden';
             }
         }
-        
+
         // Update send button state without re-rendering entire view
         const sendButton = document.getElementById('prompt-send-btn');
         if (sendButton) {
@@ -750,7 +778,7 @@
             sendButton.style.cursor = (error || !prompt?.trim() || loader) ? 'not-allowed' : 'pointer';
             sendButton.disabled = (error || !prompt?.trim() || loader);
         }
-        
+
         // Update error message if needed
         const errorMsg = document.querySelector('.prompt-error-message');
         if (prompt.length >= 2000) {
@@ -770,7 +798,7 @@
     };
 
     // Handle chat scroll
-    window.handleChatScroll = function(e) {
+    window.handleChatScroll = function (e) {
         // Load older messages when scrolled to top
         if (e.target.scrollTop === 0) {
             if (Math.ceil(totalCount / 5) > currentPage) {
@@ -795,7 +823,7 @@
 
         const param = query ? `contractId=${pluginData.contractId}&${query}` : `contractId=${pluginData.contractId}`;
         const url = `${backendUrl}/ai-assistant/chat-history?${param}`;
-        
+
         try {
             const response = await fetch(url, {
                 headers: {
@@ -803,23 +831,23 @@
                     'Content-Type': 'application/json'
                 }
             });
-            
+
             if (response.ok) {
                 const data = await response.json();
                 // Match MS Editor: if (response?.status && response?.data?.result.length > 0)
                 if (data?.status && data?.data?.result?.length > 0) {
                     totalCount = data.data?.totalCount || 0;
                     const result = data.data?.result || [];
-                    
+
                     // Add new results to history (avoid duplicates)
                     const existingIds = new Set(historySearch.map(item => item._id || item.message_id));
                     const newItems = result.filter(item => !existingIds.has(item._id || item.message_id));
                     historySearch = [...historySearch, ...newItems];
-                    
+
                     // Re-render before scrolling to ensure DOM is updated
                     isHistoryLoading = false;
                     renderAskAIView();
-                    
+
                     // Wait for DOM to update, then handle scroll
                     setTimeout(() => {
                         const messageDivRefElement = document.getElementById('message-div-ref') || window.messageDivRef;
@@ -866,7 +894,7 @@
     }
 
     // Sync document with AI - matches MS Editor exactly
-    window.syncDocumentWithAi = async function(regenerate = false) {
+    window.syncDocumentWithAi = async function (regenerate = false) {
         try {
             const pluginData = window.getPluginData();
             const backendUrl = window.getBackendUrl();
@@ -900,7 +928,7 @@
                     if (responseData) {
                         // Match MS Editor: setHistorySearch((value) => { return [responseData, ...value] })
                         // Check if already exists to avoid duplicates
-                        const exists = historySearch.some(item => 
+                        const exists = historySearch.some(item =>
                             (item._id || item.message_id) === (responseData._id || responseData.message_id)
                         );
                         if (!exists) {
@@ -932,7 +960,7 @@
     };
 
     // Set prompt from question
-    window.setPromptFromQuestion = function(question) {
+    window.setPromptFromQuestion = function (question) {
         prompt = question;
         error = prompt.length >= 2000;
         const promptInput = document.getElementById('prompt-input-ref');
@@ -941,12 +969,12 @@
             promptInput.value = question;
             const length = question.length;
             promptInput.setSelectionRange(length, length);
-            
+
             // Expand wrapper since we have content
             const wrapper = document.getElementById('prompt-input-wrapper');
             const inputArea = wrapper?.querySelector('.c_d_ai_prompt_input_area');
             const iconsContainer = wrapper?.querySelector('.c_d_ai_prompt_icons_container');
-            
+
             if (wrapper && prompt?.trim()) {
                 wrapper.classList.remove('c_d_ai_prompt_input_wrapper_v2');
                 wrapper.style.flexDirection = 'column';
@@ -954,12 +982,12 @@
                 wrapper.style.padding = '12px';
                 wrapper.style.height = 'auto';
                 wrapper.style.minHeight = 'auto';
-                
+
                 if (inputArea) {
                     inputArea.classList.remove('c_d_ai_prompt_input_area_v2');
                     inputArea.style.marginRight = '0';
                 }
-                
+
                 if (iconsContainer) {
                     iconsContainer.classList.remove('c_d_ai_prompt_icons_container_v2');
                     iconsContainer.style.position = 'static';
@@ -968,7 +996,7 @@
                     iconsContainer.style.flexShrink = 'auto';
                 }
             }
-            
+
             // Auto-resize textarea
             promptInput.style.height = 'auto';
             const maxHeight = 200;
@@ -978,9 +1006,9 @@
             promptInput.style.height = newHeight + 'px';
             promptInput.style.minHeight = '24px';
             promptInput.style.maxHeight = maxHeight + 'px';
-            
+
             promptInput.focus();
-            
+
             // Update send button state
             const sendButton = document.getElementById('prompt-send-btn');
             if (sendButton) {
@@ -1000,7 +1028,7 @@
                 sendButton.style.cursor = (error || !prompt?.trim() || loader) ? 'not-allowed' : 'pointer';
                 sendButton.disabled = (error || !prompt?.trim() || loader);
             }
-            
+
             // Update error message if needed
             const errorMsg = document.querySelector('.prompt-error-message');
             if (prompt.length >= 2000) {
@@ -1094,19 +1122,19 @@
 
     // Utility function to strip HTML tags and convert to plain text
     // Matches contract-frontend/src/utility/Utils.js htmlToString function
-    window.htmlToString = function(html) {
+    window.htmlToString = function (html) {
         if (!html) return '';
-        
+
         // First, try using DOM to extract text (handles HTML entities automatically)
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = html;
         let text = tempDiv.textContent || tempDiv.innerText || '';
-        
+
         // If DOM method didn't work, fall back to regex (matches contract-frontend)
         if (!text || text.trim() === '') {
             text = html.replace(/<\/?[^>]+(>|$)/g, '');
         }
-        
+
         // Clean up HTML entities (in case regex was used)
         text = text.replace(/&nbsp;/g, ' ');
         text = text.replace(/&amp;/g, '&');
@@ -1115,12 +1143,12 @@
         text = text.replace(/&quot;/g, '"');
         text = text.replace(/&#39;/g, "'");
         text = text.replace(/&apos;/g, "'");
-        
+
         // Clean up excessive whitespace but preserve line breaks
         text = text.replace(/[ \t]+/g, ' '); // Multiple spaces/tabs to single space
         text = text.replace(/\n{3,}/g, '\n\n'); // More than 2 newlines to 2
         text = text.trim();
-        
+
         return text;
     };
 
@@ -1165,7 +1193,7 @@
     }
 
     // Copy response text - content pipeline: normalize → markdown → sanitize → structured plain text
-    window.copyResponseText = function(element) {
+    window.copyResponseText = function (element) {
         try {
             if (!element) {
                 showToast('Nothing to copy', 'error');
@@ -1184,7 +1212,7 @@
                 return;
             }
 
-            var chatItem = historySearch.find(function(x) {
+            var chatItem = historySearch.find(function (x) {
                 var id = x._id || x.message_id;
                 return id != null && String(id) === String(chatId);
             });
@@ -1213,9 +1241,9 @@
                 return;
             }
 
-            navigator.clipboard.writeText(plainText).then(function() {
+            navigator.clipboard.writeText(plainText).then(function () {
                 showToast('Copied To Clipboard!', 'success');
-            }).catch(function(err) {
+            }).catch(function (err) {
                 console.error('Failed to copy:', err);
                 showToast('Failed to copy', 'error');
             });
@@ -1226,15 +1254,15 @@
     };
 
     // Copy to clipboard - strips HTML tags and copies only plain text
-    window.copyToClipboard = function(text) {
+    window.copyToClipboard = function (text) {
         if (!text) {
             showToast('Nothing to copy', 'error');
             return;
         }
-        
+
         // Strip HTML tags and get plain text
         const plainText = window.htmlToString ? window.htmlToString(text) : text;
-        
+
         navigator.clipboard.writeText(plainText).then(() => {
             showToast('Copied To Clipboard!', 'success');
         }).catch(err => {
@@ -1244,7 +1272,7 @@
     };
 
     // Handle back from Ask AI
-    window.handleBackFromAskAI = function() {
+    window.handleBackFromAskAI = function () {
         // Close drawer when back is clicked
         if (window.closeDrawer) {
             window.closeDrawer();
@@ -1276,14 +1304,14 @@
         const yesterday = new Date(today);
         yesterday.setDate(yesterday.getDate() - 1);
         const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-        
+
         const hours = date.getHours();
         const minutes = date.getMinutes();
         const ampm = (hours >= 12 ? 'PM' : 'AM').toUpperCase();
         const displayHours = hours % 12 || 12;
         const displayMinutes = minutes < 10 ? `0${minutes}` : minutes;
         const timeStr = `${displayHours}:${displayMinutes} ${ampm}`;
-        
+
         if (dateOnly.getTime() === today.getTime()) {
             return `Today at ${timeStr}`;
         } else if (dateOnly.getTime() === yesterday.getTime()) {
