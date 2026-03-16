@@ -2335,18 +2335,13 @@
             
             if (data?.status) {
                 showToast('Guide saved successfully!', 'success');
-                // Reset and go back to playbook list
+                // Reset manual-form state then reuse back navigation: close drawer and return to playbook list
                 showCreateForm = false;
-                showCreatePage = false;
                 window.showCreateForm = false;
-                window.showCreatePage = false;
-                generatedPlaybook = null;
-                isGeneratingPlaybook = false;
                 manualFormRules = [];
                 manualFormCurrentRule = '';
                 manualFormGuideName = 'Manual Playbook';
-                renderPlaybookList();
-                fetchPlaybooks();
+                handleBackFromCreatePage();
             } else {
                 throw new Error(data?.msg || 'Failed to save guide');
             }
@@ -2518,15 +2513,8 @@
             
             if (data?.status) {
                 showToast('Guide saved successfully!', 'success');
-                // Reset and go back to playbook list
-                showCreatePage = false;
-                window.showCreatePage = false;
-                generatedPlaybook = null;
-                isGeneratingPlaybook = false;
-                editingRuleIndex = null;
-                editingRuleText = '';
-                renderPlaybookList();
-                fetchPlaybooks();
+                // Reuse back navigation: close drawer and return to playbook list
+                handleBackFromCreatePage();
             } else {
                 throw new Error(data?.msg || 'Failed to save guide');
             }

@@ -338,6 +338,10 @@ button[title*="close" i],
     flex: 1;
 }
 
+#drawer-regenerate-btn {
+    display: none !important;
+}
+
 .drawer-close-button {
     background: none;
     border: none;
