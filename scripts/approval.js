@@ -137,16 +137,6 @@
             `;
             }
         }
-
-        // Secondary: "+ New" in header (list view only) – does not compete with primary CTA
-        var newApprovalHeaderBtn = '';
-        if (shouldShowHeader && !selectedClause && !showNewApprovalForm) {
-            newApprovalHeaderBtn = `
-            <button type="button" class="new-approval-header-btn" onclick="showNewApprovalFormHandler()" title="New Approval" style="padding: 4px 10px; background: #ffffff; color: #374151; border: 1px solid #d1d5db; border-radius: 5px; cursor: pointer; font-size: 13px; font-weight: 500; white-space: nowrap;">
-                + New
-            </button>
-            `;
-        }
         
         // Build status badge HTML
         const statusBadge = selectedClause ? `
@@ -165,17 +155,14 @@
                 ${errorMessage ? `<div id="approval-error-banner" class="approval-error-banner" style="padding: 10px 12px; margin: 8px; background: #ffebee; color: #c62828; border-radius: 4px; font-size: 13px;">${escapeHtml(errorMessage)}</div>` : ''}
                 ${shouldShowHeader ? `
                 <div class="feature-header">
-                    <div style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="width: 100%; display: flex; justify-content: space-between;">
                         <div class="header-box">
                             <svg class="back-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="handleApprovalBack()" style="cursor: pointer;">
                                 <polyline points="15 18 9 12 15 6"></polyline>
                             </svg>
                             <p class="summary-text">Clause Approval</p>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            ${newApprovalHeaderBtn}
-                            ${actionButtons || ''}
-                        </div>
+                        ${actionButtons ? `<div style="display: flex; align-items: center; gap: 8px;">${actionButtons}</div>` : ''}
                     </div>
                     ${statusBadge ? `<div style="display: flex; gap: 8px; align-items: center;">${statusBadge}</div>` : ''}
                 </div>
@@ -244,15 +231,11 @@
         const isDrawer = content.id === 'approval-content-drawer';
         const listContainerId = isDrawer ? 'approval-list-container-drawer' : 'approval-list-container';
         
-        // Render list view: "+ New Approval" as secondary (only in drawer; main view has it in header)
-        var newApprovalInContent = isDrawer;
-        var newApprovalBtnHtml = newApprovalInContent
-            ? `<button class="new-approval-button" onclick="showNewApprovalFormHandler()" style="margin-bottom: 16px; width: 100%; padding: 8px 16px; background: #ffffff; color: #374151; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; transition: background 0.15s ease;">
-                + New Approval
-            </button>`
-            : '';
+        // Render list view
         content.innerHTML = `
-            ${newApprovalBtnHtml}
+            <button class="new-approval-button" onclick="showNewApprovalFormHandler()" style="margin-bottom: 16px; width: 100%; padding: 10px; background: #2667ff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
+                +New Approval
+            </button>
             <div id="${listContainerId}" style="padding-bottom: 40px; margin-bottom: 30px;"></div>
         `;
 
