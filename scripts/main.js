@@ -481,8 +481,8 @@
         const drawerContent = document.getElementById('drawer-content');
         const drawerTitle = document.getElementById('drawer-title');
         const drawerHeaderActions = document.getElementById('drawer-header-actions');
-        const drawerRegenerateBtn = document.getElementById('drawer-regenerate-btn');
-        const drawerCopyBtn = document.getElementById('drawer-copy-btn');
+        let drawerRegenerateBtn = document.getElementById('drawer-regenerate-btn');
+        let drawerCopyBtn = document.getElementById('drawer-copy-btn');
 
         if (!drawer || !drawerContent) return;
 
@@ -545,9 +545,31 @@
                 drawerTitle.textContent = titleMap[contentKey] || contentKey;
             }
 
+            // Restore default drawer header actions if they were replaced (e.g. by Clause Approval)
+            var drawerRegenerateBtnId = 'drawer-regenerate-btn';
+            if (drawerHeaderActions && !document.getElementById(drawerRegenerateBtnId) && (contentKey === 'summary' || contentKey === 'clause' || contentKey === 'obligation' || contentKey === 'genai' || contentKey === 'askai')) {
+                drawerHeaderActions.innerHTML = `
+                    <div class="summary-button" id="drawer-regenerate-btn" title="Regenerate" style="display: none;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <polyline points="1 20 1 14 7 14"></polyline>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                        </svg>
+                    </div>
+                    <div class="summary-button" id="drawer-copy-btn" title="Copy" style="display: none;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                    </div>
+                `;
+            }
+
             // Setup header action buttons for Summary, Clauses, Obligations
             if (drawerHeaderActions && (contentKey === 'summary' || contentKey === 'clause' || contentKey === 'obligation')) {
                 drawerHeaderActions.style.display = 'flex';
+                drawerRegenerateBtn = document.getElementById('drawer-regenerate-btn');
+                drawerCopyBtn = document.getElementById('drawer-copy-btn');
 
                 if (drawerRegenerateBtn) {
                     drawerRegenerateBtn.style.display = 'flex';
@@ -578,6 +600,8 @@
                 // Setup refresh button for AI Copilot
                 if (contentKey === 'genai' || contentKey === 'askai') {
                     drawerHeaderActions.style.display = 'flex';
+                    drawerRegenerateBtn = document.getElementById('drawer-regenerate-btn');
+                    drawerCopyBtn = document.getElementById('drawer-copy-btn');
                     if (drawerRegenerateBtn) {
                         drawerRegenerateBtn.style.display = 'flex';
                         drawerRegenerateBtn.onclick = () => {
@@ -589,8 +613,14 @@
                     if (drawerCopyBtn) {
                         drawerCopyBtn.style.display = 'none';
                     }
+                } else if (contentKey === 'clauseApproval') {
+                    // Clause Approval: show header-actions container; approval.js will inject buttons in initApprovalView
+                    drawerHeaderActions.style.display = 'flex';
+                    drawerHeaderActions.style.gap = '8px';
+                    drawerHeaderActions.style.alignItems = 'center';
+                    drawerHeaderActions.innerHTML = '';
                 } else {
-                    // Hide header actions for other views (Library, Approval)
+                    // Hide header actions for other views (Library)
                     drawerHeaderActions.style.display = 'none';
                 }
             }

@@ -161,12 +161,16 @@
             </span>
         ` : '';
         
-        // When in drawer, show primary CTA in a slim bar so "Start Approval Workflow" is always visible
-        var drawerActionsBar = (isInDrawer && actionButtons) ? `
-            <div class="approval-drawer-actions" style="flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 8px 12px; border-bottom: 1px solid #e5e5e5; background: #fff;">
-                ${actionButtons}
-            </div>
-        ` : '';
+        // When in drawer, inject action buttons into the drawer header (not inside approval content)
+        if (isInDrawer) {
+            var drawerHeaderActions = document.getElementById('drawer-header-actions');
+            if (drawerHeaderActions) {
+                drawerHeaderActions.style.display = actionButtons ? 'flex' : 'none';
+                drawerHeaderActions.style.gap = '8px';
+                drawerHeaderActions.style.alignItems = 'center';
+                drawerHeaderActions.innerHTML = actionButtons || '';
+            }
+        }
 
         approvalView.innerHTML = `
             <div id="${containerId}" class="clause-approval-container" style="position: relative; min-height: 0; height: 100%; overflow: hidden; margin-top: ${isInDrawer ? '0' : '-10px'}; display: flex; flex-direction: column; width: 100%;">
@@ -185,7 +189,6 @@
                     ${statusBadge ? `<div style="display: flex; gap: 8px; align-items: center;">${statusBadge}</div>` : ''}
                 </div>
                 ` : ''}
-                ${drawerActionsBar}
                 <div id="${contentId}" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding: ${isInDrawer ? '7px 7px 50px 7px' : '0px'}; ${!isInDrawer ? 'padding-bottom: 50px;' : ''} min-height: 0; box-sizing: border-box; width: 100%; -webkit-overflow-scrolling: touch;"></div>
             </div>
         `;
@@ -252,16 +255,21 @@
         var clauses = Array.isArray(clauseApprovalsList) ? clauseApprovalsList : [];
         var hasApprovalStarted = clauses.length > 0;
 
-        // When no approval started: show full-width "+ New Approval" only. When started: hide it (header has icon).
+        // When no approval started: show full-width "+ New Approval" only. When started: show list + compact "New Approval" link.
         var newApprovalButtonHtml = hasApprovalStarted ? '' : `
-            <button class="new-approval-button" onclick="showNewApprovalFormHandler()" style="margin-bottom: 16px; width: 100%; padding: 10px; background: #2667ff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
-                +New Approval
+            <button class="new-approval-button" onclick="showNewApprovalFormHandler()" style="margin-bottom: 16px; width: 100%; padding: 10px; background: #2667ff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 100;">
+                + New Approval
             </button>
         `;
+        var addApprovalLinkHtml = hasApprovalStarted ? `
+            <button type="button" class="new-approval-button" onclick="showNewApprovalFormHandler()" style="margin-top: 12px; margin-bottom: 16px; width: 100%; padding: 8px 12px; background: #2563EB; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 100;">
+                + New Approval
+            </button>
+        ` : '';
 
         content.innerHTML = newApprovalButtonHtml + `
-            <div id="${listContainerId}" style="padding-bottom: 40px; margin-bottom: 30px;"></div>
-        `;
+            <div id="${listContainerId}" style="padding-bottom: 16px;"></div>
+        ` + addApprovalLinkHtml;
 
         renderApprovalList();
     }
@@ -329,10 +337,14 @@
             }
 
             const data = await response.json();
-            const list = (data && (data.status === true || data.status === 'true')) && Array.isArray(data.data)
-                ? data.data
-                : (data?.data || data?.result || []);
-            clauseApprovalsList = Array.isArray(list) ? list : [];
+            var list = [];
+            if (data && Array.isArray(data.data)) {
+                list = data.data;
+            } else if (data && (data.data || data.result)) {
+                var raw = data.data || data.result;
+                list = Array.isArray(raw) ? raw : [];
+            }
+            clauseApprovalsList = list;
             errorMessage = '';
 
             if (clauseApprovalsList.length === 0 && data && typeof data.status === 'boolean' && !data.status) {
