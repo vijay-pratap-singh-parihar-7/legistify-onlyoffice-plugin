@@ -2236,6 +2236,18 @@ button[title*="close" i],
     background-color: #0d5ba3;
 }
 
+/* Clause Approval header icon-only buttons (Start, Reminder, New Approval) */
+.approval-header-icon-btn {
+    transition: background-color 0.2s ease;
+}
+.approval-header-icon-btn:hover {
+    background-color: #1d4ed8 !important;
+}
+.approval-header-icon-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3);
+}
+
 .new-approval-button {
     margin-bottom: 16px;
     width: 100%;

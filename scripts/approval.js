@@ -109,33 +109,44 @@
         // NEVER render feature-header if in drawer (drawer has its own header)
         const shouldShowHeader = !isInDrawer;
 
-        // One primary CTA: getPrimaryAction(list) -> always exactly one action when on list view
-        var actionButtons = '';
+        // Workflow state: no approval started vs started (1+ clauses)
         var list = Array.isArray(clauseApprovalsList) ? clauseApprovalsList : [];
+        var hasApprovalStarted = list.length > 0;
+
+        // Reusable icon-only button style (small square, blue, white icon, rounded)
+        var iconBtnStyle = 'width: 32px; height: 32px; min-width: 32px; padding: 0; cursor: pointer; border-radius: 6px; background-color: #2563EB; color: white; display: flex; align-items: center; justify-content: center; border: none;';
+
+        var actionButtons = '';
         if (!selectedClause && !showNewApprovalForm) {
-            var action = getPrimaryAction(list);
             if (typeof console !== 'undefined' && console.debug) {
-                console.debug('[ClauseApproval] CTA Decision', { listLength: list.length, action: action });
+                console.debug('[ClauseApproval] CTA Decision', { listLength: list.length, hasApprovalStarted: hasApprovalStarted });
             }
-            if (action === 'download') {
-                actionButtons = `
-                <div title="Download Report" class="start-clause-button" onclick="downloadApprovalMatrix()" style="padding: 4px 5px; cursor: pointer; border-radius: 5px; background-color: #0f6cbd; color: white; display: flex; align-items: center;">
-                    ${loaderFor.downloadFileLoading ? '<div class="loading-spinner-small"></div>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>'}
+            if (hasApprovalStarted) {
+                // Workflow started: show icon-only Start + Reminder; when fully approved show Download only
+                if (isFullyApproved(list)) {
+                    actionButtons = `
+                    <div title="Download Report" class="approval-header-icon-btn" onclick="downloadApprovalMatrix()" style="${iconBtnStyle}">
+                        ${loaderFor.downloadFileLoading ? '<div class="loading-spinner-small"></div>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>'}
+                    </div>
+                    `;
+                } else {
+                    actionButtons = `
+                    <div title="Start Approval" class="approval-header-icon-btn" onclick="startClauseApprovals()" style="${iconBtnStyle}">
+                        ${loaderFor.startApprovalLoading ? '<div class="loading-spinner-small"></div>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>'}
+                    </div>
+                    <div title="Send Reminder" class="approval-header-icon-btn" onclick="sendApprovalsReminder()" style="${iconBtnStyle}">
+                        ${loaderFor.isReminderLoading ? '<div class="loading-spinner-small"></div>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>'}
+                    </div>
+                    `;
+                }
+                // New Approval (icon) so user can add another clause without full-width button
+                actionButtons += `
+                <div title="New Approval" class="approval-header-icon-btn" onclick="showNewApprovalFormHandler()" style="${iconBtnStyle}">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                 </div>
-            `;
-            } else if (action === 'remind') {
-                actionButtons = `
-                <div title="Send Reminder" class="start-clause-button" onclick="sendApprovalsReminder()" style="padding: 4px 5px; cursor: pointer; border-radius: 5px; background-color: #0f6cbd; color: white; display: flex; align-items: center;">
-                    ${loaderFor.isReminderLoading ? '<div class="loading-spinner-small"></div>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"></path></svg>'}
-                </div>
-            `;
-            } else {
-                actionButtons = `
-                <div id="start_clause" title="Start Approval Workflow" class="start-clause-button" onclick="startClauseApprovals()" style="padding: 6px 12px; cursor: pointer; border-radius: 5px; background-color: #0f6cbd; color: white; display: flex; align-items: center; gap: 6px;">
-                    ${loaderFor.startApprovalLoading ? '<div class="loading-spinner-small"></div>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg><span>Start Approval Workflow</span>'}
-                </div>
-            `;
+                `;
             }
+            // When no approval started: no header icon buttons (content shows "+ New Approval" only)
         }
         
         // Build status badge HTML
@@ -238,12 +249,17 @@
         // Check if we're in drawer to use correct container ID
         const isDrawer = content.id === 'approval-content-drawer';
         const listContainerId = isDrawer ? 'approval-list-container-drawer' : 'approval-list-container';
-        
-        // Render list view
-        content.innerHTML = `
+        var clauses = Array.isArray(clauseApprovalsList) ? clauseApprovalsList : [];
+        var hasApprovalStarted = clauses.length > 0;
+
+        // When no approval started: show full-width "+ New Approval" only. When started: hide it (header has icon).
+        var newApprovalButtonHtml = hasApprovalStarted ? '' : `
             <button class="new-approval-button" onclick="showNewApprovalFormHandler()" style="margin-bottom: 16px; width: 100%; padding: 10px; background: #2667ff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
                 +New Approval
             </button>
+        `;
+
+        content.innerHTML = newApprovalButtonHtml + `
             <div id="${listContainerId}" style="padding-bottom: 40px; margin-bottom: 30px;"></div>
         `;
 
