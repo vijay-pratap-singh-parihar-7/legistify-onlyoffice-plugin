@@ -45,6 +45,7 @@
     // Team member dropdown portal (rendered to body to avoid drawer overflow clipping)
     let teamMemberPortalEl = null;
     let isTeamDropdownOpen = false;
+    let isSelectingMember = false;
     const TEAM_MEMBER_DEBOUNCE_MS = 400;
     const FORM_INPUT_DEBOUNCE_MS = 250;
     let formInputDebounceTimer = null;
@@ -946,6 +947,7 @@
     // Handle team member search with debounce (400ms for faster UX)
     let searchTimers = {};
     window.handleTeamMemberSearch = function(index, value) {
+        if (isSelectingMember) return;
         const input = document.getElementById(`team-member-input-${index}`);
         if (!input) return;
 
@@ -958,7 +960,7 @@
         }
 
         if (value && value.trim().length > 0) {
-            searchTimers[index] = setTimeout(() => {
+            searchTimers[index] = setTimeout(function() {
                 fetchTeamMembers(index, value.trim());
             }, TEAM_MEMBER_DEBOUNCE_MS);
         } else {
@@ -968,6 +970,7 @@
 
     // Handle team member input focus - show dropdown on focus (defaultOptions-like behavior)
     window.handleTeamMemberFocus = function(index) {
+        if (isSelectingMember) return;
         const input = document.getElementById(`team-member-input-${index}`);
         if (!input) return;
         fetchTeamMembers(index, (input.value && input.value.trim()) ? input.value.trim() : '');
@@ -975,6 +978,11 @@
 
     // Fetch team members from API; render into portal to avoid drawer overflow clipping
     async function fetchTeamMembers(index, searchValue) {
+        if (isSelectingMember) return;
+        if (!searchValue || searchValue.trim().length < 2) {
+            closeTeamMemberPortal();
+            return;
+        }
         const input = document.getElementById(`team-member-input-${index}`);
         if (!input) return;
 
@@ -1026,10 +1034,10 @@
                             const safeNameAttr = rawName.replace(/\\/g, "\\\\").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/&/g, "&amp;");
                             return '<div class="dropdown-item" onclick="selectTeamMember(' + index + ', \'' + safeNameAttr.replace(/'/g, "&#39;") + '\', \'' + safeId + '\')">' + safeName + '</div>';
                         }).join('');
-                    } else {
+                    } else if (!isSelectingMember) {
                         portal.innerHTML = '<div style="padding: 12px; text-align: center; color: #666; font-size: 12px;">No team members found</div>';
                     }
-                } else {
+                } else if (!isSelectingMember) {
                     portal.innerHTML = '<div style="padding: 12px; text-align: center; color: #666; font-size: 12px;">No team members found</div>';
                 }
             } else {
@@ -1045,25 +1053,27 @@
 
     // Select team member from dropdown
     window.selectTeamMember = function(index, fullName, userId) {
+        isSelectingMember = true;
         closeTeamMemberPortal();
 
-        const input = document.getElementById(`team-member-input-${index}`);
-
         if (form.levels[index]) {
+            form.levels[index].orgUsers = [{ _id: userId }];
             form.levels[index].fullName = fullName;
-            form.levels[index].orgUsers = [userId];
         }
 
+        const input = document.getElementById('team-member-input-' + index);
         if (input) {
             input.value = fullName;
-            input.dispatchEvent(new Event('input', { bubbles: true }));
         }
 
         if (errors.level) {
             delete errors.level;
         }
 
-        updateApprovalContent();
+        setTimeout(function() {
+            isSelectingMember = false;
+            updateApprovalContent();
+        }, 200);
     };
 
     // Close portal when clicking outside (not on input or portal)
