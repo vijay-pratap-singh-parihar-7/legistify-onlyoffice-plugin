@@ -6,7 +6,7 @@
     // API PATHS - Centralized to match MS Editor (avoid drift)
     // -------------------------------------------------------------------------
     const APPROVAL_API = {
-        LIST: (contractId) => `clause-approval/clause-approvals-list?contractId=${encodeURIComponent(contractId)}`,
+        LIST: (contractId) => `clause-approval/clause-approvals-list/${encodeURIComponent(contractId)}`,
         DETAILS: (contractId, approvalId) => `clause-approval/clause-approval-details?contractId=${encodeURIComponent(contractId)}&approvalId=${encodeURIComponent(approvalId)}`,
         CONTRACT_FOLLOWERS: (contractId) => `contract/contract-followers/${encodeURIComponent(contractId)}`,
         CREATE: 'clause-approval/create-clause-approval',
@@ -272,6 +272,12 @@
             const backendUrl = window.getBackendUrl();
             const accessToken = window.getAccessToken();
 
+            if (!pluginData || pluginData.contractId == null) {
+                console.warn('Clause Approval: contractId from getPluginData() is missing', pluginData);
+            } else {
+                console.log('Clause Approval: fetching list for contractId', pluginData.contractId);
+            }
+
             if (!accessToken) {
                 throw new Error('Access token not available');
             }
@@ -289,11 +295,8 @@
             }
 
             const data = await response.json();
-            if (data?.status && data?.data?.length > 0) {
-                clauseApprovalsList = data.data;
-            } else {
-                clauseApprovalsList = [];
-            }
+            const list = data?.data || data?.result || [];
+            clauseApprovalsList = Array.isArray(list) ? list : [];
             errorMessage = '';
         } catch (err) {
             console.error('Error fetching clause approvals:', err);
@@ -525,9 +528,13 @@
                         ${errors.clauseNo ? `<div style="color: red; margin: -5px 0; font-size: 12px;">${errors.clauseNo}</div>` : ''}
                     </div>
                     <div style="flex: 1; width: 50%;">
-                        <select value="${form.reminderDays}" onchange="handleFormInputChange('reminderDays', this.value)" class="approval-form-select" style="border-color: ${errors.reminderDays ? 'red' : '#d1d5db'};">
+                        <select id="approval-reminder-select" class="approval-form-select" style="border-color: ${errors.reminderDays ? 'red' : '#d1d5db'};" onchange="handleFormInputChange('reminderDays', this.value)">
                             <option value="">Reminder</option>
-                            ${Array.from({ length: 10 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('')}
+                            ${Array.from({ length: 10 }, function(_, i) {
+                                var v = i + 1;
+                                var selected = form.reminderDays == v || form.reminderDays === String(v) ? ' selected' : '';
+                                return '<option value="' + v + '"' + selected + '>' + v + '</option>';
+                            }).join('')}
                         </select>
                         ${errors.reminderDays ? `<div style="color: red; margin: -5px 0; font-size: 12px;">${errors.reminderDays}</div>` : ''}
                     </div>
