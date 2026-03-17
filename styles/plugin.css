@@ -2236,22 +2236,29 @@ button[title*="close" i],
     background-color: #0d5ba3;
 }
 
+/* Secondary: does not compete with primary CTA (Start / Remind / Download) */
 .new-approval-button {
     margin-bottom: 16px;
     width: 100%;
-    padding: 10px;
-    background: #2667ff;
-    color: white;
-    border: none;
+    padding: 8px 16px;
+    background: #ffffff;
+    color: #374151;
+    border: 1px solid #d1d5db;
     border-radius: 6px;
     cursor: pointer;
     font-size: 14px;
-    font-weight: 600;
-    transition: background 0.2s;
+    font-weight: 500;
+    transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .new-approval-button:hover {
-    background: #1a4fd9;
+    background: #f9fafb;
+    border-color: #9ca3af;
+}
+
+.new-approval-header-btn:hover {
+    background: #f9fafb;
+    border-color: #9ca3af;
 }
 
 /* Approval form inputs - match contract-frontend */

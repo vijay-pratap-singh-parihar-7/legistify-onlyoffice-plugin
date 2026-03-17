@@ -109,28 +109,43 @@
         // NEVER render feature-header if in drawer (drawer has its own header)
         const shouldShowHeader = !isInDrawer;
 
-        // Build action buttons by priority: Download > Send Reminder > Start (ensures one primary action, no silent failure)
+        // One primary CTA: getPrimaryAction(list) -> always exactly one action when on list view
         var actionButtons = '';
-        if (!selectedClause) {
-            if (showDownloadReportAction()) {
+        var list = Array.isArray(clauseApprovalsList) ? clauseApprovalsList : [];
+        if (!selectedClause && !showNewApprovalForm) {
+            var action = getPrimaryAction(list);
+            if (typeof console !== 'undefined' && console.debug) {
+                console.debug('[ClauseApproval] CTA Decision', { listLength: list.length, action: action });
+            }
+            if (action === 'download') {
                 actionButtons = `
                 <div title="Download Report" class="start-clause-button" onclick="downloadApprovalMatrix()" style="padding: 4px 5px; cursor: pointer; border-radius: 5px; background-color: #0f6cbd; color: white; display: flex; align-items: center;">
                     ${loaderFor.downloadFileLoading ? '<div class="loading-spinner-small"></div>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>'}
                 </div>
             `;
-            } else if (showRemindAction()) {
+            } else if (action === 'remind') {
                 actionButtons = `
                 <div title="Send Reminder" class="start-clause-button" onclick="sendApprovalsReminder()" style="padding: 4px 5px; cursor: pointer; border-radius: 5px; background-color: #0f6cbd; color: white; display: flex; align-items: center;">
                     ${loaderFor.isReminderLoading ? '<div class="loading-spinner-small"></div>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"></path></svg>'}
                 </div>
             `;
-            } else if (showStartClauseAction()) {
+            } else {
                 actionButtons = `
                 <div title="Start Clause Approvals" class="start-clause-button" onclick="startClauseApprovals()" style="padding: 4px 5px; cursor: pointer; border-radius: 5px; background-color: #0f6cbd; color: white; display: flex; align-items: center;">
                     ${loaderFor.startApprovalLoading ? '<div class="loading-spinner-small"></div>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>'}
                 </div>
             `;
             }
+        }
+
+        // Secondary: "+ New" in header (list view only) – does not compete with primary CTA
+        var newApprovalHeaderBtn = '';
+        if (shouldShowHeader && !selectedClause && !showNewApprovalForm) {
+            newApprovalHeaderBtn = `
+            <button type="button" class="new-approval-header-btn" onclick="showNewApprovalFormHandler()" title="New Approval" style="padding: 4px 10px; background: #ffffff; color: #374151; border: 1px solid #d1d5db; border-radius: 5px; cursor: pointer; font-size: 13px; font-weight: 500; white-space: nowrap;">
+                + New
+            </button>
+            `;
         }
         
         // Build status badge HTML
@@ -150,14 +165,17 @@
                 ${errorMessage ? `<div id="approval-error-banner" class="approval-error-banner" style="padding: 10px 12px; margin: 8px; background: #ffebee; color: #c62828; border-radius: 4px; font-size: 13px;">${escapeHtml(errorMessage)}</div>` : ''}
                 ${shouldShowHeader ? `
                 <div class="feature-header">
-                    <div style="width: 100%; display: flex; justify-content: space-between;">
+                    <div style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
                         <div class="header-box">
                             <svg class="back-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="handleApprovalBack()" style="cursor: pointer;">
                                 <polyline points="15 18 9 12 15 6"></polyline>
                             </svg>
                             <p class="summary-text">Clause Approval</p>
                         </div>
-                        ${actionButtons ? `<div style="display: flex; align-items: center; gap: 8px;">${actionButtons}</div>` : ''}
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            ${newApprovalHeaderBtn}
+                            ${actionButtons || ''}
+                        </div>
                     </div>
                     ${statusBadge ? `<div style="display: flex; gap: 8px; align-items: center;">${statusBadge}</div>` : ''}
                 </div>
@@ -226,11 +244,15 @@
         const isDrawer = content.id === 'approval-content-drawer';
         const listContainerId = isDrawer ? 'approval-list-container-drawer' : 'approval-list-container';
         
-        // Render list view
+        // Render list view: "+ New Approval" as secondary (only in drawer; main view has it in header)
+        var newApprovalInContent = isDrawer;
+        var newApprovalBtnHtml = newApprovalInContent
+            ? `<button class="new-approval-button" onclick="showNewApprovalFormHandler()" style="margin-bottom: 16px; width: 100%; padding: 8px 16px; background: #ffffff; color: #374151; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; transition: background 0.15s ease;">
+                + New Approval
+            </button>`
+            : '';
         content.innerHTML = `
-            <button class="new-approval-button" onclick="showNewApprovalFormHandler()" style="margin-bottom: 16px; width: 100%; padding: 10px; background: #2667ff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
-                +New Approval
-            </button>
+            ${newApprovalBtnHtml}
             <div id="${listContainerId}" style="padding-bottom: 40px; margin-bottom: 30px;"></div>
         `;
 
@@ -509,43 +531,45 @@
     }
 
     // -------------------------------------------------------------------------
-    // State model helpers - single source of truth for workflow state
+    // Normalize backend status (handles Not Started, not_started, NOT_ACTIVE, etc.)
     // -------------------------------------------------------------------------
-    function hasNoWorkflows() {
-        return !Array.isArray(clauseApprovalsList) || clauseApprovalsList.length === 0;
+    function normalizeStatus(value) {
+        return (value || '')
+            .toString()
+            .toLowerCase()
+            .replace(/[\s_-]/g, '');
     }
 
-    function hasNotStartedWorkflows() {
-        return Array.isArray(clauseApprovalsList) && clauseApprovalsList.some(function(val) {
-            return val && val.currentLevelStatus === 'notActive';
+    // -------------------------------------------------------------------------
+    // State model helpers - single source of truth (list argument, normalized)
+    // -------------------------------------------------------------------------
+    function hasNotStartedWorkflows(list) {
+        return list.some(function(item) {
+            var level = normalizeStatus(item && item.currentLevelStatus);
+            return level === 'notactive' || level === 'notstarted';
         });
     }
 
-    function hasPendingWorkflows() {
-        return Array.isArray(clauseApprovalsList) && clauseApprovalsList.some(function(val) {
-            return val && val.approvalWorkflowStatus === 'pending' && val.currentLevelStatus !== 'notActive';
+    function hasPendingWorkflows(list) {
+        return list.some(function(item) {
+            if (!item) return false;
+            var level = normalizeStatus(item.currentLevelStatus);
+            if (level === 'notactive' || level === 'notstarted') return false;
+            return normalizeStatus(item.approvalWorkflowStatus) === 'pending';
         });
     }
 
-    function isFullyApproved() {
-        return Array.isArray(clauseApprovalsList) && clauseApprovalsList.length > 0 &&
-            clauseApprovalsList.every(function(val) { return val && val.approvalWorkflowStatus === 'approved'; });
+    function isFullyApproved(list) {
+        return list.length > 0 && list.every(function(item) {
+            return item && normalizeStatus(item.approvalWorkflowStatus) === 'approved';
+        });
     }
 
-    // Show actions - priority: Download > Send Reminder > Start (empty or not started)
-    function showStartClauseAction() {
-        if (showNewApprovalForm) return false;
-        return hasNoWorkflows() || hasNotStartedWorkflows();
-    }
-
-    function showRemindAction() {
-        if (showNewApprovalForm) return false;
-        return hasPendingWorkflows();
-    }
-
-    function showDownloadReportAction() {
-        if (showNewApprovalForm) return false;
-        return isFullyApproved();
+    // Strict priority: one primary CTA (download > remind > start)
+    function getPrimaryAction(list) {
+        if (isFullyApproved(list)) return 'download';
+        if (hasPendingWorkflows(list)) return 'remind';
+        return 'start'; // covers empty list + not started
     }
 
     // Format timestamp
