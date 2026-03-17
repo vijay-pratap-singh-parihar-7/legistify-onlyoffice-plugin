@@ -131,8 +131,8 @@
             `;
             } else {
                 actionButtons = `
-                <div title="Start Clause Approvals" class="start-clause-button" onclick="startClauseApprovals()" style="padding: 4px 5px; cursor: pointer; border-radius: 5px; background-color: #0f6cbd; color: white; display: flex; align-items: center;">
-                    ${loaderFor.startApprovalLoading ? '<div class="loading-spinner-small"></div>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>'}
+                <div id="start_clause" title="Start Approval Workflow" class="start-clause-button" onclick="startClauseApprovals()" style="padding: 6px 12px; cursor: pointer; border-radius: 5px; background-color: #0f6cbd; color: white; display: flex; align-items: center; gap: 6px;">
+                    ${loaderFor.startApprovalLoading ? '<div class="loading-spinner-small"></div>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg><span>Start Approval Workflow</span>'}
                 </div>
             `;
             }
@@ -150,6 +150,13 @@
             </span>
         ` : '';
         
+        // When in drawer, show primary CTA in a slim bar so "Start Approval Workflow" is always visible
+        var drawerActionsBar = (isInDrawer && actionButtons) ? `
+            <div class="approval-drawer-actions" style="flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 8px 12px; border-bottom: 1px solid #e5e5e5; background: #fff;">
+                ${actionButtons}
+            </div>
+        ` : '';
+
         approvalView.innerHTML = `
             <div id="${containerId}" class="clause-approval-container" style="position: relative; min-height: 0; height: 100%; overflow: hidden; margin-top: ${isInDrawer ? '0' : '-10px'}; display: flex; flex-direction: column; width: 100%;">
                 ${errorMessage ? `<div id="approval-error-banner" class="approval-error-banner" style="padding: 10px 12px; margin: 8px; background: #ffebee; color: #c62828; border-radius: 4px; font-size: 13px;">${escapeHtml(errorMessage)}</div>` : ''}
@@ -167,6 +174,7 @@
                     ${statusBadge ? `<div style="display: flex; gap: 8px; align-items: center;">${statusBadge}</div>` : ''}
                 </div>
                 ` : ''}
+                ${drawerActionsBar}
                 <div id="${contentId}" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding: ${isInDrawer ? '7px 7px 50px 7px' : '0px'}; ${!isInDrawer ? 'padding-bottom: 50px;' : ''} min-height: 0; box-sizing: border-box; width: 100%; -webkit-overflow-scrolling: touch;"></div>
             </div>
         `;
@@ -257,7 +265,7 @@
             var clauseNo = clause.approvalActivityLogs && clause.approvalActivityLogs.length
                 ? clause.approvalActivityLogs[clause.approvalActivityLogs.length - 1].newClauseNo
                 : clause.clauseNo;
-            var isNotActive = clause && clause.currentLevelStatus === 'notActive';
+            var isNotActive = isNotStartedLevel(clause && clause.currentLevelStatus);
             var approvalId = clause._id != null ? String(clause._id) : '';
             var safeId = approvalId.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             return '<div class="' + (isNotActive ? 'not-active-clause' : 'approval-card') + '"' +
@@ -330,7 +338,7 @@
     // Get clause approvals details
     window.getClauseApprovals = async function(approvalId) {
         const clause = clauseApprovalsList.find(c => c._id === approvalId);
-        if (!clause || clause?.currentLevelStatus === 'notActive') return null;
+        if (!clause || isNotStartedLevel(clause.currentLevelStatus)) return null;
 
         try {
             loading = true;
@@ -489,9 +497,9 @@
         return { activeApproval: activeApproval, rejectedApprovals: rejectedApprovals };
     }
 
-    // Get status
+    // Get status (uses normalized level status so "Not Started" / notActive both work)
     function getStatus(status, levelStatus) {
-        const statusValue = levelStatus === 'notActive' ? 'notActive' : status;
+        var statusValue = isNotStartedLevel(levelStatus) ? 'notActive' : status;
         switch (statusValue) {
             case "approved": return "Completed";
             case "rejected": return "Rejected";
@@ -503,7 +511,7 @@
 
     // Get status class
     function getStatusClass(status, levelStatus) {
-        const statusValue = levelStatus === 'notActive' ? 'notActive' : status;
+        var statusValue = isNotStartedLevel(levelStatus) ? 'notActive' : status;
         switch (statusValue) {
             case "approved": return "approved";
             case "rejected": return "rejected";
@@ -553,6 +561,11 @@
         if (isFullyApproved(list)) return 'download';
         if (hasPendingWorkflows(list)) return 'remind';
         return 'start'; // covers empty list + not started
+    }
+
+    function isNotStartedLevel(status) {
+        var n = normalizeStatus(status);
+        return n === 'notactive' || n === 'notstarted';
     }
 
     // Format timestamp
