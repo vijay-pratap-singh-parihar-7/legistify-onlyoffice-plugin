@@ -968,18 +968,20 @@
         }
     };
 
-    // Handle team member input focus - show dropdown on focus (defaultOptions-like behavior)
+    // Handle team member input focus - show default list (empty query)
     window.handleTeamMemberFocus = function(index) {
         if (isSelectingMember) return;
         const input = document.getElementById(`team-member-input-${index}`);
         if (!input) return;
-        fetchTeamMembers(index, (input.value && input.value.trim()) ? input.value.trim() : '');
+        fetchTeamMembers(index, '');
     };
 
     // Fetch team members from API; render into portal to avoid drawer overflow clipping
     async function fetchTeamMembers(index, searchValue) {
         if (isSelectingMember) return;
-        if (!searchValue || searchValue.trim().length < 2) {
+        const isSearch = searchValue && searchValue.trim().length >= 2;
+        // Allow fetch if: search (>=2 chars) OR focus (empty value). Skip single-char typing.
+        if (!isSearch && searchValue !== '') {
             closeTeamMemberPortal();
             return;
         }
@@ -1006,9 +1008,9 @@
                 ?.filter(Boolean)
                 ?.map((user) => String(typeof user === 'object' ? user._id : user)) || []);
 
-            const cleanValue = (searchValue || '').replace(/\W/g, '');
+            const query = isSearch ? (searchValue || '').trim().replace(/\W/g, '') : '';
 
-            const url = `${backendUrl}/${APPROVAL_API.ORG_USERS(cleanValue)}`;
+            const url = `${backendUrl}/${APPROVAL_API.ORG_USERS(query)}`;
             const response = await fetch(url, {
                 headers: {
                     'x-auth-token': accessToken,
@@ -1034,10 +1036,10 @@
                             const safeNameAttr = rawName.replace(/\\/g, "\\\\").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/&/g, "&amp;");
                             return '<div class="dropdown-item" onclick="selectTeamMember(' + index + ', \'' + safeNameAttr.replace(/'/g, "&#39;") + '\', \'' + safeId + '\')">' + safeName + '</div>';
                         }).join('');
-                    } else if (!isSelectingMember) {
+                    } else if (isSearch && !isSelectingMember) {
                         portal.innerHTML = '<div style="padding: 12px; text-align: center; color: #666; font-size: 12px;">No team members found</div>';
                     }
-                } else if (!isSelectingMember) {
+                } else if (isSearch && !isSelectingMember) {
                     portal.innerHTML = '<div style="padding: 12px; text-align: center; color: #666; font-size: 12px;">No team members found</div>';
                 }
             } else {
