@@ -2,6 +2,21 @@
 (function(window) {
     'use strict';
 
+    // -------------------------------------------------------------------------
+    // API PATHS - Centralized to match MS Editor (avoid drift)
+    // -------------------------------------------------------------------------
+    const APPROVAL_API = {
+        LIST: (contractId) => `clause-approval/clause-approvals-list?contractId=${encodeURIComponent(contractId)}`,
+        DETAILS: (contractId, approvalId) => `clause-approval/clause-approval-details?contractId=${encodeURIComponent(contractId)}&approvalId=${encodeURIComponent(approvalId)}`,
+        CONTRACT_FOLLOWERS: (contractId) => `contract/contract-followers/${encodeURIComponent(contractId)}`,
+        CREATE: 'clause-approval/create-clause-approval',
+        START_WORKFLOW: (contractId) => `clause-approval/start-clause-approval-workflow/${encodeURIComponent(contractId)}`,
+        REMINDER: (contractId) => `clause-approval/approval-reminder/${encodeURIComponent(contractId)}`,
+        GET_APPROVAL_MATRIX_URL: (contractId) => `clause-approval/get-approval-matrix-url/${encodeURIComponent(contractId)}`,
+        GENERATE_CLAUSE_SUMMARY: 'ai-assistant/generate-contract-clause-summary',
+        ORG_USERS: (email) => `org-user/all-users?email=${encodeURIComponent(email || '')}`
+    };
+
     // State management
     let clauseApprovalsList = [];
     let selectedClause = null;
@@ -34,26 +49,38 @@
     const FORM_INPUT_DEBOUNCE_MS = 250;
     let formInputDebounceTimer = null;
 
+    // Reset approval state when drawer closes (prevents stale UI on reopen)
+    window.resetApprovalState = function() {
+        selectedClause = null;
+        showNewApprovalForm = false;
+        errorMessage = '';
+        errors = {};
+        form = {
+            contractId: form.contractId || '',
+            clauseNo: '',
+            clause: '',
+            summary: '',
+            standPosition: '',
+            levels: [{ levelName: 'Level-1', orgUsers: [], fullName: '' }],
+            approvalId: '',
+            reminderDays: ''
+        };
+    };
+
     // Initialize approval view
     window.initApprovalView = function() {
         // Check for drawer view first (cloned), then original view
-        let approvalView = document.getElementById('clauseApproval-view-drawer') || document.getElementById('clauseApproval-view');
+        var approvalView = document.getElementById('clauseApproval-view-drawer') || document.getElementById('clauseApproval-view');
         if (!approvalView) {
-            // Try to find by container
-            const container = document.getElementById('clauseApproval-container-drawer') || document.getElementById('clauseApproval-container');
-            if (container) {
-                approvalView = container;
-            }
+            var container = document.getElementById('clauseApproval-container-drawer') || document.getElementById('clauseApproval-container');
+            if (container) approvalView = container;
         }
         if (!approvalView) return;
 
-        const pluginData = window.getPluginData();
+        var pluginData = window.getPluginData();
         form.contractId = pluginData.contractId;
 
-        // Render approval view structure
         renderApprovalView();
-        
-        // Fetch clause approvals list
         getClauseApprovalsList();
     };
 
@@ -114,6 +141,7 @@
         
         approvalView.innerHTML = `
             <div id="${containerId}" class="clause-approval-container" style="position: relative; min-height: 0; height: 100%; overflow: hidden; margin-top: ${isInDrawer ? '0' : '-10px'}; display: flex; flex-direction: column; width: 100%;">
+                ${errorMessage ? `<div id="approval-error-banner" class="approval-error-banner" style="padding: 10px 12px; margin: 8px; background: #ffebee; color: #c62828; border-radius: 4px; font-size: 13px;">${escapeHtml(errorMessage)}</div>` : ''}
                 ${shouldShowHeader ? `
                 <div class="feature-header">
                     <div style="width: 100%; display: flex; justify-content: space-between;">
@@ -137,31 +165,54 @@
 
     // Update approval content
     function updateApprovalContent() {
-        // Check for drawer content first, then original
-        const content = document.getElementById('approval-content-drawer') || document.getElementById('approval-content');
+        var content = document.getElementById('approval-content-drawer') || document.getElementById('approval-content');
         if (!content) return;
 
-        // Restore focus after re-render if user was in a form input (e.g. team member search)
-        const activeId = document.activeElement && document.activeElement.id && document.activeElement.id.startsWith('team-member-input-') ? document.activeElement.id : null;
+        var activeEl = document.activeElement;
+        var activeId = null;
+        var selectionStart = 0;
+        var selectionEnd = 0;
+        if (activeEl && content.contains(activeEl)) {
+            activeId = activeEl.id || null;
+            if (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA') {
+                selectionStart = activeEl.selectionStart != null ? activeEl.selectionStart : 0;
+                selectionEnd = activeEl.selectionEnd != null ? activeEl.selectionEnd : 0;
+            }
+        }
+        if (!activeId && activeEl && activeEl.id && (activeEl.id.startsWith('team-member-input-') || activeEl.className && activeEl.className.indexOf('approval-form') !== -1)) {
+            activeId = activeEl.id;
+        }
+
+        function restoreFocus() {
+            if (!activeId) return;
+            setTimeout(function() {
+                var el = document.getElementById(activeId);
+                if (el) {
+                    el.focus();
+                    if ((el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && el.setSelectionRange) {
+                        var len = (el.value || '').length;
+                        el.setSelectionRange(Math.min(selectionStart, len), Math.min(selectionEnd, len));
+                    }
+                }
+            }, 0);
+        }
 
         if (loading) {
             content.innerHTML = '<div class="loading-container" style="margin-top: 100px;"><div class="loading-spinner"></div></div>';
-            if (activeId) setTimeout(function() { var el = document.getElementById(activeId); if (el) el.focus(); }, 0);
+            restoreFocus();
             return;
         }
 
         if (showNewApprovalForm) {
-            if (isTeamDropdownOpen) {
-                return;
-            }
+            if (isTeamDropdownOpen) return;
             content.innerHTML = renderForm();
-            if (activeId) setTimeout(function() { var el = document.getElementById(activeId); if (el) el.focus(); }, 0);
+            restoreFocus();
             return;
         }
 
         if (selectedClause) {
             content.innerHTML = renderClauseDetails();
-            if (activeId) setTimeout(function() { var el = document.getElementById(activeId); if (el) el.focus(); }, 0);
+            restoreFocus();
             return;
         }
 
@@ -191,25 +242,21 @@
             return;
         }
 
-        const listHTML = clauseApprovalsList.map((clause) => {
-            const clauseNo = clause.approvalActivityLogs?.length 
-                ? clause.approvalActivityLogs[clause.approvalActivityLogs.length - 1].newClauseNo 
+        var listHTML = clauseApprovalsList.map(function(clause) {
+            var clauseNo = clause.approvalActivityLogs && clause.approvalActivityLogs.length
+                ? clause.approvalActivityLogs[clause.approvalActivityLogs.length - 1].newClauseNo
                 : clause.clauseNo;
-            const isNotActive = clause?.currentLevelStatus === 'notActive';
-            
-            return `
-                <div class="${isNotActive ? 'not-active-clause' : 'approval-card'}" onclick="getClauseApprovals('${clause._id}')" style="padding: 10px 15px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; cursor: ${isNotActive ? 'not-allowed' : 'pointer'}; background-color: ${isNotActive ? '#f5f5f5' : '#fff'};">
-                    <div style="flex: 1;">
-                        <strong>Clause No - ${escapeHtml(clauseNo)} Approval</strong>
-                    </div>
-                    <div style="display: flex; gap: 8px; justify-content: center; align-items: center;">
-                        <span class="status-badge ${getStatusClass(clause.approvalWorkflowStatus, clause?.currentLevelStatus)}">
-                            ${getStatus(clause.approvalWorkflowStatus, clause?.currentLevelStatus)}
-                        </span>
-                        ${!isNotActive ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>' : ''}
-                    </div>
-                </div>
-            `;
+            var isNotActive = clause && clause.currentLevelStatus === 'notActive';
+            var approvalId = clause._id != null ? String(clause._id) : '';
+            var safeId = approvalId.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return '<div class="' + (isNotActive ? 'not-active-clause' : 'approval-card') + '"' +
+                (approvalId ? ' data-approval-id="' + safeId + '"' : '') +
+                ' style="padding: 10px 15px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; cursor: ' + (isNotActive ? 'not-allowed' : 'pointer') + '; background-color: ' + (isNotActive ? '#f5f5f5' : '#fff') + ';">' +
+                '<div style="flex: 1;"><strong>Clause No - ' + escapeHtml(clauseNo) + ' Approval</strong></div>' +
+                '<div style="display: flex; gap: 8px; justify-content: center; align-items: center;">' +
+                '<span class="status-badge ' + getStatusClass(clause.approvalWorkflowStatus, clause && clause.currentLevelStatus) + '">' + getStatus(clause.approvalWorkflowStatus, clause && clause.currentLevelStatus) + '</span>' +
+                (!isNotActive ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>' : '') +
+                '</div></div>';
         }).join('');
 
         container.innerHTML = listHTML;
@@ -229,7 +276,7 @@
                 throw new Error('Access token not available');
             }
 
-            const url = `${backendUrl}/clause-approval/clause-approvals-list?contractId=${pluginData.contractId}`;
+            const url = `${backendUrl}/${APPROVAL_API.LIST(pluginData.contractId)}`;
             const response = await fetch(url, {
                 headers: {
                     'x-auth-token': accessToken,
@@ -247,9 +294,11 @@
             } else {
                 clauseApprovalsList = [];
             }
+            errorMessage = '';
         } catch (err) {
             console.error('Error fetching clause approvals:', err);
-            errorMessage = "Something went wrong.";
+            errorMessage = err && err.message ? err.message : 'Something went wrong.';
+            showToast(errorMessage, 'error');
         } finally {
             loading = false;
             updateApprovalContent();
@@ -273,7 +322,7 @@
                 throw new Error('Access token not available');
             }
 
-            const url = `${backendUrl}/clause-approval/clause-approval-details?contractId=${pluginData.contractId}&approvalId=${approvalId}`;
+            const url = `${backendUrl}/${APPROVAL_API.DETAILS(pluginData.contractId, approvalId)}`;
             const response = await fetch(url, {
                 headers: {
                     'x-auth-token': accessToken,
@@ -288,12 +337,15 @@
             const data = await response.json();
             if (data?.status && data?.data?.clauseApprovalDetails?.length > 0) {
                 selectedClause = data.data.clauseApprovalDetails;
+                errorMessage = '';
             } else {
-                errorMessage = data.msg || 'Failed to load details';
+                errorMessage = data?.msg || 'Failed to load details';
+                showToast(errorMessage, 'error');
             }
         } catch (err) {
             console.error('Error fetching clause approval details:', err);
-            errorMessage = "Something went wrong.";
+            errorMessage = err && err.message ? err.message : 'Something went wrong.';
+            showToast(errorMessage, 'error');
         } finally {
             loading = false;
             renderApprovalView();
@@ -373,14 +425,34 @@
         }).join('');
     }
 
-    // Render rejected workflows
+    // Render rejected workflows - clause, summary, stand position, levels (matches MS Editor detail)
     function renderRejectedWorkflows(rejectedApprovals) {
-        // Simplified version - would need accordion implementation
-        return rejectedApprovals.map((level, index) => `
-            <div style="padding: 8px; border-bottom: 1px solid #ebe9f1;">
-                <div style="font-size: 13px;">Clause No: ${escapeHtml(level?.newClauseNo || level?.clauseNo)}</div>
-            </div>
-        `).join('');
+        if (!rejectedApprovals || rejectedApprovals.length === 0) return '';
+        return rejectedApprovals.map(function(level, index) {
+            var clauseNo = escapeHtml(level.newClauseNo || level.clauseNo || '');
+            var clause = escapeHtml(level.newClause || level.clause || '');
+            var summary = escapeHtml(level.newSummary || level.summary || '');
+            var standPos = escapeHtml(level.newStandPosition || level.standPosition || '');
+            var levels = level.newLevels || level.levels || [];
+            var levelsHtml = levels.filter(function(l) { return l.orgUsers && l.orgUsers.length > 0; }).map(function(lvl, lvlIdx) {
+                var status = getStatus(lvl.approvalStatus);
+                var statusClass = getStatusClass(lvl.approvalStatus);
+                var fullName = (lvl.orgUsers[0] && lvl.orgUsers[0].fullName) || lvl.fullName || '';
+                var comment = (lvl.activityLogs && lvl.activityLogs.length) ? lvl.activityLogs[lvl.activityLogs.length - 1].commentText : '';
+                return '<div class="clause-details-card" style="border: 1px solid #ccc; border-radius: 8px; padding: 12px; margin-bottom: 12px;">' +
+                    '<div class="level-title" style="color: #0078D4; font-weight: 600; margin-bottom: 8px; font-size: 14px;">Level ' + (lvlIdx + 1) + ' <span class="status-badge ' + statusClass + '">' + status + '</span></div>' +
+                    '<div style="margin-bottom: 8px;"><strong>' + escapeHtml(fullName) + '</strong></div>' +
+                    (comment ? '<div style="font-size: 13px;"><b>Remark:</b> ' + escapeHtml(comment) + '</div>' : '') +
+                    '</div>';
+            }).join('');
+            return '<div style="padding: 12px; margin-bottom: 12px; border: 1px solid #ebe9f1; border-radius: 8px; background: #fafafa;">' +
+                '<div style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">Clause No: ' + clauseNo + '</div>' +
+                '<div style="font-size: 13px; margin-bottom: 6px;"><strong>Clause:</strong> ' + clause + '</div>' +
+                '<div style="font-size: 13px; margin-bottom: 6px;"><strong>Summary:</strong> ' + summary + '</div>' +
+                '<div style="font-size: 13px; margin-bottom: 8px;"><strong>Implications of Deviation:</strong> ' + standPos + '</div>' +
+                (levelsHtml ? '<div style="margin-top: 8px;">' + levelsHtml + '</div>' : '') +
+                '</div>';
+        }).join('');
     }
 
     // Get refind approvals
@@ -449,7 +521,7 @@
             <div class="form-container" style="width: 100%; padding: 12px; padding-bottom: 50px; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; overflow: visible; margin-bottom: 30px; min-height: 0;">
                 <div style="display: flex; gap: 10px; justify-content: flex-start; align-items: center; width: 100%;">
                     <div style="flex: 1; width: 50%;">
-                        <input type="text" placeholder="Clause No" value="${escapeHtml(form.clauseNo || '')}" onchange="handleFormInputChange('clauseNo', this.value)" class="approval-form-input" style="border-color: ${errors.clauseNo ? 'red' : '#d1d5db'};" />
+                        <input type="text" placeholder="Clause No" value="${escapeHtml(form.clauseNo || '')}" oninput="handleFormInputChange('clauseNo', this.value)" class="approval-form-input" style="border-color: ${errors.clauseNo ? 'red' : '#d1d5db'};" />
                         ${errors.clauseNo ? `<div style="color: red; margin: -5px 0; font-size: 12px;">${errors.clauseNo}</div>` : ''}
                     </div>
                     <div style="flex: 1; width: 50%;">
@@ -463,7 +535,7 @@
                 <textarea placeholder="Clause" oninput="handleFormInputChange('clause', this.value)" class="approval-form-textarea" style="height: 120px; resize: vertical; border-color: ${errors.clause ? 'red' : '#d1d5db'}; box-sizing: border-box;">${escapeHtml(form.clause || '')}</textarea>
                 ${errors.clause ? `<div style="color: red; margin: -5px 0; font-size: 12px;">${errors.clause}</div>` : ''}
                 <div style="width: 100%; margin-bottom: 8px; position: relative;">
-                    <textarea placeholder="Summary" onchange="handleFormInputChange('summary', this.value)" class="approval-form-textarea" style="height: 120px; resize: vertical; border-color: ${errors.summary ? 'red' : '#d1d5db'}; box-sizing: border-box;">${escapeHtml(form.summary || '')}</textarea>
+                    <textarea placeholder="Summary" oninput="handleFormInputChange('summary', this.value)" class="approval-form-textarea" style="height: 120px; resize: vertical; border-color: ${errors.summary ? 'red' : '#d1d5db'}; box-sizing: border-box;">${escapeHtml(form.summary || '')}</textarea>
                     ${errors.summary ? `<div style="color: red; margin: -5px 0; font-size: 12px;">${errors.summary}</div>` : ''}
                     <div style="display: flex; justify-content: flex-end; margin-top: 6px;">
                         <button type="button" class="auto-summarize-btn" onclick="handleGenerateSummary()" disabled="${generatingSummary || !form.clause}" style="margin-bottom: -8px;">
@@ -471,7 +543,7 @@
                         </button>
                     </div>
                 </div>
-                <textarea placeholder="Implications of Deviation" onchange="handleFormInputChange('standPosition', this.value)" class="approval-form-textarea" style="height: 120px; resize: vertical; border-color: ${errors.standPosition ? 'red' : '#d1d5db'}; box-sizing: border-box;">${escapeHtml(form.standPosition || '')}</textarea>
+                <textarea placeholder="Implications of Deviation" oninput="handleFormInputChange('standPosition', this.value)" class="approval-form-textarea" style="height: 120px; resize: vertical; border-color: ${errors.standPosition ? 'red' : '#d1d5db'}; box-sizing: border-box;">${escapeHtml(form.standPosition || '')}</textarea>
                 ${errors.standPosition ? `<div style="color: red; margin: -5px 0; font-size: 12px;">${errors.standPosition}</div>` : ''}
                 ${form.levels.map((level, index) => `
                     <div style="margin-bottom: 8px; width: 100%; display: flex; gap: 10px;">
@@ -529,7 +601,7 @@
             const backendUrl = window.getBackendUrl();
             const accessToken = window.getAccessToken();
 
-            const url = `${backendUrl}/clause-approval/contract-followers?contractId=${pluginData.contractId}`;
+            const url = `${backendUrl}/${APPROVAL_API.CONTRACT_FOLLOWERS(pluginData.contractId)}`;
             const response = await fetch(url, {
                 headers: {
                     'x-auth-token': accessToken,
@@ -542,9 +614,15 @@
                 if (data?.status && data?.data?.length > 0) {
                     contractFollowers = data.data;
                 }
+            } else {
+                const errData = await response.json().catch(() => ({}));
+                errorMessage = errData?.msg || errData?.message || 'Failed to load contract followers';
+                showToast(errorMessage, 'error');
             }
         } catch (err) {
             console.error('Error fetching contract followers:', err);
+            errorMessage = err && err.message ? err.message : 'Something went wrong.';
+            showToast(errorMessage, 'error');
         } finally {
             loading = false;
             showNewApprovalForm = true;
@@ -553,13 +631,14 @@
         }
     };
 
-    // Handle form input change (avoids full re-render for reminder and clause; debounces other textareas; skips when team dropdown open)
+    // Handle form input change: update state immediately; avoid full re-render while typing (prevents cursor jump)
     window.handleFormInputChange = function(field, value) {
         form[field] = value;
         if (errors[field]) {
             delete errors[field];
         }
         if (field === 'reminderDays') {
+            updateApprovalContent();
             return;
         }
         if (isTeamDropdownOpen) {
@@ -572,12 +651,8 @@
             }
             return;
         }
-        if (field === 'summary' || field === 'standPosition') {
-            if (formInputDebounceTimer) clearTimeout(formInputDebounceTimer);
-            formInputDebounceTimer = setTimeout(function() {
-                formInputDebounceTimer = null;
-                updateApprovalContent();
-            }, FORM_INPUT_DEBOUNCE_MS);
+        // clauseNo, summary, standPosition: update state only, no re-render (validation uses latest on submit)
+        if (field === 'clauseNo' || field === 'summary' || field === 'standPosition') {
             return;
         }
         updateApprovalContent();
@@ -611,30 +686,39 @@
             const backendUrl = window.getBackendUrl();
             const accessToken = window.getAccessToken();
 
-            const url = `${backendUrl}/clause-approval/start-clause-approval?contractId=${pluginData.contractId}`;
+            const url = `${backendUrl}/${APPROVAL_API.START_WORKFLOW(pluginData.contractId)}`;
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'x-auth-token': accessToken,
                     'Content-Type': 'application/json'
-                }
+                },
+                body: JSON.stringify({})
             });
 
             if (response.ok) {
                 const data = await response.json();
                 if (data?.status) {
                     showToast('Approval Workflows Started Successfully', 'success');
+                    errorMessage = '';
                     getClauseApprovalsList();
                 } else {
-                    errorMessage = data.msg || 'Failed to start approvals';
+                    errorMessage = data?.msg || 'Failed to start approvals';
+                    showToast(errorMessage, 'error');
                 }
+            } else {
+                const errData = await response.json().catch(() => ({}));
+                errorMessage = errData?.msg || 'Failed to start approvals';
+                showToast(errorMessage, 'error');
             }
         } catch (err) {
             console.error('Error starting clause approvals:', err);
-            errorMessage = 'Something went wrong';
+            errorMessage = err && err.message ? err.message : 'Something went wrong';
+            showToast(errorMessage, 'error');
         } finally {
             loaderFor.startApprovalLoading = false;
             renderApprovalView();
+            updateApprovalContent();
         }
     };
 
@@ -648,13 +732,14 @@
             const backendUrl = window.getBackendUrl();
             const accessToken = window.getAccessToken();
 
-            const url = `${backendUrl}/clause-approval/approval-reminder?contractId=${pluginData.contractId}`;
+            const url = `${backendUrl}/${APPROVAL_API.REMINDER(pluginData.contractId)}`;
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'x-auth-token': accessToken,
                     'Content-Type': 'application/json'
-                }
+                },
+                body: JSON.stringify({})
             });
 
             if (response.ok) {
@@ -662,12 +747,15 @@
                 if (data?.status) {
                     showToast('Approval Reminder Sent Successfully', 'success');
                 } else {
-                    showToast('Something went wrong!', 'error');
+                    showToast(data?.msg || 'Something went wrong!', 'error');
                 }
+            } else {
+                const errData = await response.json().catch(() => ({}));
+                showToast(errData?.msg || 'Something went wrong!', 'error');
             }
         } catch (err) {
             console.error('Error sending reminder:', err);
-            showToast('Something went wrong!', 'error');
+            showToast(err && err.message ? err.message : 'Something went wrong!', 'error');
         } finally {
             loaderFor.isReminderLoading = false;
             renderApprovalView();
@@ -684,7 +772,7 @@
             const backendUrl = window.getBackendUrl();
             const accessToken = window.getAccessToken();
 
-            const url = `${backendUrl}/clause-approval/approval-matrix?contractId=${pluginData.contractId}`;
+            const url = `${backendUrl}/${APPROVAL_API.GET_APPROVAL_MATRIX_URL(pluginData.contractId)}`;
             const response = await fetch(url, {
                 headers: {
                     'x-auth-token': accessToken,
@@ -698,22 +786,78 @@
                     window.open(data.data, '_blank');
                     showToast('Approval Matrix Downloaded Successfully', 'success');
                 } else {
-                    showToast('Something went wrong!', 'error');
+                    showToast(data?.msg || 'Something went wrong!', 'error');
                 }
+            } else {
+                const errData = await response.json().catch(() => ({}));
+                showToast(errData?.msg || 'Something went wrong!', 'error');
             }
         } catch (err) {
             console.error('Error downloading matrix:', err);
-            showToast('Something went wrong!', 'error');
+            showToast(err && err.message ? err.message : 'Something went wrong!', 'error');
         } finally {
             loaderFor.downloadFileLoading = false;
             renderApprovalView();
+            updateApprovalContent();
         }
     };
 
-    // Handle edit clause
-    window.handleEditClause = function() {
-        // Implementation for editing clause
-        showToast('Edit functionality coming soon', 'info');
+    // Handle edit clause - full flow: use selectedClause, fetch followers, fill form, show form
+    window.handleEditClause = async function() {
+        if (!selectedClause || !selectedClause[0]) return;
+        var clause = selectedClause[0];
+        loading = true;
+        updateApprovalContent();
+        try {
+            var pluginData = window.getPluginData();
+            var backendUrl = window.getBackendUrl();
+            var accessToken = window.getAccessToken();
+            if (!accessToken) throw new Error('Access token not available');
+            var url = backendUrl + '/' + APPROVAL_API.CONTRACT_FOLLOWERS(pluginData.contractId);
+            var response = await fetch(url, {
+                headers: { 'x-auth-token': accessToken, 'Content-Type': 'application/json' }
+            });
+            if (response.ok) {
+                var data = await response.json();
+                if (data && data.status && data.data && data.data.length > 0) contractFollowers = data.data;
+            }
+        } catch (err) {
+            console.error('Error fetching contract followers for edit:', err);
+            showToast(err && err.message ? err.message : 'Something went wrong', 'error');
+        } finally {
+            loading = false;
+        }
+        var hasLogs = clause.approvalActivityLogs && clause.approvalActivityLogs.length > 0;
+        var lastLog = hasLogs ? clause.approvalActivityLogs[clause.approvalActivityLogs.length - 1] : null;
+        var rawLevels = (lastLog ? lastLog.newLevels : clause.levels) || [];
+        form = {
+            contractId: clause.contractId || form.contractId,
+            clauseNo: lastLog ? lastLog.newClauseNo : clause.clauseNo,
+            clause: lastLog ? lastLog.newClause : clause.clause,
+            summary: lastLog ? lastLog.newSummary : clause.summary,
+            standPosition: lastLog ? lastLog.newStandPosition : clause.standPosition,
+            levels: [],
+            approvalId: clause._id,
+            reminderDays: clause.reminderDays || ''
+        };
+        if (rawLevels.length === 0) {
+            form.levels = [{ levelName: 'Level-1', orgUsers: [], fullName: '' }];
+        } else {
+            form.levels = rawLevels.map(function(lvl, idx) {
+                var uid = lvl.orgUsers && lvl.orgUsers[0];
+                var id = typeof uid === 'object' && uid ? (uid._id || uid.id) : uid;
+                var fn = (lvl.orgUsers && lvl.orgUsers[0] && lvl.orgUsers[0].fullName) || lvl.fullName || '';
+                return {
+                    levelName: 'Level-' + (idx + 1),
+                    orgUsers: id ? [id] : [],
+                    fullName: fn
+                };
+            });
+        }
+        errors = {};
+        showNewApprovalForm = true;
+        renderApprovalView();
+        updateApprovalContent();
     };
 
     // Handle generate summary
@@ -726,7 +870,7 @@
             const backendUrl = window.getBackendUrl();
             const accessToken = window.getAccessToken();
 
-            const url = `${backendUrl}/ai-assistant/generate-contract-clause-summary`;
+            const url = `${backendUrl}/${APPROVAL_API.GENERATE_CLAUSE_SUMMARY}`;
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
@@ -849,7 +993,7 @@
 
             const cleanValue = (searchValue || '').replace(/\W/g, '');
 
-            const url = `${backendUrl}/org-user/all-users?email=${encodeURIComponent(cleanValue)}`;
+            const url = `${backendUrl}/${APPROVAL_API.ORG_USERS(cleanValue)}`;
             const response = await fetch(url, {
                 headers: {
                     'x-auth-token': accessToken,
@@ -922,6 +1066,14 @@
         }
     });
 
+    // Delegated click for clause list: safe handling of approval ID (no inline onclick, no special-char issues)
+    document.addEventListener('click', function(event) {
+        var card = event.target.closest('.approval-card[data-approval-id]');
+        if (!card) return;
+        var id = card.getAttribute('data-approval-id');
+        if (id && window.getClauseApprovals) window.getClauseApprovals(id);
+    });
+
     // Handle level delete
     window.handleLevelDelete = function(deleteIndex) {
         form.levels = form.levels
@@ -933,6 +1085,31 @@
         updateApprovalContent();
     };
 
+    // Build create-approval payload; normalize levels.orgUsers to match backend (objects with _id)
+    function buildCreateApprovalPayload() {
+        const levels = (form.levels || []).map(function(level, idx) {
+            const orgUsers = (level.orgUsers || []).filter(Boolean).map(function(u) {
+                if (typeof u === 'object' && u !== null && (u._id || u.id)) return { _id: u._id || u.id };
+                return typeof u === 'string' ? { _id: u } : u;
+            });
+            return {
+                levelName: level.levelName || 'Level-' + (idx + 1),
+                orgUsers: orgUsers,
+                fullName: level.fullName || ''
+            };
+        });
+        return {
+            contractId: form.contractId,
+            clauseNo: form.clauseNo,
+            clause: form.clause,
+            summary: form.summary,
+            standPosition: form.standPosition,
+            levels: levels,
+            approvalId: form.approvalId || '',
+            reminderDays: form.reminderDays
+        };
+    }
+
     // Handle submit approval
     window.handleSubmitApproval = async function() {
         // Validate form
@@ -943,8 +1120,8 @@
         if (!form.standPosition) errors.standPosition = "Stand Position is required";
         if (!form.reminderDays) errors.reminderDays = "Reminder days required";
 
-        form.levels.forEach((level) => {
-            if (!level.orgUsers.length) errors.level = "Approver is required";
+        (form.levels || []).forEach(function(level) {
+            if (!level.orgUsers || level.orgUsers.length === 0) errors.level = "Approver is required";
         });
 
         if (Object.keys(errors).length > 0) {
@@ -959,14 +1136,15 @@
             const backendUrl = window.getBackendUrl();
             const accessToken = window.getAccessToken();
 
-            const url = `${backendUrl}/clause-approval/create-clause-approval`;
+            const payload = buildCreateApprovalPayload();
+            const url = `${backendUrl}/${APPROVAL_API.CREATE}`;
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'x-auth-token': accessToken,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(form)
+                body: JSON.stringify(payload)
             });
 
             if (response.ok) {
@@ -989,11 +1167,17 @@
                     getClauseApprovalsList();
                 } else {
                     errorMessage = data.msg || 'Failed to create approval';
+                    showToast(errorMessage, 'error');
                 }
+            } else {
+                const errData = await response.json().catch(function() { return {}; });
+                errorMessage = errData.msg || 'Failed to create approval';
+                showToast(errorMessage, 'error');
             }
         } catch (err) {
             console.error('Error submitting approval:', err);
-            errorMessage = 'Something went wrong';
+            errorMessage = err && err.message ? err.message : 'Something went wrong';
+            showToast(errorMessage, 'error');
         } finally {
             loading2 = false;
             renderApprovalView();

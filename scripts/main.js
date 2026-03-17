@@ -674,6 +674,11 @@
             if (copyBtn) copyBtn.style.display = 'none';
         }
 
+        // Reset clause approval state when closing approval drawer (prevents stale UI)
+        if (activeContent === 'clauseApproval' && typeof window.resetApprovalState === 'function') {
+            window.resetApprovalState();
+        }
+
         // Hide all drawer-view elements (library-view, summary-view, clauses-view, etc.)
         const drawerViews = document.querySelectorAll('.drawer-view');
         drawerViews.forEach(view => {
@@ -719,7 +724,7 @@
                 window.initLibraryView();
             }
         } else if (contentKey === 'clauseApproval') {
-            await getClauseApprovals();
+            // Single source of truth: approval.js fetches list in initApprovalView (no redundant fetch here)
             if (window.initApprovalView) {
                 window.initApprovalView();
             }
