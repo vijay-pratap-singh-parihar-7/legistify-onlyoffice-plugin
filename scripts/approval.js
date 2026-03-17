@@ -523,12 +523,12 @@
     function renderForm() {
         return `
             <div class="form-container" style="width: 100%; padding: 12px; padding-bottom: 50px; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; overflow: visible; margin-bottom: 30px; min-height: 0;">
-                <div style="display: flex; gap: 10px; justify-content: flex-start; align-items: center; width: 100%;">
-                    <div style="flex: 1; width: 50%;">
+                <div class="form-row">
+                    <div class="form-group">
                         <input type="text" placeholder="Clause No" value="${escapeHtml(form.clauseNo || '')}" oninput="handleFormInputChange('clauseNo', this.value)" class="approval-form-input" style="border-color: ${errors.clauseNo ? 'red' : '#d1d5db'};" />
-                        ${errors.clauseNo ? `<div style="color: red; margin: -5px 0; font-size: 12px;">${errors.clauseNo}</div>` : ''}
+                        <div class="error ${errors.clauseNo ? 'visible' : ''}">${escapeHtml(errors.clauseNo || '')}</div>
                     </div>
-                    <div style="flex: 1; width: 50%;">
+                    <div class="form-group">
                         <select id="approval-reminder-select" class="approval-form-select" style="border-color: ${errors.reminderDays ? 'red' : '#d1d5db'};" onchange="handleFormInputChange('reminderDays', this.value)">
                             <option value="">Reminder</option>
                             ${Array.from({ length: 10 }, function(_, i) {
@@ -537,22 +537,26 @@
                                 return '<option value="' + v + '"' + selected + '>' + v + '</option>';
                             }).join('')}
                         </select>
-                        ${errors.reminderDays ? `<div style="color: red; margin: -5px 0; font-size: 12px;">${errors.reminderDays}</div>` : ''}
+                        <div class="error ${errors.reminderDays ? 'visible' : ''}">${escapeHtml(errors.reminderDays || '')}</div>
                     </div>
                 </div>
-                <textarea placeholder="Clause" oninput="handleFormInputChange('clause', this.value)" class="approval-form-textarea" style="height: 120px; resize: vertical; border-color: ${errors.clause ? 'red' : '#d1d5db'}; box-sizing: border-box;">${escapeHtml(form.clause || '')}</textarea>
-                ${errors.clause ? `<div style="color: red; margin: -5px 0; font-size: 12px;">${errors.clause}</div>` : ''}
-                <div style="width: 100%; margin-bottom: 8px; position: relative;">
+                <div class="form-group">
+                    <textarea placeholder="Clause" oninput="handleFormInputChange('clause', this.value)" class="approval-form-textarea" style="height: 120px; resize: vertical; border-color: ${errors.clause ? 'red' : '#d1d5db'}; box-sizing: border-box;">${escapeHtml(form.clause || '')}</textarea>
+                    <div class="error ${errors.clause ? 'visible' : ''}">${escapeHtml(errors.clause || '')}</div>
+                </div>
+                <div class="form-group" style="width: 100%; margin-bottom: 8px; position: relative;">
                     <textarea placeholder="Summary" oninput="handleFormInputChange('summary', this.value)" class="approval-form-textarea" style="height: 120px; resize: vertical; border-color: ${errors.summary ? 'red' : '#d1d5db'}; box-sizing: border-box;">${escapeHtml(form.summary || '')}</textarea>
-                    ${errors.summary ? `<div style="color: red; margin: -5px 0; font-size: 12px;">${errors.summary}</div>` : ''}
+                    <div class="error ${errors.summary ? 'visible' : ''}">${escapeHtml(errors.summary || '')}</div>
                     <div style="display: flex; justify-content: flex-end; margin-top: 6px;">
                         <button type="button" class="auto-summarize-btn" onclick="handleGenerateSummary()" disabled="${generatingSummary || !form.clause}" style="margin-bottom: -8px;">
                             ${generatingSummary ? 'Generating...' : 'Auto Summarize'}
                         </button>
                     </div>
                 </div>
-                <textarea placeholder="Implications of Deviation" oninput="handleFormInputChange('standPosition', this.value)" class="approval-form-textarea" style="height: 120px; resize: vertical; border-color: ${errors.standPosition ? 'red' : '#d1d5db'}; box-sizing: border-box;">${escapeHtml(form.standPosition || '')}</textarea>
-                ${errors.standPosition ? `<div style="color: red; margin: -5px 0; font-size: 12px;">${errors.standPosition}</div>` : ''}
+                <div class="form-group">
+                    <textarea placeholder="Implications of Deviation" oninput="handleFormInputChange('standPosition', this.value)" class="approval-form-textarea" style="height: 120px; resize: vertical; border-color: ${errors.standPosition ? 'red' : '#d1d5db'}; box-sizing: border-box;">${escapeHtml(form.standPosition || '')}</textarea>
+                    <div class="error ${errors.standPosition ? 'visible' : ''}">${escapeHtml(errors.standPosition || '')}</div>
+                </div>
                 ${form.levels.map((level, index) => `
                     <div style="margin-bottom: 8px; width: 100%; display: flex; gap: 10px;">
                         <div style="width: 90%; position: relative;">
@@ -571,7 +575,9 @@
                         </div>
                     </div>
                 `).join('')}
-                ${errors.level ? `<div style="color: red; margin: 0; font-size: 12px;">${errors.level}</div>` : ''}
+                <div class="form-group" style="margin-bottom: 0;">
+                    <div class="error ${errors.level ? 'visible' : ''}">${escapeHtml(errors.level || '')}</div>
+                </div>
                 <button onclick="handleAddLevel()" style="width: 100%; margin-top: 8px; min-height: 40px; font-size: 14px; font-weight: 500; padding: 10px 16px; background: #f0f0f0; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
                     + Add Level
                 </button>

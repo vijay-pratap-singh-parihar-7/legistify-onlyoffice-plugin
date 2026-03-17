@@ -2283,6 +2283,35 @@ button[title*="close" i],
     border-color: #2563eb;
 }
 
+/* Approval form layout - consistent spacing, no layout shift from errors */
+.form-container .form-row {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+}
+
+.form-container .form-row .form-group {
+    flex: 1;
+}
+
+.form-container .form-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 16px;
+}
+
+.form-container .form-group .error {
+    min-height: 16px;
+    font-size: 12px;
+    color: #c62828;
+    margin-top: 4px;
+    visibility: hidden;
+}
+
+.form-container .form-group .error.visible {
+    visibility: visible;
+}
+
 /* Team member dropdown portal - prevents clipping by drawer overflow */
 .team-member-dropdown-portal {
     position: fixed;
