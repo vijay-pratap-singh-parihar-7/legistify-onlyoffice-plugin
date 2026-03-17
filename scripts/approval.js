@@ -108,25 +108,30 @@
 
         // NEVER render feature-header if in drawer (drawer has its own header)
         const shouldShowHeader = !isInDrawer;
-        
-        // Build action buttons HTML
-        const actionButtons = !selectedClause ? `
-            ${showRemindAction() ? `
-                <div title="Send Reminder" class="start-clause-button" onclick="sendApprovalsReminder()" style="padding: 4px 5px; cursor: pointer; border-radius: 5px; background-color: #0f6cbd; color: white; display: flex; align-items: center;">
-                    ${loaderFor.isReminderLoading ? '<div class="loading-spinner-small"></div>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"></path></svg>'}
-                </div>
-            ` : ''}
-            ${showDownloadReportAction() ? `
+
+        // Build action buttons by priority: Download > Send Reminder > Start (ensures one primary action, no silent failure)
+        var actionButtons = '';
+        if (!selectedClause) {
+            if (showDownloadReportAction()) {
+                actionButtons = `
                 <div title="Download Report" class="start-clause-button" onclick="downloadApprovalMatrix()" style="padding: 4px 5px; cursor: pointer; border-radius: 5px; background-color: #0f6cbd; color: white; display: flex; align-items: center;">
                     ${loaderFor.downloadFileLoading ? '<div class="loading-spinner-small"></div>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>'}
                 </div>
-            ` : ''}
-            ${showStartClauseAction() ? `
+            `;
+            } else if (showRemindAction()) {
+                actionButtons = `
+                <div title="Send Reminder" class="start-clause-button" onclick="sendApprovalsReminder()" style="padding: 4px 5px; cursor: pointer; border-radius: 5px; background-color: #0f6cbd; color: white; display: flex; align-items: center;">
+                    ${loaderFor.isReminderLoading ? '<div class="loading-spinner-small"></div>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"></path></svg>'}
+                </div>
+            `;
+            } else if (showStartClauseAction()) {
+                actionButtons = `
                 <div title="Start Clause Approvals" class="start-clause-button" onclick="startClauseApprovals()" style="padding: 4px 5px; cursor: pointer; border-radius: 5px; background-color: #0f6cbd; color: white; display: flex; align-items: center;">
                     ${loaderFor.startApprovalLoading ? '<div class="loading-spinner-small"></div>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>'}
                 </div>
-            ` : ''}
-        ` : '';
+            `;
+            }
+        }
         
         // Build status badge HTML
         const statusBadge = selectedClause ? `
@@ -263,8 +268,9 @@
         container.innerHTML = listHTML;
     }
 
-    // Get clause approvals list
+    // Get clause approvals list - always initializes clauseApprovalsList safely
     async function getClauseApprovalsList() {
+        clauseApprovalsList = [];
         try {
             loading = true;
             updateApprovalContent();
@@ -275,8 +281,6 @@
 
             if (!pluginData || pluginData.contractId == null) {
                 console.warn('Clause Approval: contractId from getPluginData() is missing', pluginData);
-            } else {
-                console.log('Clause Approval: fetching list for contractId', pluginData.contractId);
             }
 
             if (!accessToken) {
@@ -296,16 +300,25 @@
             }
 
             const data = await response.json();
-            const list = data?.data || data?.result || [];
+            const list = (data && (data.status === true || data.status === 'true')) && Array.isArray(data.data)
+                ? data.data
+                : (data?.data || data?.result || []);
             clauseApprovalsList = Array.isArray(list) ? list : [];
             errorMessage = '';
+
+            if (clauseApprovalsList.length === 0 && data && typeof data.status === 'boolean' && !data.status) {
+                if (typeof console !== 'undefined' && console.debug) {
+                    console.debug('Clause Approval: no workflows yet for contract (empty state); Start button will be shown.');
+                }
+            }
         } catch (err) {
             console.error('Error fetching clause approvals:', err);
+            clauseApprovalsList = [];
             errorMessage = err && err.message ? err.message : 'Something went wrong.';
             showToast(errorMessage, 'error');
         } finally {
             loading = false;
-            updateApprovalContent();
+            renderApprovalView();
         }
     }
 
@@ -495,17 +508,44 @@
         }
     }
 
-    // Show actions
+    // -------------------------------------------------------------------------
+    // State model helpers - single source of truth for workflow state
+    // -------------------------------------------------------------------------
+    function hasNoWorkflows() {
+        return !Array.isArray(clauseApprovalsList) || clauseApprovalsList.length === 0;
+    }
+
+    function hasNotStartedWorkflows() {
+        return Array.isArray(clauseApprovalsList) && clauseApprovalsList.some(function(val) {
+            return val && val.currentLevelStatus === 'notActive';
+        });
+    }
+
+    function hasPendingWorkflows() {
+        return Array.isArray(clauseApprovalsList) && clauseApprovalsList.some(function(val) {
+            return val && val.approvalWorkflowStatus === 'pending' && val.currentLevelStatus !== 'notActive';
+        });
+    }
+
+    function isFullyApproved() {
+        return Array.isArray(clauseApprovalsList) && clauseApprovalsList.length > 0 &&
+            clauseApprovalsList.every(function(val) { return val && val.approvalWorkflowStatus === 'approved'; });
+    }
+
+    // Show actions - priority: Download > Send Reminder > Start (empty or not started)
     function showStartClauseAction() {
-        return clauseApprovalsList?.some(val => val?.currentLevelStatus === 'notActive' && !showNewApprovalForm);
+        if (showNewApprovalForm) return false;
+        return hasNoWorkflows() || hasNotStartedWorkflows();
     }
 
     function showRemindAction() {
-        return clauseApprovalsList?.some(val => (val?.approvalWorkflowStatus === 'pending' && val?.currentLevelStatus !== 'notActive') && !showNewApprovalForm);
+        if (showNewApprovalForm) return false;
+        return hasPendingWorkflows();
     }
 
     function showDownloadReportAction() {
-        return clauseApprovalsList?.every(val => val?.approvalWorkflowStatus === 'approved' && !showNewApprovalForm);
+        if (showNewApprovalForm) return false;
+        return isFullyApproved();
     }
 
     // Format timestamp
@@ -760,6 +800,8 @@
                 const data = await response.json();
                 if (data?.status) {
                     showToast('Approval Reminder Sent Successfully', 'success');
+                    getClauseApprovalsList();
+                    return;
                 } else {
                     showToast(data?.msg || 'Something went wrong!', 'error');
                 }
