@@ -474,6 +474,9 @@
         }
     }
 
+    // Regenerate support whitelist - Only these actions should show Regenerate
+    const REGENERATE_SUPPORTED_ACTIONS = ['summary', 'clause', 'obligation'];
+
     // Open drawer - matches MS Editor CustomDrawer
     function openDrawer(contentKey) {
         const drawer = document.getElementById('drawer');
@@ -566,13 +569,14 @@
             }
 
             // Setup header action buttons for Summary, Clauses, Obligations
-            if (drawerHeaderActions && (contentKey === 'summary' || contentKey === 'clause' || contentKey === 'obligation')) {
+            if (drawerHeaderActions && REGENERATE_SUPPORTED_ACTIONS.includes(contentKey)) {
                 drawerHeaderActions.style.display = 'flex';
                 drawerRegenerateBtn = document.getElementById('drawer-regenerate-btn');
                 drawerCopyBtn = document.getElementById('drawer-copy-btn');
 
                 if (drawerRegenerateBtn) {
-                    drawerRegenerateBtn.style.display = 'flex';
+                    // Visibility is controlled by feature modules based on streaming state
+                    drawerRegenerateBtn.style.display = 'none';
                     drawerRegenerateBtn.onclick = () => {
                         if (contentKey === 'summary' && window.regenerateSummary) {
                             window.regenerateSummary();
@@ -585,7 +589,8 @@
                 }
 
                 if (drawerCopyBtn) {
-                    drawerCopyBtn.style.display = 'flex';
+                    // Visibility is controlled by feature modules based on streaming state
+                    drawerCopyBtn.style.display = 'none';
                     drawerCopyBtn.onclick = () => {
                         if (contentKey === 'summary' && window.copySummary) {
                             window.copySummary();
@@ -597,22 +602,9 @@
                     };
                 }
             } else if (drawerHeaderActions) {
-                // Setup refresh button for AI Copilot
+                // AI Copilot and other views: Regenerate/Copy header buttons are not used
                 if (contentKey === 'genai' || contentKey === 'askai') {
-                    drawerHeaderActions.style.display = 'flex';
-                    drawerRegenerateBtn = document.getElementById('drawer-regenerate-btn');
-                    drawerCopyBtn = document.getElementById('drawer-copy-btn');
-                    if (drawerRegenerateBtn) {
-                        drawerRegenerateBtn.style.display = 'flex';
-                        drawerRegenerateBtn.onclick = () => {
-                            if (window.syncDocumentWithAi) {
-                                window.syncDocumentWithAi(true);
-                            }
-                        };
-                    }
-                    if (drawerCopyBtn) {
-                        drawerCopyBtn.style.display = 'none';
-                    }
+                    drawerHeaderActions.style.display = 'none';
                 } else if (contentKey === 'clauseApproval') {
                     // Clause Approval: show header-actions container; approval.js will inject buttons in initApprovalView
                     drawerHeaderActions.style.display = 'flex';

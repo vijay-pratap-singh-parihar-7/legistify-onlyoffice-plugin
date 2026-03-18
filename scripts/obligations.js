@@ -357,6 +357,40 @@
         }
     }
 
+    function updateHeaderButtonsVisibility(hasContent) {
+        const drawerHeaderActions = document.getElementById('drawer-header-actions');
+        const drawerRegenerateBtn = document.getElementById('drawer-regenerate-btn');
+        const drawerCopyBtn = document.getElementById('drawer-copy-btn');
+
+        if (!drawerHeaderActions) {
+            return;
+        }
+
+        // Keep header container layout stable
+        drawerHeaderActions.style.display = 'flex';
+
+        const isResponseComplete = !!hasContent && !isStreaming;
+
+        // Hide buttons while streaming or when there is no content yet
+        if (!isResponseComplete) {
+            if (drawerRegenerateBtn) {
+                drawerRegenerateBtn.style.display = 'none';
+            }
+            if (drawerCopyBtn) {
+                drawerCopyBtn.style.display = 'none';
+            }
+            return;
+        }
+
+        // Streaming finished and content is ready – show both buttons
+        if (drawerRegenerateBtn) {
+            drawerRegenerateBtn.style.display = 'flex';
+        }
+        if (drawerCopyBtn) {
+            drawerCopyBtn.style.display = 'flex';
+        }
+    }
+
     function updateStreamingUI() {
         const resultContainer = getObligationsResultContainer();
         if (!resultContainer) {
@@ -368,6 +402,9 @@
         const displayData = savedObligation || (responseChunks.length > 0 ? responseChunks.join('') : obligationsData);
         const hasContent = displayData && displayData.trim();
         const mayShowContent = hasContent && (shouldHideLoader || !progressLoaderInstance);
+
+        // Update header buttons (Copy / Regenerate) visibility based on streaming state
+        updateHeaderButtonsVisibility(hasContent);
 
         if (!mayShowContent) {
             if (!hasContent && (isStreaming || regenerateLoader) && !progressLoaderInstance && window.createProgressLoader) {

@@ -550,6 +550,40 @@
         }
     }
 
+    function updateHeaderButtonsVisibility(hasContent) {
+        const drawerHeaderActions = document.getElementById('drawer-header-actions');
+        const drawerRegenerateBtn = document.getElementById('drawer-regenerate-btn');
+        const drawerCopyBtn = document.getElementById('drawer-copy-btn');
+
+        if (!drawerHeaderActions) {
+            return;
+        }
+
+        // Keep header container layout stable
+        drawerHeaderActions.style.display = 'flex';
+
+        const isResponseComplete = !!hasContent && !isStreaming;
+
+        // Hide buttons while streaming or when there is no content yet
+        if (!isResponseComplete) {
+            if (drawerRegenerateBtn) {
+                drawerRegenerateBtn.style.display = 'none';
+            }
+            if (drawerCopyBtn) {
+                drawerCopyBtn.style.display = 'none';
+            }
+            return;
+        }
+
+        // Streaming finished and content is ready – show both buttons
+        if (drawerRegenerateBtn) {
+            drawerRegenerateBtn.style.display = 'flex';
+        }
+        if (drawerCopyBtn) {
+            drawerCopyBtn.style.display = 'flex';
+        }
+    }
+
     function updateStreamingUI() {
         const resultContainer = getSummaryResultContainer();
         if (!resultContainer) {
@@ -566,6 +600,9 @@
 
         // Show content only when loader has been released (first chunk + min time) or we have saved data and no loader
         const mayShowContent = hasContent && (shouldHideLoader || !progressLoaderInstance);
+        // Update header buttons (Copy / Regenerate) visibility based on streaming state
+        updateHeaderButtonsVisibility(hasContent);
+
         if (!mayShowContent) {
             if (!hasContent && (isStreaming || regenerateLoader) && !progressLoaderInstance && window.createProgressLoader) {
                 progressLoaderInstance = window.createProgressLoader(resultContainer, {
@@ -604,7 +641,7 @@
                 </div>
             `;
             
-            // Show action buttons
+            // Show action buttons (header visibility + per-button visibility)
             showSummaryActions(resultContainer);
             
             // Auto-scroll to bottom during streaming (will be called after each chunk update)
@@ -659,11 +696,11 @@
     }
 
     function showSummaryActions(container) {
-        // Show action buttons in drawer header (matches MS Editor)
-        const drawerHeaderActions = document.getElementById('drawer-header-actions');
-        if (drawerHeaderActions) {
-            drawerHeaderActions.style.display = 'flex';
-        }
+        // Show action buttons in drawer header (matches MS Editor) with streaming-aware visibility
+        const resultContainer = getSummaryResultContainer() || container;
+        const displayData = savedSummary || (responseChunks.length > 0 ? responseChunks.join('') : summaryData);
+        const hasContent = displayData && displayData.trim();
+        updateHeaderButtonsVisibility(hasContent);
     }
 
     function copySummary() {
