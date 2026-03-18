@@ -369,9 +369,12 @@
         // Keep header container layout stable
         drawerHeaderActions.style.display = 'flex';
 
-        const isResponseComplete = !!hasContent && !isStreaming;
+        // Streaming state is the single source of truth:
+        // - While streaming: hide buttons
+        // - After streaming finishes: show buttons (regardless of content quirks)
+        const isResponseComplete = !isStreaming;
 
-        // Hide buttons while streaming or when there is no content yet
+        // Hide buttons while streaming
         if (!isResponseComplete) {
             if (drawerRegenerateBtn) {
                 drawerRegenerateBtn.style.display = 'none';
