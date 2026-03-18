@@ -35,6 +35,7 @@
     let streamBuffer = '';
     let streamHasEndMarker = false;
     let lastStreamSnapshot = null;
+    let playbookProgressLoaderInstance = null; // Loader hides only after first chunk + min time (matches obligations/contract-frontend)
     const STREAM_END_MARKER = '---END_OF_ASSISTANT_RESPONSE---';
 
     // Initialize playbook view
@@ -899,6 +900,11 @@
         streamBuffer = '';
         streamHasEndMarker = false;
         lastStreamSnapshot = null;
+        if (playbookProgressLoaderInstance) {
+            playbookProgressLoaderInstance.cleanup();
+            playbookProgressLoaderInstance.hide();
+            playbookProgressLoaderInstance = null;
+        }
 
         // Ensure Playbook tab is active and view is visible
         if (window.handleTabChange) {
@@ -973,13 +979,17 @@
                 const partial = parsePlaybookStreamPayload(streamBuffer);
                 if (partial?.aiPlaybookResponse?.length) {
                     console.log('✅ Parsed partial results:', partial.aiPlaybookResponse.length, 'items');
+                    // Signal first chunk received so loader stays until content is rendered (no blank screen)
+                    if (playbookProgressLoaderInstance && typeof playbookProgressLoaderInstance.setFirstChunkReceived === 'function') {
+                        playbookProgressLoaderInstance.setFirstChunkReceived(true);
+                    }
                     const snapshotKey = JSON.stringify(partial.aiPlaybookResponse);
                     if (snapshotKey === lastStreamSnapshot) {
                         continue;
                     }
                     lastStreamSnapshot = snapshotKey;
                     playbookResults = partial;
-                    // Force update the view immediately
+                    // Force update the view immediately (replaces loader with content in one paint)
                     updateResultsView();
                     
                     // Ensure playbook view is visible
@@ -1004,6 +1014,10 @@
             errorMessage = error?.message || 'Failed to run playbook';
             isStreamingPlaybook = false;
             runningPlaybook = null;
+            if (playbookProgressLoaderInstance) {
+                playbookProgressLoaderInstance.hide();
+                playbookProgressLoaderInstance = null;
+            }
             showToast(errorMessage, 'error');
             // Update results view to show error
             updateResultsView();
@@ -1381,7 +1395,7 @@
                     `;
                     const loaderContainer = document.getElementById('progress-loader-container');
                     if (loaderContainer && window.createProgressLoader) {
-                        window.createProgressLoader(loaderContainer, {
+                        playbookProgressLoaderInstance = window.createProgressLoader(loaderContainer, {
                             title: 'Analyzing your contract playbook',
                             steps: [
                                 'Reading playbook guidelines',
@@ -1390,25 +1404,34 @@
                                 'Generating recommendations'
                             ],
                             stepDelay: 1000,
-                            minDisplayTime: 3000
+                            minDisplayTime: 3000,
+                            onRelease: function() {
+                                playbookProgressLoaderInstance = null;
+                                updateResultsView();
+                            }
                         });
                     } else if (loaderContainer) {
                         loaderContainer.innerHTML = '<div class="loading-spinner"></div>';
                     }
                 }
             } else {
-                // Show empty state or error message
+                // Show empty state or error message (hide loader so no blank frame)
+                if (playbookProgressLoaderInstance) {
+                    playbookProgressLoaderInstance.hide();
+                    playbookProgressLoaderInstance = null;
+                }
                 const errorMsg = errorMessage || 'No playbook results available';
                 resultsContent.innerHTML = `<p class="empty-state-text" style="text-align: center; color: #6c757d; margin: 40px 0;">${escapeHtml(errorMsg)}</p>`;
             }
             return;
         }
         
-        // Remove ProgressLoader if it exists when data arrives
+        // Remove ProgressLoader when data is rendered (loader stays until first chunk + min time via onRelease)
         const existingLoader = resultsContent.querySelector('#progress-loader-container');
         if (existingLoader && existingLoader.parentNode) {
             existingLoader.parentNode.remove();
         }
+        playbookProgressLoaderInstance = null;
 
         // Render filters and results - matches MS Editor exactly
         const riskyPercentage = ((statusCount?.notMet || 0) / playBook.length) * 100;
@@ -1533,7 +1556,11 @@
         streamHasEndMarker = false;
         lastStreamSnapshot = null;
         runningPlaybook = null;
-        
+        if (playbookProgressLoaderInstance) {
+            playbookProgressLoaderInstance.hide();
+            playbookProgressLoaderInstance = null;
+        }
+
         // Close drawer and reset all playbook state (returning to list)
         window.closePlaybookDrawer();
         
