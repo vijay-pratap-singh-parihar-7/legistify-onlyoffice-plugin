@@ -109,44 +109,51 @@
         // NEVER render feature-header if in drawer (drawer has its own header)
         const shouldShowHeader = !isInDrawer;
 
-        // Workflow state: no approval started vs started (1+ clauses)
+        // Button visibility: match contract-frontend ClauseApproval.js exactly (independent conditions per button)
         var list = Array.isArray(clauseApprovalsList) ? clauseApprovalsList : [];
         var hasApprovalStarted = list.length > 0;
+        var showStartClauseAction = hasApprovalStarted && hasNotStartedWorkflows(list);   // any clause "Not started" -> show Start
+        var showRemindAction = hasApprovalStarted && hasPendingWorkflows(list);           // any clause pending (and not not-started) -> show Remind
+        var showDownloadReportAction = hasApprovalStarted && isFullyApproved(list);       // all approved -> show Download
+
+        if (typeof console !== 'undefined' && console.debug) {
+            console.debug('[ClauseApproval] Buttons', { listLength: list.length, showStart: showStartClauseAction, showRemind: showRemindAction, showDownload: showDownloadReportAction });
+        }
 
         // Reusable icon-only button style (small square, blue, white icon, rounded)
-        var iconBtnStyle = 'width: 32px; height: 32px; min-width: 32px; padding: 0; cursor: pointer; border-radius: 6px; background-color: #2563EB; color: white; display: flex; align-items: center; justify-content: center; border: none;';
+        var iconBtnStyle = 'width: 32px; height: 27px; min-width: 32px; padding: 0; cursor: pointer; border-radius: 6px; background-color: #2563EB; color: white; display: flex; align-items: center; justify-content: center; border: none;';
 
         var actionButtons = '';
         if (!selectedClause && !showNewApprovalForm) {
-            if (typeof console !== 'undefined' && console.debug) {
-                console.debug('[ClauseApproval] CTA Decision', { listLength: list.length, hasApprovalStarted: hasApprovalStarted });
+            // Render each button only when its condition is true (same order as frontend: Remind, Download, Start)
+            if (showRemindAction) {
+                actionButtons += `
+                <div title="Send Reminder" class="approval-header-icon-btn" onclick="sendApprovalsReminder()" style="${iconBtnStyle}">
+                    ${loaderFor.isReminderLoading ? '<div class="loading-spinner-small"></div>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>'}
+                </div>
+                `;
+            }
+            if (showDownloadReportAction) {
+                actionButtons += `
+                <div title="Download Report" class="approval-header-icon-btn" onclick="downloadApprovalMatrix()" style="${iconBtnStyle}">
+                    ${loaderFor.downloadFileLoading ? '<div class="loading-spinner-small"></div>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>'}
+                </div>
+                `;
+            }
+            if (showStartClauseAction) {
+                actionButtons += `
+                <div title="Start Approval" class="approval-header-icon-btn" onclick="startClauseApprovals()" style="${iconBtnStyle}">
+                    ${loaderFor.startApprovalLoading ? '<div class="loading-spinner-small"></div>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>'}
+                </div>
+                `;
             }
             if (hasApprovalStarted) {
-                // Workflow started: show icon-only Start + Reminder; when fully approved show Download only
-                if (isFullyApproved(list)) {
-                    actionButtons = `
-                    <div title="Download Report" class="approval-header-icon-btn" onclick="downloadApprovalMatrix()" style="${iconBtnStyle}">
-                        ${loaderFor.downloadFileLoading ? '<div class="loading-spinner-small"></div>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>'}
-                    </div>
-                    `;
-                } else {
-                    actionButtons = `
-                    <div title="Start Approval" class="approval-header-icon-btn" onclick="startClauseApprovals()" style="${iconBtnStyle}">
-                        ${loaderFor.startApprovalLoading ? '<div class="loading-spinner-small"></div>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>'}
-                    </div>
-                    <div title="Send Reminder" class="approval-header-icon-btn" onclick="sendApprovalsReminder()" style="${iconBtnStyle}">
-                        ${loaderFor.isReminderLoading ? '<div class="loading-spinner-small"></div>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>'}
-                    </div>
-                    `;
-                }
-                // New Approval (icon) so user can add another clause without full-width button
                 actionButtons += `
                 <div title="New Approval" class="approval-header-icon-btn" onclick="showNewApprovalFormHandler()" style="${iconBtnStyle}">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                 </div>
                 `;
             }
-            // When no approval started: no header icon buttons (content shows "+ New Approval" only)
         }
         
         // Build status badge HTML
@@ -305,7 +312,7 @@
         container.innerHTML = listHTML;
     }
 
-    // Get clause approvals list - always initializes clauseApprovalsList safely
+    // Get clause approvals list - matches contract-frontend fetchClauseApprovals (services.js + ClauseApproval.js)
     async function getClauseApprovalsList() {
         clauseApprovalsList = [];
         try {
@@ -316,27 +323,51 @@
             const backendUrl = window.getBackendUrl();
             const accessToken = window.getAccessToken();
 
-            if (!pluginData || pluginData.contractId == null) {
+            if (!pluginData || pluginData.contractId == null || pluginData.contractId === '') {
+                errorMessage = 'Contract ID is missing. Please open the document from the contract page and try again.';
                 console.warn('Clause Approval: contractId from getPluginData() is missing', pluginData);
+                return;
+            }
+
+            if (!backendUrl) {
+                errorMessage = 'Backend URL is not configured. Please refresh and try again.';
+                console.warn('Clause Approval: getBackendUrl() returned empty');
+                return;
             }
 
             if (!accessToken) {
-                throw new Error('Access token not available');
+                errorMessage = 'Session expired or not signed in. Please refresh the page and open the document again.';
+                console.warn('Clause Approval: access token not available');
+                return;
             }
 
-            const url = `${backendUrl}/${APPROVAL_API.LIST(pluginData.contractId)}`;
+            // Same path as frontend: constants.CLAUSE_APPROVALS_LIST + '/' + contractId
+            const url = backendUrl.replace(/\/+$/, '') + '/' + APPROVAL_API.LIST(pluginData.contractId);
             const response = await fetch(url, {
+                method: 'GET',
                 headers: {
+                    'Content-Type': 'application/json',
                     'x-auth-token': accessToken,
-                    'Content-Type': 'application/json'
+                    'ngrok-skip-browser-warning': 'true'
                 }
             });
 
-            if (!response.ok) {
-                throw new Error('Failed to fetch clause approvals');
+            var data;
+            try {
+                data = await response.json();
+            } catch (parseErr) {
+                data = null;
             }
 
-            const data = await response.json();
+            if (!response.ok) {
+                var serverMsg = (data && (data.msg || data.message || (data.errors && Object.values(data.errors).join(' ')))) || '';
+                errorMessage = serverMsg || 'Failed to fetch clause approvals (' + response.status + '). Please try again.';
+                console.error('Clause Approval API error:', response.status, data);
+                clauseApprovalsList = [];
+                showToast(errorMessage, 'error');
+                return;
+            }
+
             var list = [];
             if (data && Array.isArray(data.data)) {
                 list = data.data;
@@ -355,7 +386,7 @@
         } catch (err) {
             console.error('Error fetching clause approvals:', err);
             clauseApprovalsList = [];
-            errorMessage = err && err.message ? err.message : 'Something went wrong.';
+            errorMessage = (err && err.message) ? err.message : 'Network error. Please check your connection and try again.';
             showToast(errorMessage, 'error');
         } finally {
             loading = false;
