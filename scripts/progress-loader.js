@@ -112,19 +112,22 @@
                 spinner.style.display = 'block';
                 text.className = 'progress-loader-text text-current';
 
+                const isLastStep = stepIndex === steps.length - 1;
+
                 // Complete this step after delay
                 const timer = setTimeout(() => {
                     completedSteps.push(stepIndex);
-                    spinner.style.display = 'none';
-                    
-                    // Show check if not last step
-                    if (stepIndex < steps.length - 1) {
+                    if (isLastStep) {
+                        // Keep spinner visible on last step while waiting for first chunk (no blank icon)
+                        currentStep = stepIndex + 1;
+                        checkCompletion();
+                    } else {
+                        spinner.style.display = 'none';
                         check.style.display = 'block';
                         text.className = 'progress-loader-text text-completed';
+                        currentStep = stepIndex + 1;
+                        animateStep(currentStep);
                     }
-                    
-                    currentStep = stepIndex + 1;
-                    animateStep(currentStep);
                 }, stepDelay);
 
                 stepTimers.push(timer);
