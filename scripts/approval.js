@@ -369,10 +369,17 @@
 
             if (!response.ok) {
                 var serverMsg = (data && (data.msg || data.message || (data.errors && Object.values(data.errors).join(' ')))) || '';
-                errorMessage = serverMsg || 'Failed to fetch clause approvals (' + response.status + '). Please try again.';
-                console.error('Clause Approval API error:', response.status, data);
-                clauseApprovalsList = [];
-                showToast(errorMessage, 'error');
+                // Treat "no approvals yet" as empty list, not error - show "No existing clause approvals found" below + New Approval only
+                if (serverMsg && (serverMsg.indexOf('No clause approvals initiated') !== -1 || serverMsg.indexOf('no clause approvals initiated') !== -1)) {
+                    clauseApprovalsList = [];
+                    listFetchedOnce = true;
+                    errorMessage = '';
+                } else {
+                    errorMessage = serverMsg || 'Failed to fetch clause approvals (' + response.status + '). Please try again.';
+                    console.error('Clause Approval API error:', response.status, data);
+                    clauseApprovalsList = [];
+                    showToast(errorMessage, 'error');
+                }
                 return;
             }
 
@@ -658,7 +665,7 @@
                     </div>
                     <div class="form-group">
                         <select id="approval-reminder-select" class="approval-form-select" style="border-color: ${errors.reminderDays ? 'red' : '#d1d5db'};" onchange="handleFormInputChange('reminderDays', this.value)">
-                            <option value="" disabled>Reminder</option>
+                            <option value="" ${!form.reminderDays ? 'selected ' : ''}disabled hidden>Reminder</option>
                             ${Array.from({ length: 10 }, function(_, i) {
                                 var v = i + 1;
                                 var selected = form.reminderDays == v || form.reminderDays === String(v) ? ' selected' : '';
@@ -676,7 +683,7 @@
                     <textarea placeholder="Summary" oninput="handleFormInputChange('summary', this.value)" class="approval-form-textarea" style="height: 120px; resize: vertical; border-color: ${errors.summary ? 'red' : '#d1d5db'}; box-sizing: border-box;">${escapeHtml(form.summary || '')}</textarea>
                     <div class="error ${errors.summary ? 'visible' : ''}">${escapeHtml(errors.summary || '')}</div>
                     <div style="display: flex; justify-content: flex-end; margin-top: 6px;">
-                        <button type="button" class="auto-summarize-btn" onclick="handleGenerateSummary()" disabled="${generatingSummary || !(form.clause && form.clause.trim())}" style="margin-bottom: -8px;">
+                        <button type="button" class="auto-summarize-btn" onclick="handleGenerateSummary()" disabled="${!(form.clause && form.clause.trim())}" style="margin-bottom: -8px;">
                             ${generatingSummary ? 'Generating...' : 'Auto Summarize'}
                         </button>
                     </div>
@@ -789,7 +796,7 @@
         if (field === 'clause') {
             var btn = document.querySelector('.auto-summarize-btn');
             if (btn) {
-                btn.disabled = generatingSummary || !(value && value.trim && value.trim().length > 0);
+                btn.disabled = !(value && value.trim && value.trim().length > 0);
             }
             return;
         }
