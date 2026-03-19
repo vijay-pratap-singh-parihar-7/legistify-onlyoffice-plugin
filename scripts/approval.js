@@ -249,7 +249,6 @@
         }
 
         if (showNewApprovalForm) {
-            if (isTeamDropdownOpen) return;
             content.innerHTML = renderForm();
             restoreFocus();
             return;
@@ -660,7 +659,7 @@
             <div class="form-container" style="width: 100%; padding: 12px; padding-bottom: 50px; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; overflow: visible; margin-bottom: 30px; min-height: 0;">
                 <div class="form-row">
                     <div class="form-group">
-                        <input type="text" placeholder="Clause No" value="${escapeHtml(form.clauseNo || '')}" oninput="handleFormInputChange('clauseNo', this.value)" class="approval-form-input" style="border-color: ${errors.clauseNo ? 'red' : '#d1d5db'};" />
+                        <input type="text" id="approval-form-clauseNo" placeholder="Clause No" value="${escapeHtml(form.clauseNo || '')}" oninput="handleFormInputChange('clauseNo', this.value)" class="approval-form-input" style="border-color: ${errors.clauseNo ? 'red' : '#d1d5db'};" />
                         <div class="error ${errors.clauseNo ? 'visible' : ''}">${escapeHtml(errors.clauseNo || '')}</div>
                     </div>
                     <div class="form-group">
@@ -676,11 +675,11 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <textarea placeholder="Clause" oninput="handleFormInputChange('clause', this.value)" class="approval-form-textarea" style="height: 120px; resize: vertical; border-color: ${errors.clause ? 'red' : '#d1d5db'}; box-sizing: border-box;">${escapeHtml(form.clause || '')}</textarea>
+                    <textarea id="approval-form-clause" placeholder="Clause" oninput="handleFormInputChange('clause', this.value)" class="approval-form-textarea" style="height: 120px; resize: vertical; border-color: ${errors.clause ? 'red' : '#d1d5db'}; box-sizing: border-box;">${escapeHtml(form.clause || '')}</textarea>
                     <div class="error ${errors.clause ? 'visible' : ''}">${escapeHtml(errors.clause || '')}</div>
                 </div>
                 <div class="form-group" style="width: 100%; margin-bottom: 8px; position: relative;">
-                    <textarea placeholder="Summary" oninput="handleFormInputChange('summary', this.value)" class="approval-form-textarea" style="height: 120px; resize: vertical; border-color: ${errors.summary ? 'red' : '#d1d5db'}; box-sizing: border-box;">${escapeHtml(form.summary || '')}</textarea>
+                    <textarea id="approval-form-summary" placeholder="Summary" oninput="handleFormInputChange('summary', this.value)" class="approval-form-textarea" style="height: 120px; resize: vertical; border-color: ${errors.summary ? 'red' : '#d1d5db'}; box-sizing: border-box;">${escapeHtml(form.summary || '')}</textarea>
                     <div class="error ${errors.summary ? 'visible' : ''}">${escapeHtml(errors.summary || '')}</div>
                     <div style="display: flex; justify-content: flex-end; margin-top: 6px;">
                         <button type="button" class="auto-summarize-btn" onclick="handleGenerateSummary()"${!(form.clause && form.clause.trim()) ? ' disabled' : ''} style="margin-bottom: -8px;">
@@ -689,7 +688,7 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <textarea placeholder="Implications of Deviation" oninput="handleFormInputChange('standPosition', this.value)" class="approval-form-textarea" style="height: 120px; resize: vertical; border-color: ${errors.standPosition ? 'red' : '#d1d5db'}; box-sizing: border-box;">${escapeHtml(form.standPosition || '')}</textarea>
+                    <textarea id="approval-form-standPosition" placeholder="Implications of Deviation" oninput="handleFormInputChange('standPosition', this.value)" class="approval-form-textarea" style="height: 120px; resize: vertical; border-color: ${errors.standPosition ? 'red' : '#d1d5db'}; box-sizing: border-box;">${escapeHtml(form.standPosition || '')}</textarea>
                     <div class="error ${errors.standPosition ? 'visible' : ''}">${escapeHtml(errors.standPosition || '')}</div>
                 </div>
                 ${form.levels.map((level, index) => `
@@ -780,10 +779,11 @@
         }
     };
 
-    // Handle form input change: update state immediately; avoid full re-render while typing (prevents cursor jump)
+    // Handle form input change: update state immediately; re-render when clearing validation so error UI updates (restoreFocus preserves cursor via input ids)
     window.handleFormInputChange = function(field, value) {
         form[field] = value;
-        if (errors[field]) {
+        var hadError = !!errors[field];
+        if (hadError) {
             delete errors[field];
         }
         if (field === 'reminderDays') {
@@ -798,10 +798,16 @@
             if (btn) {
                 btn.disabled = !(value && value.trim && value.trim().length > 0);
             }
+            if (hadError) {
+                updateApprovalContent();
+            }
             return;
         }
-        // clauseNo, summary, standPosition: update state only, no re-render (validation uses latest on submit)
+        // clauseNo, summary, standPosition: re-render when we cleared an error so validation message disappears
         if (field === 'clauseNo' || field === 'summary' || field === 'standPosition') {
+            if (hadError) {
+                updateApprovalContent();
+            }
             return;
         }
         updateApprovalContent();
@@ -1078,6 +1084,14 @@
         }
     }
 
+    // Token-based, case-insensitive match: every token in searchValue must appear in name (supports space, hyphen, partial)
+    function matchesTeamMemberSearch(fullName, searchValue) {
+        if (!searchValue || !searchValue.trim()) return true;
+        var name = (fullName || '').toLowerCase().trim();
+        var tokens = (searchValue || '').toLowerCase().trim().split(/[\s\-]+/).filter(Boolean);
+        return tokens.every(function(t) { return name.includes(t); });
+    }
+
     function positionTeamMemberPortal(portal, input) {
         const rect = input.getBoundingClientRect();
         portal.style.position = 'fixed';
@@ -1098,6 +1112,11 @@
             form.levels[index].fullName = value;
         }
 
+        if (errors.level) {
+            delete errors.level;
+            updateApprovalContent();
+        }
+
         if (searchTimers[index]) {
             clearTimeout(searchTimers[index]);
         }
@@ -1107,7 +1126,7 @@
                 fetchTeamMembers(index, value.trim());
             }, TEAM_MEMBER_DEBOUNCE_MS);
         } else {
-            closeTeamMemberPortal();
+            fetchTeamMembers(index, '');
         }
     };
 
@@ -1151,7 +1170,9 @@
                 ?.filter(Boolean)
                 ?.map((user) => String(typeof user === 'object' ? user._id : user)) || []);
 
-            const query = isSearch ? (searchValue || '').trim().replace(/\W/g, '') : '';
+            var trimmedSearch = (searchValue || '').trim();
+            var firstToken = trimmedSearch.split(/[\s\-]+/).filter(Boolean)[0] || '';
+            var query = isSearch ? (firstToken.replace(/\W/g, '') || firstToken) : '';
 
             const url = `${backendUrl}/${APPROVAL_API.ORG_USERS(query)}`;
             const response = await fetch(url, {
@@ -1167,9 +1188,14 @@
                 const orgUsers = Array.isArray(rawUsers) ? rawUsers : [];
 
                 if ((data?.status !== false) && orgUsers.length > 0) {
-                    const filteredUsers = orgUsers.filter(
-                        (item) => !selectedUserIds.includes(String(item._id != null ? item._id : item.id))
+                    var filteredUsers = orgUsers.filter(
+                        function(item) { return !selectedUserIds.includes(String(item._id != null ? item._id : item.id)); }
                     );
+                    if (isSearch && trimmedSearch.length > 0) {
+                        filteredUsers = filteredUsers.filter(function(user) {
+                            return matchesTeamMemberSearch(user.fullName || user.name, trimmedSearch);
+                        });
+                    }
 
                     if (filteredUsers.length > 0) {
                         portal.innerHTML = filteredUsers.map((user) => {
