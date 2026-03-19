@@ -27,6 +27,13 @@
 
     // Initialize library view
     window.initLibraryView = function(data) {
+        // Reset search when opening Clause Library so each open starts with empty search (UX: no persisted query).
+        searchText = '';
+        if (timerRef) {
+            clearTimeout(timerRef);
+            timerRef = null;
+        }
+
         // Check for drawer view first (cloned), then original view
         let libraryView = document.querySelector('#library-view-drawer, #library-view');
         if (!libraryView) {
