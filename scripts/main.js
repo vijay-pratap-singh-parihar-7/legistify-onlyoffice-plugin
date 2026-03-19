@@ -1021,7 +1021,7 @@
             subtree: true
         });
 
-        // Click handler only on plugin document - never on parent. Only intercept inside plugin container.
+        // Click handler only on plugin document - only intercept inside plugin container.
         const handleCloseClick = function (e) {
             const target = e.target;
             const pluginRoot = document.getElementById('plugin-container') || document.body;
@@ -1046,6 +1046,35 @@
         };
 
         document.addEventListener('click', handleCloseClick, true);
+
+        // Scoped parent listener: only for the "Close plugin" button in the plugin panel header (OnlyOffice renders this in parent).
+        // We attach ONLY to the plugin panel container (iframe's parent), not the whole document, so other panels are unaffected.
+        try {
+            const iframeEl = window.frameElement;
+            const parentDoc = window.parent && window.parent.document;
+            if (iframeEl && parentDoc && iframeEl.ownerDocument === parentDoc) {
+                const panelContainer = iframeEl.parentElement;
+                if (panelContainer) {
+                    const handlePluginPanelCloseClick = function (e) {
+                        const target = e.target;
+                        const button = target.closest ? target.closest('button, [role="button"]') : target;
+                        if (!button || !panelContainer.contains(button)) return;
+                        const title = (button.getAttribute('title') || '').toLowerCase();
+                        const ariaLabel = (button.getAttribute('aria-label') || '').toLowerCase();
+                        const isClosePluginButton = title === 'close plugin' || ariaLabel === 'close plugin';
+                        if (isClosePluginButton) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            closePluginPanel();
+                            return false;
+                        }
+                    };
+                    panelContainer.addEventListener('click', handlePluginPanelCloseClick, true);
+                }
+            }
+        } catch (err) {
+            // Cross-origin or no parent access
+        }
     }
 
     // Track if ensureMainMenuWidth interval is already running
