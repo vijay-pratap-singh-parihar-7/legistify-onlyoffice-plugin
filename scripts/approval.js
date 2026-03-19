@@ -19,6 +19,7 @@
 
     // State management
     let clauseApprovalsList = [];
+    let listFetchedOnce = false; // true only after first successful list API response (avoids showing empty state before load)
     let selectedClause = null;
     let loading = false;
     let loading2 = false;
@@ -54,6 +55,7 @@
     window.resetApprovalState = function() {
         selectedClause = null;
         showNewApprovalForm = false;
+        listFetchedOnce = false;
         errorMessage = '';
         errors = {};
         form = {
@@ -81,6 +83,9 @@
         var pluginData = window.getPluginData();
         form.contractId = pluginData.contractId;
 
+        // Show loading on first paint so we never show "No existing clause approvals" before API resolves
+        loading = true;
+        listFetchedOnce = false;
         renderApprovalView();
         getClauseApprovalsList();
     };
@@ -287,8 +292,11 @@
         const container = document.getElementById('approval-list-container-drawer') || document.getElementById('approval-list-container');
         if (!container) return;
 
-        if (!Array.isArray(clauseApprovalsList) || clauseApprovalsList.length === 0) {
-            container.innerHTML = '<div style="margin-top: 16px; color: #666;">No existing clause approvals found.</div>';
+        // Only show empty-state message after we've fetched at least once (avoids flash before API resolves)
+        if (!listFetchedOnce || !Array.isArray(clauseApprovalsList) || clauseApprovalsList.length === 0) {
+            if (listFetchedOnce) {
+                container.innerHTML = '<div style="margin-top: 16px; color: #666;">No existing clause approvals found.</div>';
+            }
             return;
         }
 
@@ -376,6 +384,7 @@
                 list = Array.isArray(raw) ? raw : [];
             }
             clauseApprovalsList = list;
+            listFetchedOnce = true;
             errorMessage = '';
 
             if (clauseApprovalsList.length === 0 && data && typeof data.status === 'boolean' && !data.status) {
@@ -649,7 +658,7 @@
                     </div>
                     <div class="form-group">
                         <select id="approval-reminder-select" class="approval-form-select" style="border-color: ${errors.reminderDays ? 'red' : '#d1d5db'};" onchange="handleFormInputChange('reminderDays', this.value)">
-                            <option value="">Reminder</option>
+                            <option value="" disabled>Reminder</option>
                             ${Array.from({ length: 10 }, function(_, i) {
                                 var v = i + 1;
                                 var selected = form.reminderDays == v || form.reminderDays === String(v) ? ' selected' : '';
@@ -667,7 +676,7 @@
                     <textarea placeholder="Summary" oninput="handleFormInputChange('summary', this.value)" class="approval-form-textarea" style="height: 120px; resize: vertical; border-color: ${errors.summary ? 'red' : '#d1d5db'}; box-sizing: border-box;">${escapeHtml(form.summary || '')}</textarea>
                     <div class="error ${errors.summary ? 'visible' : ''}">${escapeHtml(errors.summary || '')}</div>
                     <div style="display: flex; justify-content: flex-end; margin-top: 6px;">
-                        <button type="button" class="auto-summarize-btn" onclick="handleGenerateSummary()" disabled="${generatingSummary || !form.clause}" style="margin-bottom: -8px;">
+                        <button type="button" class="auto-summarize-btn" onclick="handleGenerateSummary()" disabled="${generatingSummary || !(form.clause && form.clause.trim())}" style="margin-bottom: -8px;">
                             ${generatingSummary ? 'Generating...' : 'Auto Summarize'}
                         </button>
                     </div>
