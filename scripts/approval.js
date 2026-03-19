@@ -161,9 +161,11 @@
             }
         }
         
-        // Build status badge HTML
+        // Build status badge HTML (edit icon when current workflow is rejected at any level)
+        var currentClause = getCurrentApprovalClause();
+        var showEditIcon = currentClause && isClauseRejected(currentClause);
         const statusBadge = selectedClause ? `
-            ${getStatus(selectedClause[0]?.approvalWorkflowStatus) === 'Rejected' ? `
+            ${showEditIcon ? `
                 <div class="edit-clause-button" onclick="handleEditClause()" style="padding: 4px 5px; cursor: pointer; border-radius: 5px; background-color: #0f6cbd; color: white; display: flex; align-items: center;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                 </div>
@@ -173,14 +175,19 @@
             </span>
         ` : '';
         
-        // When in drawer, inject action buttons into the drawer header (not inside approval content)
+        // When in drawer: show action buttons (list view) OR status badge + edit icon (clause detail view)
         if (isInDrawer) {
             var drawerHeaderActions = document.getElementById('drawer-header-actions');
             if (drawerHeaderActions) {
-                drawerHeaderActions.style.display = actionButtons ? 'flex' : 'none';
                 drawerHeaderActions.style.gap = '8px';
                 drawerHeaderActions.style.alignItems = 'center';
-                drawerHeaderActions.innerHTML = actionButtons || '';
+                if (selectedClause && statusBadge) {
+                    drawerHeaderActions.innerHTML = statusBadge;
+                    drawerHeaderActions.style.display = 'flex';
+                } else {
+                    drawerHeaderActions.innerHTML = actionButtons || '';
+                    drawerHeaderActions.style.display = actionButtons ? 'flex' : 'none';
+                }
             }
         }
 
@@ -640,6 +647,31 @@
     function isNotStartedLevel(status) {
         var n = normalizeStatus(status);
         return n === 'notactive' || n === 'notstarted';
+    }
+
+    // -------------------------------------------------------------------------
+    // Rejected detection: show edit icon when clause is rejected at any level
+    // (matches contract-frontend / ms-editor-addins behavior; supports multi-level
+    // and activity-log / resubmission flows)
+    // -------------------------------------------------------------------------
+    function isClauseRejected(clause) {
+        if (!clause) return false;
+        if (normalizeStatus(clause.approvalWorkflowStatus) === 'rejected') return true;
+        var levels = clause.levels || clause.newLevels || [];
+        return levels.some(function(l) {
+            return normalizeStatus(l && l.approvalStatus) === 'rejected';
+        });
+    }
+
+    // Current workflow clause for header (when resubmitted, use active approval)
+    function getCurrentApprovalClause() {
+        if (!selectedClause || !selectedClause[0]) return null;
+        var c = selectedClause[0];
+        if (c.approvalActivityLogs && c.approvalActivityLogs.length > 0) {
+            var refind = getRefindApprovals();
+            return refind.activeApproval || c;
+        }
+        return c;
     }
 
     // Format timestamp
