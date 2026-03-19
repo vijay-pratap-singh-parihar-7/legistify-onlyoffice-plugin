@@ -907,121 +907,10 @@
     }
 
     // Set up close button event listeners
-    // SCOPED TO PLUGIN IFRAME ONLY: We do not query or modify the parent (main editor) document,
-    // so OnlyOffice panels (Find, Comments, Chat, Headings) can close normally.
+    // SCOPED TO PLUGIN IFRAME ONLY: We do not hide the close button so it remains visible and clickable.
+    // We intercept the click and call closePluginPanel() so the drawer closes first, then the panel hides.
     function setupCloseButtonListeners() {
-        let attempts = 0;
-        const maxAttempts = 10;
-
-        const hideCloseButton = function (element) {
-            if (element) {
-                element.style.display = 'none';
-                element.style.visibility = 'hidden';
-                element.style.opacity = '0';
-                element.style.pointerEvents = 'none';
-                element.style.width = '0';
-                element.style.height = '0';
-                element.style.margin = '0';
-                element.style.padding = '0';
-                if (element.parentElement && element.parentElement.classList.contains('plugin-close')) {
-                    hideCloseButton(element.parentElement);
-                }
-            }
-        };
-
-        // Only consider element a close button if it has plugin-specific classes (no generic aria-label/title)
-        const isActuallyCloseButton = function (element) {
-            if (!element || !element.matches) return false;
-            if (element.matches('.asc-window-close, .plugin-close')) {
-                return true;
-            }
-            if (element.classList.contains('close') && element.closest && element.closest('.current-plugin-header')) {
-                return true;
-            }
-            return false;
-        };
-
-        const findAndSetupCloseButton = function () {
-            attempts++;
-
-            // Plugin scope only: search only within this iframe's document. Never touch parent document.
-            const pluginRoot = document.getElementById('plugin-container') || document.body;
-
-            // Only look for close button inside .current-plugin-header (plugin chrome), using class-based selectors only
-            const currentPluginHeader = document.querySelector('.current-plugin-header');
-            if (currentPluginHeader && currentPluginHeader.contains && pluginRoot.contains(currentPluginHeader)) {
-                const classSelectors = ['.asc-window-close', '.plugin-close', '.asc-window-header .asc-window-close', '.current-plugin-header .asc-window-close', '.current-plugin-header .plugin-close'];
-                for (const selector of classSelectors) {
-                    const elements = currentPluginHeader.querySelectorAll(selector);
-                    for (const el of elements) {
-                        if (isActuallyCloseButton(el)) {
-                            hideCloseButton(el);
-                            console.log('Found and hiding plugin close button (scoped to .current-plugin-header)');
-                            if (attempts >= 5) {
-                                console.log('Close button hidden successfully');
-                            }
-                            return true;
-                        }
-                    }
-                }
-                // Fallback: last button in plugin header (common OnlyOffice pattern)
-                const buttons = currentPluginHeader.querySelectorAll('button, [role="button"]');
-                if (buttons.length > 0) {
-                    const lastBtn = buttons[buttons.length - 1];
-                    if (lastBtn && isActuallyCloseButton(lastBtn)) {
-                        hideCloseButton(lastBtn);
-                        console.log('Found and hiding plugin close button (last button in header)');
-                        return true;
-                    }
-                }
-            }
-
-            if (attempts >= 5) {
-                console.log('Plugin close button setup finished (no matching element in plugin scope)');
-                return true;
-            }
-            if (attempts < maxAttempts) {
-                setTimeout(findAndSetupCloseButton, 500);
-            } else {
-                console.warn('Could not find plugin close button after', maxAttempts, 'attempts (plugin scope only)');
-            }
-        };
-
-        setTimeout(findAndSetupCloseButton, 100);
-
-        // MutationObserver only on plugin document body - never on parent
-        const observer = new MutationObserver(function (mutations) {
-            mutations.forEach(function (mutation) {
-                mutation.addedNodes.forEach(function (node) {
-                    if (node.nodeType !== 1) return;
-                    const pluginRoot = document.getElementById('plugin-container') || document.body;
-                    if (!pluginRoot.contains || !pluginRoot.contains(node)) return;
-                    const isPluginHeaderOrClose = node.matches && (
-                        node.matches('.asc-window-close, .plugin-close') ||
-                        node.matches('.current-plugin-header') ||
-                        (node.querySelector && node.querySelector('.current-plugin-header .asc-window-close, .current-plugin-header .plugin-close'))
-                    );
-                    if (isPluginHeaderOrClose) {
-                        if (node.matches && isActuallyCloseButton(node)) {
-                            hideCloseButton(node);
-                        }
-                        if (node.querySelectorAll) {
-                            node.querySelectorAll('.asc-window-close, .plugin-close').forEach(el => {
-                                if (isActuallyCloseButton(el)) hideCloseButton(el);
-                            });
-                        }
-                        setTimeout(findAndSetupCloseButton, 100);
-                    }
-                });
-            });
-        });
-
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
-
-        // Click handler only on plugin document - only intercept inside plugin container.
+        // Click handler: intercept Close plugin button click and close via API (keeps drawer + panel in sync).
         const handleCloseClick = function (e) {
             const target = e.target;
             const pluginRoot = document.getElementById('plugin-container') || document.body;
@@ -1031,13 +920,17 @@
             if (!clickedElement) return;
 
             const inPluginHeader = clickedElement.closest && clickedElement.closest('.current-plugin-header');
-            if (!inPluginHeader) return;
+            const inAscHeader = clickedElement.closest && clickedElement.closest('.asc-window-header');
+            if (!inPluginHeader && !inAscHeader) return;
 
             const isCloseByClass = clickedElement.classList.contains('asc-window-close') ||
                 clickedElement.classList.contains('plugin-close') ||
-                (clickedElement.classList.contains('close') && inPluginHeader);
+                (clickedElement.classList.contains('close') && (inPluginHeader || inAscHeader));
+            const title = (clickedElement.getAttribute('title') || '').toLowerCase();
+            const ariaLabel = (clickedElement.getAttribute('aria-label') || '').toLowerCase();
+            const isCloseByAria = (title === 'close plugin' || ariaLabel === 'close plugin');
 
-            if (isCloseByClass) {
+            if (isCloseByClass || isCloseByAria) {
                 e.preventDefault();
                 e.stopPropagation();
                 closePluginPanel();

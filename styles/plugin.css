@@ -109,6 +109,25 @@ button[title*="close" i],
     padding: 0 !important;
 }
 
+/* Show OnlyOffice plugin panel close button so it is visible and clickable; we handle the click in JS (closePluginPanel). */
+.current-plugin-header .asc-window-close,
+.current-plugin-header .plugin-close,
+.current-plugin-header button[aria-label*="Close plugin" i],
+.current-plugin-header button[title*="close plugin" i],
+.asc-window-header .asc-window-close,
+.asc-window-header .plugin-close,
+.asc-window-header button[aria-label*="Close plugin" i],
+.asc-window-header button[title*="close plugin" i] {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    width: auto !important;
+    height: auto !important;
+    margin: 0.25em !important;
+    padding: 0.25em !important;
+}
+
 /* Tab List - Matches MS Editor App.jsx tabList - Dynamic Resizing */
 .tab-list-container {
     display: flex;
