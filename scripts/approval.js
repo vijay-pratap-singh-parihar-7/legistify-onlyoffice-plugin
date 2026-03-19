@@ -683,7 +683,7 @@
                     <textarea placeholder="Summary" oninput="handleFormInputChange('summary', this.value)" class="approval-form-textarea" style="height: 120px; resize: vertical; border-color: ${errors.summary ? 'red' : '#d1d5db'}; box-sizing: border-box;">${escapeHtml(form.summary || '')}</textarea>
                     <div class="error ${errors.summary ? 'visible' : ''}">${escapeHtml(errors.summary || '')}</div>
                     <div style="display: flex; justify-content: flex-end; margin-top: 6px;">
-                        <button type="button" class="auto-summarize-btn" onclick="handleGenerateSummary()" disabled="${!(form.clause && form.clause.trim())}" style="margin-bottom: -8px;">
+                        <button type="button" class="auto-summarize-btn" onclick="handleGenerateSummary()"${!(form.clause && form.clause.trim()) ? ' disabled' : ''} style="margin-bottom: -8px;">
                             ${generatingSummary ? 'Generating...' : 'Auto Summarize'}
                         </button>
                     </div>
