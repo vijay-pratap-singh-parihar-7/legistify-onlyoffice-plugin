@@ -1041,6 +1041,9 @@
                 const data = await response.json();
                 if (data?.status && data?.data) {
                     form.summary = data.data;
+                    if (errors.summary) {
+                        delete errors.summary;
+                    }
                 }
             }
         } catch (error) {
