@@ -1206,11 +1206,17 @@
                 return;
             }
 
-            // Prefer copying from the rendered content element so format matches UI
+            // Prefer copying from the rendered content so format matches UI (summary + Important Questions if present)
             var contentEl = container.querySelector('.p3');
             if (contentEl && window.renderedContentToCopyText) {
-                var plainText = window.renderedContentToCopyText(contentEl);
-                if (plainText.trim()) {
+                var parts = [];
+                parts.push(window.renderedContentToCopyText(contentEl));
+                var questionEls = container.querySelectorAll('.doc-questions');
+                for (var q = 0; q < questionEls.length; q++) {
+                    parts.push(window.renderedContentToCopyText(questionEls[q]));
+                }
+                var plainText = parts.filter(Boolean).join('\n\n').replace(/\n{3,}/g, '\n\n').trim();
+                if (plainText) {
                     navigator.clipboard.writeText(plainText).then(function () {
                         showToast('Copied To Clipboard!', 'success');
                     }).catch(function (err) {
