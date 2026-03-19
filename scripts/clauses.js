@@ -574,21 +574,17 @@
             showToast('No clauses content to copy', 'error');
             return;
         }
-        const htmlClausesText = resultContainer.querySelector('#html_clauses_text') || resultContainer;
-        const sourceHtml = htmlClausesText.innerHTML || '';
-        let text = '';
-        if (window.htmlToString && sourceHtml) {
-            text = window.htmlToString(sourceHtml);
-        } else {
-            text = htmlClausesText.textContent || htmlClausesText.innerText || '';
-            text = text.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
-        }
-        
+        const contentEl = resultContainer.querySelector('#html_clauses_text') || resultContainer;
+        // Use rendered DOM text so clipboard format matches UI (innerText respects <p>, <br>, blocks)
+        const text = window.renderedContentToCopyText
+            ? window.renderedContentToCopyText(contentEl)
+            : (contentEl.innerText || contentEl.textContent || '').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+
         if (!text) {
             showToast('No clauses content to copy', 'error');
             return;
         }
-        
+
         navigator.clipboard.writeText(text).then(() => {
             showToast('Clauses copied to clipboard', 'success');
         }).catch(err => {

@@ -119,6 +119,20 @@
     };
 
     /**
+     * Get plain text from a rendered DOM element so clipboard matches what the user sees.
+     * Uses innerText (layout-aware) then normalizes whitespace. Use this for Copy on Summary/Clauses/Obligations.
+     * @param {HTMLElement} element - The content element (e.g. #html_summary_text, #html_clauses_text)
+     * @returns {string} Plain text matching the rendered format
+     */
+    window.renderedContentToCopyText = function(element) {
+        if (!element || typeof element.innerText === 'undefined') return '';
+        var text = element.innerText || element.textContent || '';
+        text = text.replace(/[ \t]+/g, ' ');
+        text = text.replace(/\n{3,}/g, '\n\n');
+        return text.trim();
+    };
+
+    /**
      * Scroll container to bottom smoothly
      */
     window.scrollToBottom = function(container, smooth = false) {

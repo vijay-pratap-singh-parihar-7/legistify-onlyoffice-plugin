@@ -714,20 +714,16 @@
             return;
         }
         const contentEl = resultContainer.querySelector('#html_summary_text') || resultContainer;
-        const sourceHtml = contentEl.innerHTML || '';
-        let text = '';
-        if (window.htmlToString && sourceHtml) {
-            text = window.htmlToString(sourceHtml);
-        } else {
-            text = contentEl.textContent || contentEl.innerText || '';
-            text = text.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
-        }
-        
+        // Use rendered DOM text so clipboard format matches UI (innerText respects <p>, <br>, blocks)
+        const text = window.renderedContentToCopyText
+            ? window.renderedContentToCopyText(contentEl)
+            : (contentEl.innerText || contentEl.textContent || '').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+
         if (!text) {
             showToast('No summary content to copy');
             return;
         }
-        
+
         navigator.clipboard.writeText(text).then(() => {
             showToast('Summary copied to clipboard');
         }).catch(err => {

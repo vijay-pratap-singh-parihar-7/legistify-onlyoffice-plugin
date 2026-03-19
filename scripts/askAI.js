@@ -1192,7 +1192,7 @@
         return text;
     }
 
-    // Copy response text - content pipeline: normalize → markdown → sanitize → structured plain text
+    // Copy response text - use rendered DOM so clipboard matches what the user sees
     window.copyResponseText = function (element) {
         try {
             if (!element) {
@@ -1206,6 +1206,22 @@
                 return;
             }
 
+            // Prefer copying from the rendered content element so format matches UI
+            var contentEl = container.querySelector('.p3');
+            if (contentEl && window.renderedContentToCopyText) {
+                var plainText = window.renderedContentToCopyText(contentEl);
+                if (plainText.trim()) {
+                    navigator.clipboard.writeText(plainText).then(function () {
+                        showToast('Copied To Clipboard!', 'success');
+                    }).catch(function (err) {
+                        console.error('Failed to copy:', err);
+                        showToast('Failed to copy', 'error');
+                    });
+                    return;
+                }
+            }
+
+            // Fallback: build from stored response (same as before)
             var chatId = container.dataset.chatId;
             if (chatId === undefined || chatId === '') {
                 showToast('Nothing to copy', 'error');

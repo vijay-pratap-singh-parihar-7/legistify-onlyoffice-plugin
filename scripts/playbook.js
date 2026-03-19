@@ -1587,6 +1587,28 @@
         renderResultsView();
     };
 
+    // Copy guideline detail content to clipboard (matches rendered format)
+    window.copyPlaybookGuidelineDetail = function() {
+        const contentEl = document.querySelector('.playbook-guideline-detail-content');
+        if (!contentEl) {
+            showToast('Nothing to copy', 'error');
+            return;
+        }
+        const text = window.renderedContentToCopyText
+            ? window.renderedContentToCopyText(contentEl)
+            : (contentEl.innerText || contentEl.textContent || '').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+        if (!text) {
+            showToast('Nothing to copy', 'error');
+            return;
+        }
+        navigator.clipboard.writeText(text).then(function() {
+            showToast('Copied to clipboard', 'success');
+        }).catch(function(err) {
+            console.error('Failed to copy:', err);
+            showToast('Failed to copy', 'error');
+        });
+    };
+
     // Render drawer for playbook item details - uses existing drawer infrastructure
     function renderDrawer() {
         if (!activeContentPlaybook) return;
@@ -1624,9 +1646,13 @@
                         </svg>
                         <p class="summary-text" onclick="handleBackFromGuidelineDetail()" style="cursor: pointer; margin: 0; font-weight: 650; font-size: 14px;">Back</p>
                     </div>
-                    <div style="flex: 0 0 auto; width: 60px;"></div>
+                    <div style="display: flex; align-items: center; gap: 8px; flex: 0 0 auto;">
+                        <div class="summary-button" onclick="window.copyPlaybookGuidelineDetail && window.copyPlaybookGuidelineDetail()" title="Copy" style="cursor: pointer; display: flex; align-items: center; padding: 4px; border-radius: 5px; border: 1px solid #0000003d;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        </div>
+                    </div>
                 </div>
-                <div style="padding: 12px; flex: 1; overflow-y: auto; max-height: calc(90vh - 100px);">
+                <div class="playbook-guideline-detail-content" style="padding: 12px; flex: 1; overflow-y: auto; max-height: calc(90vh - 100px);">
                     ${isNotMet ? `
                         <div style="margin-bottom: 12px;">
                             <strong>Guideline:</strong> <span style="color: #666;">${escapeHtml(activeContentPlaybook.Rule || 'No guideline text available')}</span>
