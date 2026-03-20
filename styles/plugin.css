@@ -76,57 +76,7 @@ body {
     height: 16px;
 }
 
-/* Hide OnlyOffice Plugin Close Button - Comprehensive selectors */
-.asc-window-close,
-.asc-window-button-close,
-.plugin-close,
-.plugin-close.close,
-.plugin-close button,
-.plugin-close .btn,
-.plugin-close .btn-close,
-.current-plugin-header button:last-child,
-.current-plugin-header .asc-window-close,
-.current-plugin-header .plugin-close,
-.asc-window-header .asc-window-close,
-.asc-window-header button:last-child,
-.asc-window-header .plugin-close,
-button[aria-label*="close" i],
-button[aria-label*="Close plugin" i],
-button[title*="close" i],
-[aria-label*="close" i][role="button"],
-[title*="close" i][role="button"],
-.btn.btn-toolbar[aria-label*="close" i],
-.btn.btn-toolbar[aria-label*="Close plugin" i],
-.btn-close,
-.icon.btn-close {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-    width: 0 !important;
-    height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-/* Show OnlyOffice plugin panel close button so it is visible and clickable; we handle the click in JS (closePluginPanel). */
-.current-plugin-header .asc-window-close,
-.current-plugin-header .plugin-close,
-.current-plugin-header button[aria-label*="Close plugin" i],
-.current-plugin-header button[title*="close plugin" i],
-.asc-window-header .asc-window-close,
-.asc-window-header .plugin-close,
-.asc-window-header button[aria-label*="Close plugin" i],
-.asc-window-header button[title*="close plugin" i] {
-    display: inline-block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    width: auto !important;
-    height: auto !important;
-    margin: 0.25em !important;
-    padding: 0.25em !important;
-}
+/* Do not style/override OnlyOffice native panel header close controls. */
 
 /* Tab List - Matches MS Editor App.jsx tabList - Dynamic Resizing */
 .tab-list-container {

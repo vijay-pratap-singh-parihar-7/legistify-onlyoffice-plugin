@@ -337,11 +337,6 @@
             handleTabChange('Playbook');
         };
 
-        // Plugin execution complete callback
-        window.Asc.plugin.executeCommand = function (command, data) {
-            console.log('Command received:', command, data);
-        };
-
         // Handle plugin panel close event
         window.Asc.plugin.onClose = function () {
             console.log('Plugin panel close event triggered by OnlyOffice');
@@ -907,67 +902,16 @@
     }
 
     // Set up close button event listeners
-    // SCOPED TO PLUGIN IFRAME ONLY: We do not hide the close button so it remains visible and clickable.
-    // We intercept the click and call closePluginPanel() so the drawer closes first, then the panel hides.
+    // IMPORTANT: only bind plugin-owned close buttons. Do not intercept OnlyOffice native header close.
     function setupCloseButtonListeners() {
-        // Click handler: intercept Close plugin button click and close via API (keeps drawer + panel in sync).
-        const handleCloseClick = function (e) {
-            const target = e.target;
-            const pluginRoot = document.getElementById('plugin-container') || document.body;
-            if (!pluginRoot.contains(target)) return;
-
-            const clickedElement = target.closest ? target.closest('button, [role="button"], a[onclick]') : target;
-            if (!clickedElement) return;
-
-            const inPluginHeader = clickedElement.closest && clickedElement.closest('.current-plugin-header');
-            const inAscHeader = clickedElement.closest && clickedElement.closest('.asc-window-header');
-            if (!inPluginHeader && !inAscHeader) return;
-
-            const isCloseByClass = clickedElement.classList.contains('asc-window-close') ||
-                clickedElement.classList.contains('plugin-close') ||
-                (clickedElement.classList.contains('close') && (inPluginHeader || inAscHeader));
-            const title = (clickedElement.getAttribute('title') || '').toLowerCase();
-            const ariaLabel = (clickedElement.getAttribute('aria-label') || '').toLowerCase();
-            const isCloseByAria = (title === 'close plugin' || ariaLabel === 'close plugin');
-
-            if (isCloseByClass || isCloseByAria) {
+        const closeButtons = document.querySelectorAll('.panel-close-button, .plugin-close-button');
+        closeButtons.forEach((button) => {
+            button.addEventListener('click', function (e) {
                 e.preventDefault();
-                e.stopPropagation();
+                console.log('Plugin-owned close button clicked');
                 closePluginPanel();
-                return false;
-            }
-        };
-
-        document.addEventListener('click', handleCloseClick, true);
-
-        // Scoped parent listener: only for the "Close plugin" button in the plugin panel header (OnlyOffice renders this in parent).
-        // We attach ONLY to the plugin panel container (iframe's parent), not the whole document, so other panels are unaffected.
-        try {
-            const iframeEl = window.frameElement;
-            const parentDoc = window.parent && window.parent.document;
-            if (iframeEl && parentDoc && iframeEl.ownerDocument === parentDoc) {
-                const panelContainer = iframeEl.parentElement;
-                if (panelContainer) {
-                    const handlePluginPanelCloseClick = function (e) {
-                        const target = e.target;
-                        const button = target.closest ? target.closest('button, [role="button"]') : target;
-                        if (!button || !panelContainer.contains(button)) return;
-                        const title = (button.getAttribute('title') || '').toLowerCase();
-                        const ariaLabel = (button.getAttribute('aria-label') || '').toLowerCase();
-                        const isClosePluginButton = title === 'close plugin' || ariaLabel === 'close plugin';
-                        if (isClosePluginButton) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            closePluginPanel();
-                            return false;
-                        }
-                    };
-                    panelContainer.addEventListener('click', handlePluginPanelCloseClick, true);
-                }
-            }
-        } catch (err) {
-            // Cross-origin or no parent access
-        }
+            });
+        });
     }
 
     // Track if ensureMainMenuWidth interval is already running
@@ -1121,10 +1065,8 @@
         window.getDocumentText = window.getDocumentContent;
     }
 
-    // Function to close/hide the plugin panel programmatically
-    // NOTE: This function uses HidePluginPanel which COLLAPSES the plugin (not permanently closes it)
-    // The collapse functionality is preserved - users can still collapse the plugin via other means
-    // The close button is hidden but collapse functionality remains intact
+    // Function to close/hide the plugin panel programmatically.
+    // Prefers official executeCommand("close", "") and falls back to panel methods.
     window.closePluginPanel = function () {
         console.log('closePluginPanel called');
 
@@ -1133,37 +1075,39 @@
             window.closeDrawer();
         }
 
-        // Try multiple methods to close the plugin panel
+        const pluginApi = window.Asc && window.Asc.plugin;
+        if (!pluginApi) {
+            console.warn('OnlyOffice plugin API not available');
+            return;
+        }
+
+        // Preferred official close command.
         try {
-            if (window.Asc && window.Asc.plugin && window.Asc.plugin.executeMethod) {
-                // Method 1: HidePluginPanel - This COLLAPSES the plugin (preserves collapse functionality)
-                window.Asc.plugin.executeMethod("HidePluginPanel", [], function () {
-                    console.log('Plugin panel closed via HidePluginPanel');
-                }, function (error) {
-                    console.warn('HidePluginPanel not available, trying alternative methods:', error);
-
-                    // Method 2: Try ClosePluginPanel
-                    window.Asc.plugin.executeMethod("ClosePluginPanel", [], function () {
-                        console.log('Plugin panel closed via ClosePluginPanel');
-                    }, function (error2) {
-                        console.warn('ClosePluginPanel not available:', error2);
-
-                        // Method 3: Try calling onClose
-                        if (window.Asc.plugin.onClose) {
-                            try {
-                                window.Asc.plugin.onClose();
-                                console.log('Plugin panel closed via onClose');
-                            } catch (e) {
-                                console.error('Error calling onClose:', e);
-                            }
-                        }
-                    });
-                });
-            } else {
-                console.warn('OnlyOffice plugin API not available');
+            if (typeof pluginApi.executeCommand === 'function') {
+                console.log('Attempting plugin close via executeCommand("close", "")');
+                pluginApi.executeCommand('close', '');
+                return;
             }
         } catch (error) {
-            console.error('Error closing plugin panel:', error);
+            console.warn('executeCommand("close") failed, trying fallbacks:', error);
+        }
+
+        // Fallback methods used by some host builds.
+        try {
+            if (typeof pluginApi.executeMethod === 'function') {
+                pluginApi.executeMethod("HidePluginPanel", [], function () {
+                    console.log('Plugin panel closed via HidePluginPanel');
+                }, function (error) {
+                    console.warn('HidePluginPanel not available, trying ClosePluginPanel:', error);
+                    pluginApi.executeMethod("ClosePluginPanel", [], function () {
+                        console.log('Plugin panel closed via ClosePluginPanel');
+                    }, function (error2) {
+                        console.error('ClosePluginPanel also failed:', error2);
+                    });
+                });
+            }
+        } catch (error) {
+            console.error('Error closing plugin panel with fallback methods:', error);
         }
     };
 
