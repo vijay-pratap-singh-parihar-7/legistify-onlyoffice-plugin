@@ -47,6 +47,7 @@
     let teamMemberPortalEl = null;
     let isTeamDropdownOpen = false;
     let isSelectingMember = false;
+    let activeTeamMemberInput = null;
     const TEAM_MEMBER_DEBOUNCE_MS = 400;
     const FORM_INPUT_DEBOUNCE_MS = 250;
     let formInputDebounceTimer = null;
@@ -1114,6 +1115,7 @@
 
     function closeTeamMemberPortal() {
         isTeamDropdownOpen = false;
+        activeTeamMemberInput = null;
         if (teamMemberPortalEl) {
             teamMemberPortalEl.style.display = 'none';
         }
@@ -1134,6 +1136,15 @@
         portal.style.left = rect.left + 'px';
         portal.style.width = rect.width + 'px';
         portal.style.minWidth = rect.width + 'px';
+    }
+
+    function syncTeamMemberPortalPosition() {
+        if (!isTeamDropdownOpen || !teamMemberPortalEl || !activeTeamMemberInput) return;
+        if (!document.body.contains(activeTeamMemberInput)) {
+            closeTeamMemberPortal();
+            return;
+        }
+        positionTeamMemberPortal(teamMemberPortalEl, activeTeamMemberInput);
     }
 
     // Handle team member search with debounce (400ms for faster UX)
@@ -1186,6 +1197,7 @@
         if (!input) return;
 
         const portal = getOrCreateTeamMemberPortal();
+        activeTeamMemberInput = input;
         positionTeamMemberPortal(portal, input);
         portal.style.display = 'block';
         isTeamDropdownOpen = true;
@@ -1287,6 +1299,14 @@
         if (!event.target.closest('.team-member-input') && !event.target.closest('.team-member-dropdown-portal')) {
             closeTeamMemberPortal();
         }
+    });
+
+    // Keep dropdown attached to input when parent container/window scrolls or resizes
+    document.addEventListener('scroll', function() {
+        syncTeamMemberPortalPosition();
+    }, true);
+    window.addEventListener('resize', function() {
+        syncTeamMemberPortalPosition();
     });
 
     // Delegated click for clause list: safe handling of approval ID (no inline onclick, no special-char issues)
