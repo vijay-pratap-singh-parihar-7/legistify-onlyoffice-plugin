@@ -344,6 +344,17 @@
 
         // Handle button clicks from OnlyOffice toolbar
         window.Asc.plugin.button = function (id) {
+            // OnlyOffice commonly uses id === -1 for header close.
+            if (id === -1 || id === '-1') {
+                console.log('OnlyOffice close button clicked (id: -1)');
+                if (typeof window.closePluginPanel === 'function') {
+                    window.closePluginPanel();
+                } else if (window.Asc && window.Asc.plugin && typeof window.Asc.plugin.executeCommand === 'function') {
+                    window.Asc.plugin.executeCommand('close', '');
+                }
+                return;
+            }
+
             const buttonMap = {
                 'askai': 'genai',
                 'ask-ai': 'genai',
@@ -356,7 +367,7 @@
                 'approval': 'clauseApproval'
             };
 
-            const normalizedId = id.toLowerCase().replace(/\s+/g, '');
+            const normalizedId = String(id || '').toLowerCase().replace(/\s+/g, '');
             const contentKey = buttonMap[normalizedId] || buttonMap[id];
 
             if (contentKey) {
