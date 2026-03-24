@@ -140,8 +140,7 @@
         const htmlContent = `
             <div class="ask-ai-container" style="display: flex; flex-direction: column; height: 100%; width: 100%; overflow: hidden; position: relative;">
                 ${isHistoryLoading ? `
-                    <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;">
-                        <div class="loading-spinner"></div>
+                    <div id="ask-ai-initial-loader-host" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%;">
                     </div>
                 ` : `
                 <div class="ask-ai-body" style="display: flex; flex-direction: column; overflow: scroll; height: calc(100vh - 20px); margin-right: -8px;">
@@ -222,6 +221,24 @@
         console.log('🔵 Setting innerHTML, length:', htmlContent.length);
         askAIView.innerHTML = htmlContent;
         console.log('✅ innerHTML set, askAIView.children.length:', askAIView.children.length);
+
+        // Initial open of AI Copilot: show 4-step progress loader instead of round spinner
+        if (isHistoryLoading && window.createProgressLoader) {
+            const loaderHost = askAIView.querySelector('#ask-ai-initial-loader-host');
+            if (loaderHost) {
+                window.createProgressLoader(loaderHost, {
+                    title: 'Analyzing contract clauses',
+                    steps: [
+                        'Scanning contract sections',
+                        'Detecting important clauses',
+                        'Categorizing by type',
+                        'Preparing findings'
+                    ],
+                    stepDelay: 1000,
+                    minDisplayTime: 3000
+                });
+            }
+        }
 
         // Find elements within the askAIView we just rendered
         bottomRef = askAIView.querySelector('#bottom-ref');
