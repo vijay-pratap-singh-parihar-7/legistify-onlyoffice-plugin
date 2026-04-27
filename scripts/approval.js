@@ -827,7 +827,8 @@
             return;
         }
         if (field === 'clause') {
-            var btn = document.querySelector('.auto-summarize-btn');
+            var activeContent = document.getElementById('approval-content-drawer') || document.getElementById('approval-content');
+            var btn = activeContent ? activeContent.querySelector('.auto-summarize-btn') : null;
             if (btn) {
                 btn.disabled = !(value && value.trim && value.trim().length > 0);
             }
@@ -1052,7 +1053,12 @@
 
     // Handle generate summary
     window.handleGenerateSummary = async function() {
-        if (!form.clause) return;
+        if (!form.clause || !form.clause.trim()) {
+            if (typeof showToast === 'function') {
+                showToast('Please enter clause text first', 'error');
+            }
+            return;
+        }
         generatingSummary = true;
         updateApprovalContent();
 
@@ -1077,10 +1083,20 @@
                     if (errors.summary) {
                         delete errors.summary;
                     }
+                } else if (typeof showToast === 'function') {
+                    showToast((data && (data.msg || data.message)) || 'Failed to generate summary', 'error');
+                }
+            } else {
+                const errData = await response.json().catch(() => ({}));
+                if (typeof showToast === 'function') {
+                    showToast(errData?.msg || errData?.message || 'Failed to generate summary', 'error');
                 }
             }
         } catch (error) {
             console.error('Error generating summary:', error);
+            if (typeof showToast === 'function') {
+                showToast(error?.message || 'Failed to generate summary', 'error');
+            }
         } finally {
             generatingSummary = false;
             updateApprovalContent();
